@@ -9,52 +9,48 @@ This status separates executable code from model components that still require t
 - Finite-difference reaction-diffusion solver on 2D and 3D Cartesian grids, no-flux edges and explicit Euler time stepping.
 - Dimension-aware explicit diffusion stability guard.
 - Synthetic initial states, CLI 2D/3D simulations and Streamlit 2D maps / 3D voxel-volume visualization.
-- Timestep refinement and nested-grid refinement diagnostics for 2D and 3D. These measure numerical sensitivity, not biological validity.
+- Timestep refinement and nested-grid refinement diagnostics for 2D and 3D.
 
 ### Cellular and spatial AI inputs
-- Stochastic 2D/3D agent-based simulation for cancer, immune and fibroblast cell proxies, including movement, local environment coupling, recruitment and division/death rules.
-- Radius-based cell-neighbour graph construction with coordinates, cell-type encoding, age and local PDE fields as node features.
-- GNN architecture consuming these spatial graphs.
-- Patient-grouped train/test split utility to keep a patient's samples in one partition.
+- Stochastic 2D/3D agent-based simulation for cancer, immune and fibroblast cell proxies.
+- Radius-based cell-neighbour graph construction and a GNN architecture.
+- Patient-grouped train/test split utility.
 
-### Data engineering
-- GDC open-access metadata query with sample/case provenance.
-- GDC sample-manifest export and required-column / duplicate-ID audit.
-- Explicit selected-file open-access downloader with UUID/name checks, byte-count verification and MD5 checksum verification.
-- TCGA expression-file parser and strict matrix assembler; requires exactly one sample link per file and an identical gene set across files.
-- Identifier-aware expression matrix validation, training-only variance filtering and scaling.
+### Data engineering and first real-cohort audit
+- GDC public/open metadata query, sample-manifest export and audit.
+- Sample-type-specific filtering, including Primary Tumor and Solid Tissue Normal.
+- Selected open-file download with retry handling, byte-count verification and MD5 checksum verification.
+- Strict expression matrix assembly with sample/gene alignment.
+- Identifier-aware expression preprocessing.
+- Paired TCGA-BRCA selection: one primary-tumour and one normal sample per shared patient.
+- Reproducible tumour-versus-normal expression baseline using log1p(TPM), train-fold-only feature filtering/selection/scaling, patient-grouped holdout and StratifiedGroupKFold evaluation.
+- Workflow artifacts contain selected metadata and metrics only; raw expression files and expression matrices are not uploaded.
 
 ### Statistical and model components
-- Local finite-difference parameter sensitivity.
-- Monte Carlo propagation of user-supplied parameter ranges (not a Bayesian posterior).
-- Optional PyTorch PINN, Fourier neural operator and fixed-order expression transformer.
-- Optional PyMC Gaussian-likelihood posterior builder with user-supplied forward model.
-- Optional DoWhy linear backdoor wrapper requiring analyst-specified common causes.
-- Optional CasADi dimensionless mean-field optimal-control example.
+- Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
+- Optional PyTorch PINN, Fourier neural operator, spatial GNN and expression-transformer architectures.
+- Optional PyMC posterior builder, DoWhy linear backdoor wrapper and CasADi mean-field control demonstration.
 
 ### Hardware and presentation
-- ESP32 firmware sketch, normalized JSON serial protocol, parser and dashboard control hook.
-- Parametric OpenSCAD breast-phantom shell, separate lesion inserts and stand ring.
-- Wiring map, component list, physical build guide and dashboard deployment notes.
+- ESP32 firmware, normalized serial protocol and dashboard control hook.
+- Parametric OpenSCAD breast-phantom shell, removable lesion inserts, wiring map and physical build guide.
 
 ## Implemented as architecture only or optional components
 
-The PINN, GNN, neural operator, expression transformer, Bayesian, causal and optimal-control modules are code components. They are not trained models and do not generate scientifically validated predictions by simply being imported. Optional dependencies are not part of the minimal base install.
+PINN, GNN, neural operator, expression transformer, Bayesian, causal and optimal-control modules are code components. They are not trained or biologically validated models by simply being present in source.
 
 ## Still outstanding
-
-- Execute and review an actual permitted TCGA-BRCA cohort query; inspect sample types, assay metadata, endpoints and sample linkage before selecting files.
-- Train and benchmark AI models with suitable train/validation/test splits and an independent cohort.
-- Calibrate biological parameter values and assess identifiability, posterior convergence and uncertainty using compatible observed data.
-- Compare the numerical engine with an independent solver and document multi-level grid/time convergence.
-- Fully couple PDE and agent-based cell dynamics through explicit source/sink feedback.
+- Confirm successful completion of the paired TCGA-BRCA download/matrix/model workflow and inspect the final metrics artifact.
+- Increase cohort size and repeat the baseline with independent patient-level validation.
+- Obtain and harmonize clinical outcome endpoints for survival/prognosis research; tumour-normal classification is not a survival or therapy-response task.
+- Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
+- Compare numerical solver with independent methods and document multi-level convergence.
+- Fully couple PDE and agent-based dynamics.
 - Validate spatial graphs against registered histology/spatial assay ground truth.
-- Integrate and validate additional compatible modalities/cohorts (METABRIC, GEO, proteomics or spatial data).
-- Add clonal heterogeneity, detailed ECM mechanics, angiogenesis and more biologically resolved immune phenotypes.
-- Implement the full PDE-constrained control problem; current CasADi module is a toy mean-field demonstration.
-- Physically print/cast the phantom, wire the ESP32 console and complete bench integration tests.
-- Configure and authorize a hosted Streamlit deployment; local deployment instructions are present.
+- Integrate additional compatible modalities/cohorts and perform independent validation.
+- Implement the full PDE-constrained control problem.
+- Fabricate the phantom, assemble ESP32 hardware and complete bench tests.
 
 ## Scientific and clinical boundary
 
-All current simulation parameters and initial fields are dimensionless teaching proxies. Synthetic tests establish software behaviour only. No current output has clinical validation or utility for screening, diagnosis, prognosis, patient-specific treatment selection, dose calculation or treatment recommendations. Controlled, restricted or identifiable participant-level data must not be committed to this public repository.
+All simulation parameters remain dimensionless teaching proxies. The TCGA baseline predicts known specimen labels in a small research subset only. No current output has clinical validation or utility for screening, diagnosis, prognosis, patient-specific treatment selection, dose calculation or treatment recommendations. Controlled, restricted or identifiable participant-level data must not be committed to this public repository.
