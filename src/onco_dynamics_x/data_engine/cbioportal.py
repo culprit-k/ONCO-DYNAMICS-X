@@ -457,7 +457,9 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
         study_id="brca_metabric",
         expression_sample_list_id="brca_metabric_mrna",
     )
-\n\ndef write_audit_outputs(
+
+
+def write_audit_outputs(
     report: dict[str, Any], json_path: str, csv_path: str
 ) -> None:
     """Write aggregate-only JSON and clinical-attribute coverage CSV."""
