@@ -1,33 +1,60 @@
 # Implementation status
 
-This document separates implemented software from work that still requires scientific validation or physical fabrication.
+This status separates executable code from model components that still require training, scientific validation or physical integration.
 
-## Implemented and covered by base CI
-- Dimensionless 2D and 3D reaction-diffusion solver with eight spatial fields, no-flux finite differences and dimension-aware explicit diffusion stability guard.
-- Synthetic initial fields, state validation, 2D/3D CLI, timestep and nested-grid refinement diagnostics, and Streamlit 2D/3D visualization.
-- NumPy 2D/3D agent-based model with cancer-agent division/death, local oxygen/nutrient dependence, immune recruitment and gradient-directed migration, fibroblast movement, reflecting boundaries and reproducible seeds.
-- Spatial cell-graph builder using cell coordinates, phenotype, age and local PDE fields; patient-grouped train/test split utility.
-- Public-only GDC metadata query, sample-manifest export, audit, selected open-file download with checksum verification, and strict TCGA expression-matrix assembly.
-- Identifier-aware expression preprocessing, local parameter sensitivity and Monte Carlo parameter-range uncertainty.
-- Validated JSON serial parser, normalized knob mapping, ESP32 firmware sketch and dashboard serial-input hook.
-- GitHub Actions tests on Python 3.11 and 3.12.
+## Implemented in the repository
 
-## Implemented as optional model components
-- PyTorch PINN with automatic-differentiation PDE residual and weighted observation/physics loss.
-- Spatial graph message-passing network, Fourier neural operator and fixed-order expression transformer.
-- PyMC Gaussian-likelihood posterior builder, DoWhy backdoor wrapper and CasADi mean-field control demonstration.
+### Mathematical simulation
+- Eight dimensionless spatial fields: cancer, immune, fibroblast, oxygen, nutrient, drug, immune-evasion proxy and vasculature proxy.
+- Finite-difference reaction-diffusion solver on 2D and 3D Cartesian grids, no-flux edges and explicit Euler time stepping.
+- Dimension-aware explicit diffusion stability guard.
+- Synthetic initial states, CLI 2D/3D simulations and Streamlit 2D maps / 3D voxel-volume visualization.
+- Timestep refinement and nested-grid refinement diagnostics for 2D and 3D. These measure numerical sensitivity, not biological validity.
 
-Optional modules need compatible data, training and validation; they are not trained models by default.
+### Cellular and spatial AI inputs
+- Stochastic 2D/3D agent-based simulation for cancer, immune and fibroblast cell proxies, including movement, local environment coupling, recruitment and division/death rules.
+- Radius-based cell-neighbour graph construction with coordinates, cell-type encoding, age and local PDE fields as node features.
+- GNN architecture consuming these spatial graphs.
+- Patient-grouped train/test split utility to keep a patient's samples in one partition.
 
-## Not yet completed
-- Biological parameter calibration, identifiability and independent cohort validation.
-- End-to-end PINN/FNO training and benchmarking against numerical baselines.
-- Spatial GNN training with registered ground truth.
-- PhysiCell integration and fully coupled PDE-ABM feedback.
-- Real-observation Bayesian inference and defensible causal analysis.
-- PDE-constrained optimal control and multi-omics external validation.
-- Physical phantom printing/casting, ESP32 bench testing and integrated exhibit assembly.
-- Hosted dashboard deployment; the repository owner must configure hosting.
+### Data engineering
+- GDC open-access metadata query with sample/case provenance.
+- GDC sample-manifest export and required-column / duplicate-ID audit.
+- Explicit selected-file open-access downloader with UUID/name checks, byte-count verification and MD5 checksum verification.
+- TCGA expression-file parser and strict matrix assembler; requires exactly one sample link per file and an identical gene set across files.
+- Identifier-aware expression matrix validation, training-only variance filtering and scaling.
 
-## Evidence policy
-Synthetic results demonstrate software behaviour only. No clinical utility, patient-specific prediction, treatment effect or therapeutic recommendation is established by this project.
+### Statistical and model components
+- Local finite-difference parameter sensitivity.
+- Monte Carlo propagation of user-supplied parameter ranges (not a Bayesian posterior).
+- Optional PyTorch PINN, Fourier neural operator and fixed-order expression transformer.
+- Optional PyMC Gaussian-likelihood posterior builder with user-supplied forward model.
+- Optional DoWhy linear backdoor wrapper requiring analyst-specified common causes.
+- Optional CasADi dimensionless mean-field optimal-control example.
+
+### Hardware and presentation
+- ESP32 firmware sketch, normalized JSON serial protocol, parser and dashboard control hook.
+- Parametric OpenSCAD breast-phantom shell, separate lesion inserts and stand ring.
+- Wiring map, component list, physical build guide and dashboard deployment notes.
+
+## Implemented as architecture only or optional components
+
+The PINN, GNN, neural operator, expression transformer, Bayesian, causal and optimal-control modules are code components. They are not trained models and do not generate scientifically validated predictions by simply being imported. Optional dependencies are not part of the minimal base install.
+
+## Still outstanding
+
+- Execute and review an actual permitted TCGA-BRCA cohort query; inspect sample types, assay metadata, endpoints and sample linkage before selecting files.
+- Train and benchmark AI models with suitable train/validation/test splits and an independent cohort.
+- Calibrate biological parameter values and assess identifiability, posterior convergence and uncertainty using compatible observed data.
+- Compare the numerical engine with an independent solver and document multi-level grid/time convergence.
+- Fully couple PDE and agent-based cell dynamics through explicit source/sink feedback.
+- Validate spatial graphs against registered histology/spatial assay ground truth.
+- Integrate and validate additional compatible modalities/cohorts (METABRIC, GEO, proteomics or spatial data).
+- Add clonal heterogeneity, detailed ECM mechanics, angiogenesis and more biologically resolved immune phenotypes.
+- Implement the full PDE-constrained control problem; current CasADi module is a toy mean-field demonstration.
+- Physically print/cast the phantom, wire the ESP32 console and complete bench integration tests.
+- Configure and authorize a hosted Streamlit deployment; local deployment instructions are present.
+
+## Scientific and clinical boundary
+
+All current simulation parameters and initial fields are dimensionless teaching proxies. Synthetic tests establish software behaviour only. No current output has clinical validation or utility for screening, diagnosis, prognosis, patient-specific treatment selection, dose calculation or treatment recommendations. Controlled, restricted or identifiable participant-level data must not be committed to this public repository.
