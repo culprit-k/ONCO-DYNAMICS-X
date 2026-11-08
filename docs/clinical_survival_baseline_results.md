@@ -130,3 +130,38 @@ Important threats:
 - cBioPortal clinical field conventions: https://github.com/cbioportal/cbioportal/blob/master/docs/File-Formats.md
 - TCGA PanCancer Atlas: https://www.cbioportal.org/study/summary?id=brca_tcga_pan_can_atlas_2018
 - METABRIC: https://www.cbioportal.org/study/summary?id=brca_metabric
+
+
+## Stage and missingness sensitivity analysis (8 November 2026)
+
+### Reproducibility
+
+- Sensitivity workflow: https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42455733551
+- Workflow commit: `96407b83108b85ab81a5ceb1f99f0547bf5f322e`
+- Conclusion: success
+- Aggregate report artifact: `tcga-metabric-clinical-survival-baseline` (artifact ID `13607636020`)
+
+The primary age + four-level stage model was left unchanged. Three additional analyses were run against the same external METABRIC endpoint.
+
+### Results
+
+| Sensitivity model | METABRIC patients | Harrell C-index | Bootstrap 95% interval |
+|---|---:|---:|---:|
+| Age only, stage-complete cases | 1,454 | 0.5914 | 0.5700–0.6174 |
+| Age + stage I-IV (primary) | 1,454 | 0.6161 | 0.5923–0.6411 |
+| Stage only, I reference | 1,454 | 0.4782 | 0.4565–0.4984 |
+| Age + stage I-II vs III-IV | 1,454 | 0.6213 | 0.5966–0.6460 |
+| Age only, no stage requirement | 1,979 | 0.5882 | 0.5683–0.6066 |
+
+The no-stage-requirement age-only analysis retained 1,069 TCGA development patients (151 deaths) and 1,979 METABRIC external patients (1,143 deaths). This is a different, larger analysis population and should not be treated as a like-for-like comparison with the complete-case model.
+
+### Interpretation
+
+- The age-only C-index is similar when stage is not required (0.588) versus the stage-complete subset (0.591). This suggests that the large stage-related exclusion does not materially change age-only discrimination in this particular run, but it does not eliminate selection bias.
+- Collapsing stage III and IV gives a slightly higher C-index (0.621) than the four-level primary model (0.616). Their bootstrap intervals overlap; this does not establish a reliable improvement.
+- The stage-only model has an external C-index below 0.5 (0.478). This is a warning that stage coding, stage definitions, transportability or the prognostic relation may not align across cohorts. It must not be interpreted as evidence that advanced stage is protective. Raw stage category distributions and source definitions need to be audited before further interpretation.
+- These sensitivity results remain exploratory clinical-only analyses. They do not validate a molecular signature, predict treatment benefit or validate the spatial digital twin.
+
+### Next required check
+
+A new aggregate-only cBioPortal audit has been added to report the raw value frequencies for TCGA `AJCC_PATHOLOGIC_TUMOR_STAGE` and METABRIC `TUMOR_STAGE`. This is intended to establish whether the two fields encode comparable categories before any new model is built. Do not infer harmonization from the shared field names or from the current broad-stage mapping alone.
