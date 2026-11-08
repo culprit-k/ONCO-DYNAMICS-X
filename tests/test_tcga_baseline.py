@@ -43,7 +43,7 @@ def test_select_paired_samples_keeps_one_sample_per_patient_and_class(tmp_path):
     tumour = tmp_path / "tumour.csv"
     normal = tmp_path / "normal.csv"
     _write_rows(tumour, [_row(f"P{i}", "Primary Tumor", "T") for i in range(10)])
-    _write_rows(normal, [_row(f"P{i}", "Solid Tissue Normal", "N") for i in range(8, 18)])
+    _write_rows(normal, [_row(f"P{i}", "Solid Tissue Normal", "N") for i in range(2, 12)])
     metadata = tmp_path / "selected.csv"
     manifest = tmp_path / "manifest.csv"
     rows = select_paired_samples(tumour, normal, metadata, manifest, max_pairs=5)
