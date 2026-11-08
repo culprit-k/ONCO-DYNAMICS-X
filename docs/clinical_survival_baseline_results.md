@@ -165,3 +165,59 @@ The no-stage-requirement age-only analysis retained 1,069 TCGA development patie
 ### Next required check
 
 A new aggregate-only cBioPortal audit has been added to report the raw value frequencies for TCGA `AJCC_PATHOLOGIC_TUMOR_STAGE` and METABRIC `TUMOR_STAGE`. This is intended to establish whether the two fields encode comparable categories before any new model is built. Do not infer harmonization from the shared field names or from the current broad-stage mapping alone.
+
+
+## Raw stage-category audit
+
+### Audit provenance
+
+- METABRIC audit: https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42455802465
+- TCGA audit: https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42455802428
+- Both workflows completed successfully on commit `c5aa4883052d48b845a426084a533e7c8fbae932`.
+- Aggregate artifacts only; no row-level patient or sample identifiers were published.
+
+### Raw categories returned by cBioPortal
+
+TCGA uses patient-level `AJCC_PATHOLOGIC_TUMOR_STAGE` values:
+
+| Raw value | Patient records |
+|---|---:|
+| Stage I | 89 |
+| Stage IA | 86 |
+| Stage IB | 6 |
+| Stage II | 6 |
+| Stage IIA | 355 |
+| Stage IIB | 255 |
+| Stage III | 2 |
+| Stage IIIA | 155 |
+| Stage IIIB | 28 |
+| Stage IIIC | 64 |
+| Stage IV | 19 |
+| Stage X | 14 |
+
+METABRIC uses sample-level `TUMOR_STAGE` values:
+
+| Raw value | Sample records |
+|---|---:|
+| 0 | 24 |
+| 1 | 630 |
+| 2 | 979 |
+| 3 | 144 |
+| 4 | 11 |
+
+These are different raw representations and different clinical levels: a patient-level AJCC pathologic stage in TCGA versus a sample-level generic tumour-stage attribute in METABRIC. cBioPortal's clinical data model allows study-specific patient and sample attributes; a shared-looking field name is not enough to guarantee semantic equivalence. See the [cBioPortal clinical file-format documentation](https://docs.cbioportal.org/file-formats/) and the [clinical attribute dictionary](https://github.com/cBioPortal/clinical-attributes).
+
+### Consequence for interpretation
+
+The numeric METABRIC categories appear ordered from 0 to 4, but the audit has not yet established their exact source definition, staging system, assessment timepoint or equivalence to TCGA AJCC pathologic stage. The current I-IV conversion is therefore provisional. The stage-only external C-index of 0.478 is an explicit warning against treating the two encodings as validated harmonized variables.
+
+Do not interpret the low stage-only score as evidence that more advanced disease is protective. It could reflect incompatible field definitions, coding, selection, cohort differences or poor transportability. The age-only model is a useful comparator, but it does not resolve the stage-field problem.
+
+### Decision gate
+
+Before using stage as a cross-cohort predictor:
+1. Verify METABRIC's `TUMOR_STAGE` definition against the study's original data dictionary/publication.
+2. Verify whether the field is clinical or pathological stage and when it was recorded.
+3. Determine what value 0 means and whether it represents stage 0, unknown, or another category.
+4. Confirm whether TCGA's AJCC pathologic stage can legitimately be harmonized to the METABRIC field.
+5. If equivalence cannot be established, do not transport a stage-based model. Use an age-only baseline or find a better harmonized stage field.

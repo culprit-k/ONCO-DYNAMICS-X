@@ -48,8 +48,8 @@ PINN, GNN, neural operator, expression transformer, Bayesian, causal and optimal
 The survival Cox model is a clinical-only exploratory baseline. It does not use molecular expression and does not validate the digital twin.
 
 ## Still outstanding
-- Review source-level endpoint definitions and raw TCGA/METABRIC stage-value distributions; the first stage/missingness sensitivity analysis is complete, with stage-only transport below 0.5 prompting a raw-category audit.
-- Assess calibration and time-dependent survival performance, in addition to discrimination; do not advance to molecular modelling until the stage-field comparability warning is resolved.
+- Review source-level endpoint definitions and raw TCGA/METABRIC stage-value distributions; aggregate category counts are now recorded, but TCGA patient-level AJCC pathologic stage and METABRIC sample-level generic tumour stage are not yet established as equivalent.
+- Assess calibration and time-dependent survival performance, in addition to discrimination; resolve stage-field semantics and the below-0.5 stage-only transport warning before relying on stage-adjusted external estimates or advancing to molecular modelling.
 - Build a fixed molecular feature/signature pipeline and solve cross-platform harmonization between TCGA RNA-seq RSEM and METABRIC Illumina HT-12 v3 microarray.
 - Perform independent molecular evaluation without using METABRIC outcomes for feature selection or tuning.
 - Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
