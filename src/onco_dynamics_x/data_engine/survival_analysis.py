@@ -294,7 +294,11 @@ def run_cross_cohort_cox(
     stage_test["event"] = metabric["event"].to_numpy()
     stage_model = CoxPHFitter(penalizer=penalizer)
     stage_model.fit(stage_train, duration_col="duration_months", event_col="event")
-    stage_hazard = stage_model.predict_partial_hazard(stage_test[stage_features]).to_numpy().reshape(-1)
+    stage_hazard = (
+        stage_model.predict_partial_hazard(stage_test[stage_features])
+        .to_numpy()
+        .reshape(-1)
+    )
     sensitivity_models["stage_only"] = {
         "harrell_c_index": float(concordance_index(test_durations, -stage_hazard, test_events)),
         "harrell_c_index_bootstrap_95ci": bootstrap_ci(stage_hazard),
@@ -316,7 +320,11 @@ def run_cross_cohort_cox(
     late_test["event"] = metabric["event"].to_numpy()
     late_model = CoxPHFitter(penalizer=penalizer)
     late_model.fit(late_train, duration_col="duration_months", event_col="event")
-    late_hazard = late_model.predict_partial_hazard(late_test[["age_z", "late_stage_III_IV"]]).to_numpy().reshape(-1)
+    late_hazard = (
+        late_model.predict_partial_hazard(late_test[["age_z", "late_stage_III_IV"]])
+        .to_numpy()
+        .reshape(-1)
+    )
     sensitivity_models["age_plus_stage_III_IV_collapsed"] = {
         "harrell_c_index": float(concordance_index(test_durations, -late_hazard, test_events)),
         "harrell_c_index_bootstrap_95ci": bootstrap_ci(late_hazard),
@@ -327,7 +335,11 @@ def run_cross_cohort_cox(
     if tcga_age_records is not None and metabric_age_records is not None:
         tcga_age = pd.DataFrame(tcga_age_records)
         metabric_age = pd.DataFrame(metabric_age_records)
-        if len(tcga_age) >= 100 and int(tcga_age["event"].sum()) >= 30 and len(metabric_age) >= 100 and int(metabric_age["event"].sum()) >= 30:
+        enough_tcga = len(tcga_age) >= 100 and int(tcga_age["event"].sum()) >= 30
+        enough_metabric = (
+            len(metabric_age) >= 100 and int(metabric_age["event"].sum()) >= 30
+        )
+        if enough_tcga and enough_metabric:
             age_mean_all = float(tcga_age["age_years"].mean())
             age_sd_all = float(tcga_age["age_years"].std(ddof=0))
             if np.isfinite(age_sd_all) and age_sd_all > 0:
@@ -340,21 +352,40 @@ def run_cross_cohort_cox(
                     "age_z": (metabric_age["age_years"] - age_mean_all) / age_sd_all,
                 })
                 age_all_model = CoxPHFitter(penalizer=penalizer)
-                age_all_model.fit(age_train_all, duration_col="duration_months", event_col="event")
-                age_all_hazard = age_all_model.predict_partial_hazard(age_test_all).to_numpy().reshape(-1)
+                age_all_model.fit(
+                    age_train_all, duration_col="duration_months", event_col="event"
+                )
+                age_all_hazard = (
+                    age_all_model.predict_partial_hazard(age_test_all)
+                    .to_numpy()
+                    .reshape(-1)
+                )
                 missing_stage_sensitivity = {
-                    "training_cohort": {"patients": len(tcga_age), "events": int(tcga_age["event"].sum())},
+                    "training_cohort": {
+                        "patients": len(tcga_age),
+                        "events": int(tcga_age["event"].sum()),
+                    },
                     "external_cohort": {
                         "patients": len(metabric_age),
                         "events": int(metabric_age["event"].sum()),
-                        "harrell_c_index": float(concordance_index(metabric_age["duration_months"], -age_all_hazard, metabric_age["event"])),
+                        "harrell_c_index": float(
+                            concordance_index(
+                                metabric_age["duration_months"].to_numpy(),
+                                -age_all_hazard,
+                                metabric_age["event"].to_numpy(),
+                            )
+                        ),
                         "harrell_c_index_bootstrap_95ci": bootstrap_ci_for_records(
                             metabric_age["duration_months"].to_numpy(),
                             metabric_age["event"].to_numpy(),
                             age_all_hazard,
                         ),
                     },
-                    "interpretation": "Age-only model trained/evaluated without requiring stage; this quantifies the complete-case selection effect but is not a stage-adjusted model.",
+                    "interpretation": (
+                        "Age-only model trained/evaluated without requiring stage; "
+                        "this quantifies the complete-case selection effect but is "
+                        "not a stage-adjusted model."
+                    ),
                 }
 
     ph_test = proportional_hazard_test(
