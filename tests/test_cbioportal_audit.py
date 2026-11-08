@@ -61,7 +61,10 @@ def test_client_pagination_stops_on_short_page():
     assert client.get_all("fake", page_size=3) == [{"id": "a"}, {"id": "b"}]
     assert calls == [0]
 
-\n\ndef test_survival_pair_summary_checks_patient_level_overlap_and_time_quality():
+
+
+
+def test_survival_pair_summary_checks_patient_level_overlap_and_time_quality():
     records = [
         {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
         {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
