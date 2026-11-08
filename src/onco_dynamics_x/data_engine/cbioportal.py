@@ -434,6 +434,30 @@ def summarize_expression_survival_linkage(
     return result
 
 
+def summarize_attribute_value_counts(records, attribute_id, entity_key):
+    """Return aggregate raw category counts for one clinical field only."""
+    counts = {}
+    entities_by_value = {}
+    for row in records:
+        if row.get("clinicalAttributeId") != attribute_id:
+            continue
+        value = row.get("value")
+        entity_id = row.get(entity_key)
+        if not _nonempty(value):
+            continue
+        label = str(value).strip()
+        counts[label] = counts.get(label, 0) + 1
+        if entity_id:
+            entities_by_value.setdefault(label, set()).add(entity_id)
+    return {
+        value: {
+            "records_with_value": count,
+            "unique_entities_with_value": len(entities_by_value.get(value, set())),
+        }
+        for value, count in sorted(counts.items())
+    }
+
+
 def audit_cbioportal_study(
     client: CBioPortalClient | None = None,
     study_id: str = "brca_metabric",
@@ -548,6 +572,14 @@ def audit_cbioportal_study(
             }
             for item in sample_lists
         ],
+        "stage_value_inventory": {
+            "tcga_ajcc_pathologic_tumor_stage_patient_level": summarize_attribute_value_counts(
+                patient_clinical, "AJCC_PATHOLOGIC_TUMOR_STAGE", "patientId"
+            ),
+            "metabric_tumor_stage_sample_level": summarize_attribute_value_counts(
+                sample_clinical, "TUMOR_STAGE", "sampleId"
+            ),
+        },
         "clinical_inventory": {
             "clinical_attribute_count": len(attributes),
             "patient_clinical_records": len(patient_clinical),

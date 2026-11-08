@@ -234,3 +234,20 @@ def test_expression_linkage_omits_unavailable_tcga_covariate_intersections():
     result = summarize_expression_survival_linkage(samples, ["S1"], clinical)
     assert "expression_patients_with_positive_os_age_and_stage" not in result
     assert "expression_patients_with_positive_os_age_stage_and_hypoxia" not in result
+
+
+def test_stage_value_inventory_reports_aggregate_categories_without_identifiers():
+    from onco_dynamics_x.data_engine.cbioportal import summarize_attribute_value_counts
+
+    rows = [
+        {"clinicalAttributeId": "TUMOR_STAGE", "sampleId": "S1", "value": "Stage I"},
+        {"clinicalAttributeId": "TUMOR_STAGE", "sampleId": "S2", "value": "Stage II"},
+        {"clinicalAttributeId": "TUMOR_STAGE", "sampleId": "S3", "value": "Stage II"},
+        {"clinicalAttributeId": "OTHER", "sampleId": "S4", "value": "x"},
+    ]
+    result = summarize_attribute_value_counts(rows, "TUMOR_STAGE", "sampleId")
+    assert result == {
+        "Stage I": {"records_with_value": 1, "unique_entities_with_value": 1},
+        "Stage II": {"records_with_value": 2, "unique_entities_with_value": 2},
+    }
+    assert "S1" not in str(result)
