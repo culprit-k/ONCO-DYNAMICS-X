@@ -76,13 +76,20 @@ def initialize_agents(
         ]
     )
     cursor = 0
-    for count, radius in ((cancer_count, 0.25), (immune_count, 0.75), (fibroblast_count, 0.55)):
+    for count, radius in (
+        (cancer_count, 0.25),
+        (immune_count, 0.75),
+        (fibroblast_count, 0.55),
+    ):
         x[cursor : cursor + count] = rng.normal(0.0, radius / 2.0, count)
         y[cursor : cursor + count] = rng.normal(0.0, radius / 2.0, count)
         cursor += count
-    x = np.clip(x, -1.0, 1.0)
-    y = np.clip(y, -1.0, 1.0)
-    population = AgentPopulation(x, y, cell_type, np.zeros(total, dtype=float))
+    population = AgentPopulation(
+        np.clip(x, -1.0, 1.0),
+        np.clip(y, -1.0, 1.0),
+        cell_type,
+        np.zeros(total, dtype=float),
+    )
     population.validate()
     return population
 
@@ -105,8 +112,8 @@ def advance_agents(
 ) -> AgentPopulation:
     """Advance agents by one stochastic step under local field-dependent rules.
 
-    This is an illustrative ABM, not a validated model of cell kinetics.
-    Daughter cells are placed near parent cells. Boundaries are reflecting.
+    This illustrative ABM is not a validated model of cell kinetics.
+    Daughter cells are placed near parents. Boundaries are reflecting.
     """
     if dt <= 0:
         raise ValueError("dt must be positive.")
@@ -123,12 +130,10 @@ def advance_agents(
     immune_mask = result.cell_type == IMMUNE
     fibro_mask = result.cell_type == FIBROBLAST
 
-    cancer_field = _sample(environment.cancer, result.x, result.y)
     oxygen = _sample(environment.oxygen, result.x, result.y)
     nutrient = _sample(environment.nutrient, result.x, result.y)
     local_immune = _sample(environment.immune, result.x, result.y)
     drug = _sample(environment.drug, result.x, result.y)
-    fibro_field = _sample(environment.fibroblast, result.x, result.y)
     evasion = _sample(environment.evasion, result.x, result.y)
 
     motility = np.where(cancer_mask, 0.008, np.where(immune_mask, 0.025, 0.006))
@@ -142,7 +147,8 @@ def advance_agents(
     oxygen_factor = oxygen / (parameters.oxygen_half_saturation + oxygen)
     nutrient_factor = nutrient / (parameters.nutrient_half_saturation + nutrient)
     immune_hazard = (
-        parameters.immune_killing * local_immune
+        parameters.immune_killing
+        * local_immune
         / (1.0 + parameters.evasion_resistance * evasion)
     )
     drug_hazard = parameters.drug_killing * drug / (parameters.drug_ec50 + drug)
@@ -153,7 +159,6 @@ def advance_agents(
     birth_probability = 1.0 - np.exp(-cancer_birth_hazard * dt)
     random_values = rng.random(len(result.x))
     deaths = cancer_mask & (random_values < death_probability)
-
     daughter_mask = (
         cancer_mask
         & ~deaths
@@ -166,10 +171,13 @@ def advance_agents(
 
     immune_death_probability = 1.0 - np.exp(-parameters.immune_decay * dt)
     fibro_death_probability = 1.0 - np.exp(-parameters.fibroblast_decay * dt)
-    immune_deaths = immune_mask & (rng.random(len(result.x)) < immune_death_probability)
-    fibro_deaths = fibro_mask & (rng.random(len(result.x)) < fibro_death_probability)
+    immune_deaths = immune_mask & (
+        rng.random(len(result.x)) < immune_death_probability
+    )
+    fibro_deaths = fibro_mask & (
+        rng.random(len(result.x)) < fibro_death_probability
+    )
     keep = ~(deaths | immune_deaths | fibro_deaths)
-
     result = AgentPopulation(
         x=result.x[keep],
         y=result.y[keep],
@@ -177,8 +185,14 @@ def advance_agents(
         age=result.age[keep],
     )
     if len(daughter_indices):
-        daughters_x = population.x[daughter_indices] + rng.normal(0.0, 0.015, len(daughter_indices))
-        daughters_y = population.y[daughter_indices] + rng.normal(0.0, 0.015, len(daughter_indices))
+        daughters_x = (
+            population.x[daughter_indices]
+            + rng.normal(0.0, 0.015, len(daughter_indices))
+        )
+        daughters_y = (
+            population.y[daughter_indices]
+            + rng.normal(0.0, 0.015, len(daughter_indices))
+        )
         result.x = np.concatenate([result.x, np.clip(daughters_x, -1.0, 1.0)])
         result.y = np.concatenate([result.y, np.clip(daughters_y, -1.0, 1.0)])
         result.cell_type = np.concatenate(
