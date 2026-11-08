@@ -354,6 +354,15 @@ def summarize_expression_survival_linkage(
                 expression_os_status_counts[status] = (
                     expression_os_status_counts.get(status, 0) + 1
                 )
+    age, _ = _patient_attribute_values(patient_clinical, "AGE")
+    stage, _ = _patient_attribute_values(
+        patient_clinical, "AJCC_PATHOLOGIC_TUMOR_STAGE"
+    )
+    hypoxia, _ = _patient_attribute_values(
+        patient_clinical, "WINTER_HYPOXIA_SCORE"
+    )
+    age_stage = set(age) & set(stage)
+    age_stage_hypoxia = age_stage & set(hypoxia)
     return {
         "expression_sample_list_sample_count": len(expression_ids),
         "expression_samples_linked_to_patient": sum(
@@ -368,6 +377,12 @@ def summarize_expression_survival_linkage(
         ),
         "expression_positive_time_overall_survival_status_counts": dict(
             sorted(expression_os_status_counts.items())
+        ),
+        "expression_patients_with_positive_os_age_and_stage": len(
+            expression_patient_ids & os_positive & age_stage
+        ),
+        "expression_patients_with_positive_os_age_stage_and_hypoxia": len(
+            expression_patient_ids & os_positive & age_stage_hypoxia
         ),
         "expression_patients_with_complete_relapse_free_survival": len(
             expression_patient_ids & rfs_complete

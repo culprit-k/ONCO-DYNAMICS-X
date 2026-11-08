@@ -208,6 +208,10 @@ def test_expression_linkage_counts_positive_followup_and_event_categories():
         {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
         {"clinicalAttributeId": "OS_MONTHS", "patientId": "P2", "value": "0"},
         {"clinicalAttributeId": "OS_STATUS", "patientId": "P2", "value": "0:LIVING"},
+        {"clinicalAttributeId": "AGE", "patientId": "P1", "value": "55"},
+        {"clinicalAttributeId": "AGE", "patientId": "P2", "value": "60"},
+        {"clinicalAttributeId": "AJCC_PATHOLOGIC_TUMOR_STAGE", "patientId": "P1", "value": "II"},
+        {"clinicalAttributeId": "WINTER_HYPOXIA_SCORE", "patientId": "P1", "value": "0.5"},
     ]
     result = summarize_expression_survival_linkage(
         samples, ["S1", "S2"], clinical
@@ -217,3 +221,5 @@ def test_expression_linkage_counts_positive_followup_and_event_categories():
     assert result["expression_positive_time_overall_survival_status_counts"] == {
         "1:DECEASED": 1
     }
+    assert result["expression_patients_with_positive_os_age_and_stage"] == 1
+    assert result["expression_patients_with_positive_os_age_stage_and_hypoxia"] == 1
