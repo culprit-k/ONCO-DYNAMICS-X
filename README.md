@@ -12,7 +12,7 @@ The numerical baseline is an eight-field reaction-diffusion model with both 2D s
 
 Additional implemented components include:
 - Stochastic cell-agent simulation using 2D PDE fields as a local environment.
-- Cohort manifest validation and identifier-aware expression preprocessing.
+- Public-only GDC file-metadata query and sample-manifest export, plus cohort-manifest validation and identifier-aware expression preprocessing.
 - Local parameter sensitivity and Monte Carlo parameter-range uncertainty.
 - Optional PyTorch PINN, spatial GNN, Fourier neural operator and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy causal wrapper and CasADi mean-field control demonstration.
@@ -35,12 +35,32 @@ pytest
 onco-dynamics simulate --grid-size 51 --steps 400 --dt 0.0003
 ```
 
+Run a true 3D voxel simulation from the CLI:
+
+```bash
+onco-dynamics simulate --dimensions 3 --grid-size 21 --steps 200 --dt 0.0003
+```
+
 The CLI writes `results/simulation_summary.csv`. Launch the optional dashboard with:
 
 ```bash
 pip install -e ".[dashboard,hardware]"
 streamlit run dashboard/app.py
 ```
+
+## Cohort metadata audit
+
+The optional GDC metadata query uses the official API and restricts results to files marked open-access. It does not download the files.
+
+```bash
+onco-dynamics gdc-query \
+  --project-id TCGA-BRCA \
+  --data-type "Gene Expression Quantification" \
+  --workflow-type "STAR - Counts" \
+  --max-results 100
+```
+
+See [cohort data sources and GDC workflow](docs/data_sources.md). Generated metadata CSVs are local and ignored by Git. Never commit controlled or identifiable participant-level data.
 
 For optional AI and research methods, install the relevant extras in pyproject.toml. For example, `pip install -e ".[pinn,spatial]"` installs PyTorch. Do not install every extra blindly; some frameworks require substantial platform-specific dependencies.
 
@@ -63,11 +83,9 @@ See [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), [hardware 
 
 Potential sources include [TCGA-BRCA](https://portal.gdc.cancer.gov/), [METABRIC via cBioPortal](https://www.cbioportal.org/study/summary?id=brca_metabric), [NCBI GEO](https://www.ncbi.nlm.nih.gov/geo/), and [Proteomic Data Commons](https://proteomic.datacommons.cancer.gov/). Each cohort must be audited for endpoints, modality, permissions, identifiers, missingness and compatibility. Do not combine modalities from different patients as if paired. Bulk RNA data alone cannot establish spatial positions, oxygen gradients, or direct cell contact.
 
-Never commit controlled, identifiable, or restricted participant-level data. Keep raw datasets in approved local/institutional storage; commit permitted code, schemas and aggregate audit outputs only.
-
 ## Reproducibility
 
-Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic software tests from biological validation. Report uncertainty, negative results, limitations and failures.
+Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic simulation tests from biological validation. Report uncertainty, negative results, limitations and failures.
 
 ## License
 

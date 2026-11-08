@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
+from onco_dynamics_x.data_engine.gdc import GDCClient, write_sample_manifest
+from onco_dynamics_x.data_engine.manifest import audit_manifest
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import simulate
 from onco_dynamics_x.state import initial_state
@@ -42,12 +44,74 @@ def run_simulation(args: argparse.Namespace) -> Path:
     return output
 
 
+def run_gdc_query(args: argparse.Namespace) -> Path:
+    """Query public GDC metadata and create a sample-level audit manifest."""
+    client = GDCClient(timeout=args.timeout)
+    files = client.query_open_files(
+        project_id=args.project_id,
+        data_type=args.data_type,
+        workflow_type=args.workflow_type,
+        page_size=args.page_size,
+        max_results=args.max_results,
+    )
+    metadata_path = Path(args.metadata_output)
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    columns = [
+        "file_id",
+        "file_name",
+        "md5sum",
+        "file_size",
+        "access",
+        "data_type",
+        "workflow_type",
+        "case_ids",
+        "patient_submitter_ids",
+        "sample_submitter_ids",
+    ]
+    with metadata_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        for item in files:
+            writer.writerow(
+                {
+                    "file_id": item.file_id,
+                    "file_name": item.file_name,
+                    "md5sum": item.md5sum,
+                    "file_size": item.file_size,
+                    "access": item.access,
+                    "data_type": item.data_type,
+                    "workflow_type": item.workflow_type,
+                    "case_ids": "|".join(item.case_ids),
+                    "patient_submitter_ids": "|".join(item.patient_submitter_ids),
+                    "sample_submitter_ids": "|".join(item.sample_submitter_ids),
+                }
+            )
+
+    manifest_path = write_sample_manifest(
+        files, args.manifest_output, args.project_id, args.modality
+    )
+    audit = audit_manifest(manifest_path)
+    print(f"Found {len(files)} open-access file records.")
+    print(f"Metadata: {metadata_path}")
+    print(f"Sample manifest: {manifest_path}")
+    print(
+        f"Manifest audit: {'PASSED' if audit.passed else 'FAILED'}; "
+        f"{audit.unique_patients} patients, {audit.unique_samples} samples."
+    )
+    for warning in audit.warnings:
+        print(f"WARNING: {warning}")
+    for error in audit.errors:
+        print(f"ERROR: {error}")
+    return metadata_path
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="onco-dynamics",
-        description="Run the ONCO-DYNAMICS X dimensionless 2D/3D demonstration model.",
+        description="Run ONCO-DYNAMICS X research data and simulation tools.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
     sim = subparsers.add_parser("simulate", help="run the reaction-diffusion demo")
     sim.add_argument("--grid-size", type=int, default=51)
     sim.add_argument("--dimensions", type=int, choices=(2, 3), default=2)
@@ -56,16 +120,36 @@ def build_parser() -> argparse.ArgumentParser:
     sim.add_argument("--save-every", type=int, default=20)
     sim.add_argument("--output", default="results/simulation_summary.csv")
     sim.set_defaults(func=run_simulation)
+
+    gdc = subparsers.add_parser(
+        "gdc-query",
+        help="query open-access GDC file metadata (no file downloads)",
+    )
+    gdc.add_argument("--project-id", default="TCGA-BRCA")
+    gdc.add_argument("--data-type", default="Gene Expression Quantification")
+    gdc.add_argument("--workflow-type", default=None)
+    gdc.add_argument("--page-size", type=int, default=100)
+    gdc.add_argument("--max-results", type=int, default=100)
+    gdc.add_argument("--timeout", type=float, default=60.0)
+    gdc.add_argument("--modality", default="transcriptomics")
+    gdc.add_argument(
+        "--metadata-output", default="data/metadata/gdc_open_files.csv"
+    )
+    gdc.add_argument(
+        "--manifest-output", default="data/metadata/gdc_sample_manifest.csv"
+    )
+    gdc.set_defaults(func=run_gdc_query)
     return parser
 
 
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    if args.grid_size < 5:
-        parser.error("--grid-size must be at least 5")
-    if args.steps < 1 or args.dt <= 0:
-        parser.error("--steps and --dt must be positive")
+    if args.command == "simulate":
+        if args.grid_size < 5:
+            parser.error("--grid-size must be at least 5")
+        if args.steps < 1 or args.dt <= 0:
+            parser.error("--steps and --dt must be positive")
     args.func(args)
 
 
