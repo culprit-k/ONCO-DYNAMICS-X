@@ -1,0 +1,45 @@
+name: TCGA to METABRIC clinical survival baseline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/onco_dynamics_x/data_engine/survival_analysis.py"
+      - "scripts/run_clinical_survival_baseline.py"
+      - "tests/test_survival_analysis.py"
+      - "pyproject.toml"
+      - ".github/workflows/clinical-survival-baseline.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  cross-cohort-survival-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install survival dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,survival]"
+      - name: Run survival unit tests
+        run: pytest tests/test_survival_analysis.py
+      - name: Run frozen TCGA-to-METABRIC Cox baseline
+        run: |
+          python scripts/run_clinical_survival_baseline.py \
+            --output results/clinical_survival_baseline/report.json
+      - name: Publish aggregate survival report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tcga-metabric-clinical-survival-baseline
+          path: results/clinical_survival_baseline/report.json
+          if-no-files-found: error
+          retention-days: 14
