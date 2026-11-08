@@ -1,0 +1,16 @@
+project:
+  name: ONCO-DYNAMICS X
+  version: 0.1.0
+  description: Dimensionless educational baseline
+simulation:
+  grid_size: 51
+  spatial_domain: [-1.0, 1.0]
+  time_step: 0.0003
+  steps: 400
+  boundary_condition: no_flux
+  integrator: explicit_euler
+  seed: 42
+interpretation:
+  parameter_status: illustrative_not_calibrated
+  patient_specific: false
+  clinical_use: prohibited

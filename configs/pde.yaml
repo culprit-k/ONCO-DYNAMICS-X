@@ -1,0 +1,10 @@
+model:
+  spatial_dimension: 2
+  formulation: coupled_reaction_diffusion
+  discretization: finite_difference
+  diffusion: diagonal_constant
+  boundary_condition: no_flux
+  time_integrator: explicit_euler
+  positivity_handling: post_step_clipping
+  timestep_rule: dt_le_dx_squared_over_4Dmax
+  note: The diffusion timestep rule does not replace reaction-stiffness or convergence testing.

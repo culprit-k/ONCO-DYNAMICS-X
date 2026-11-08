@@ -1,0 +1,7 @@
+pinn:
+  status: planned
+  input_coordinates: [x, y, time]
+  outputs: [cancer, immune, fibroblast, oxygen, nutrient, drug, evasion, vasculature]
+  loss_components: [observation, pde_residual, initial_condition, boundary_condition, regularization]
+  benchmark_against: [finite_difference_reference, held_out_observations]
+  caution: Do not assume a PINN is more accurate than a conventional solver.
