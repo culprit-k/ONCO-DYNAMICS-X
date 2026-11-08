@@ -31,7 +31,12 @@ def _metadata_response(access="open"):
                         {
                             "case_id": "case-uuid",
                             "submitter_id": "TCGA-BRCA-01",
-                            "samples": [{"submitter_id": "TCGA-BRCA-01-01A"}],
+                            "samples": [
+                                {
+                                    "submitter_id": "TCGA-BRCA-01-01A",
+                                    "sample_type": "Primary Tumor",
+                                }
+                            ],
                         }
                     ],
                 }
@@ -55,16 +60,27 @@ class FakeGDCClient(GDCClient):
 
 def test_gdc_open_file_query_uses_public_access_filter_and_parses_linkage():
     client = FakeGDCClient(_metadata_response())
-    files = client.query_open_files(workflow_type="STAR - Counts", max_results=10)
+    files = client.query_open_files(
+        workflow_type="STAR - Counts", sample_type="Primary Tumor", max_results=10
+    )
     assert len(files) == 1
     assert files[0].access == "open"
     assert files[0].associated_samples == (
         ("case-uuid", "TCGA-BRCA-01", "TCGA-BRCA-01-01A"),
     )
+    assert files[0].sample_types == ("Primary Tumor",)
+    assert files[0].associated_sample_metadata == (
+        ("case-uuid", "TCGA-BRCA-01", "TCGA-BRCA-01-01A", "Primary Tumor"),
+    )
     clauses = client.last_payload["filters"]["content"]
     assert any(
         item["content"]["field"] == "files.access"
         and item["content"]["value"] == "open"
+        for item in clauses
+    )
+    assert any(
+        item["content"]["field"] == "cases.samples.sample_type"
+        and item["content"]["value"] == "Primary Tumor"
         for item in clauses
     )
 
@@ -73,6 +89,14 @@ def test_gdc_query_rejects_non_open_response():
     client = FakeGDCClient(_metadata_response(access="controlled"))
     with pytest.raises(RuntimeError, match="non-open"):
         client.query_open_files()
+
+
+def test_gdc_query_rejects_wrong_sample_type_in_response():
+    response = _metadata_response()
+    response["data"]["hits"][0]["cases"][0]["samples"][0]["sample_type"] = "Solid Tissue Normal"
+    client = FakeGDCClient(response)
+    with pytest.raises(RuntimeError, match="requested linked sample type"):
+        client.query_open_files(sample_type="Primary Tumor")
 
 
 def test_gdc_open_file_download_checks_checksum(tmp_path):
@@ -113,7 +137,7 @@ def test_gdc_download_rejects_controlled_access(tmp_path):
         GDCClient().download_open_file(metadata, tmp_path)
 
 
-def test_gdc_manifest_export_passes_sample_audit(tmp_path):
+def test_gdc_manifest_export_passes_sample_audit_and_preserves_specimen_type(tmp_path):
     file = GDCFile(
         file_id=SAMPLE_FILE_ID,
         file_name="sample.tsv",
@@ -126,6 +150,10 @@ def test_gdc_manifest_export_passes_sample_audit(tmp_path):
         patient_submitter_ids=("TCGA-BRCA-01",),
         sample_submitter_ids=("TCGA-BRCA-01-01A",),
         associated_samples=(("case-uuid", "TCGA-BRCA-01", "TCGA-BRCA-01-01A"),),
+        sample_types=("Primary Tumor",),
+        associated_sample_metadata=(
+            ("case-uuid", "TCGA-BRCA-01", "TCGA-BRCA-01-01A", "Primary Tumor"),
+        ),
     )
     path = write_sample_manifest(
         [file], tmp_path / "gdc_manifest.csv", "TCGA-BRCA", "transcriptomics"
@@ -134,3 +162,7 @@ def test_gdc_manifest_export_passes_sample_audit(tmp_path):
     assert audit.passed
     assert audit.unique_patients == 1
     assert audit.unique_samples == 1
+    import csv
+    with path.open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["sample_type"] == "Primary Tumor"

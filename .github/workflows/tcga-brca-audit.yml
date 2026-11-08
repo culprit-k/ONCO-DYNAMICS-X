@@ -28,42 +28,45 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-      - name: Query open TCGA-BRCA STAR-count metadata
+      - name: Query primary-tumour open TCGA-BRCA STAR-count metadata
         run: |
           mkdir -p audit-output
           onco-dynamics gdc-query \
             --project-id TCGA-BRCA \
             --data-type "Gene Expression Quantification" \
             --workflow-type "STAR - Counts" \
+            --sample-type "Primary Tumor" \
             --page-size 100 \
             --max-results 100 \
             --metadata-output audit-output/gdc_open_files.csv \
             --manifest-output audit-output/gdc_sample_manifest.csv
-      - name: Summarize cohort metadata
+      - name: Summarize and validate specimen selection
         run: |
           python - <<'PY'
           import csv
           import json
           import os
+          from collections import Counter
           from pathlib import Path
 
-          metadata_path = Path("audit-output/gdc_open_files.csv")
-          manifest_path = Path("audit-output/gdc_sample_manifest.csv")
-          with metadata_path.open(newline="", encoding="utf-8") as handle:
+          with Path("audit-output/gdc_open_files.csv").open(newline="", encoding="utf-8") as handle:
               files = list(csv.DictReader(handle))
-          with manifest_path.open(newline="", encoding="utf-8") as handle:
+          with Path("audit-output/gdc_sample_manifest.csv").open(newline="", encoding="utf-8") as handle:
               samples = list(csv.DictReader(handle))
+          sample_types = Counter(row["sample_type"] for row in samples)
           report = {
               "project": "TCGA-BRCA",
               "query": {
                   "data_type": "Gene Expression Quantification",
                   "workflow_type": "STAR - Counts",
                   "access": "open",
+                  "sample_type": "Primary Tumor",
                   "max_file_records": 100,
               },
               "file_records": len(files),
               "unique_patients": len({r["patient_id"] for r in samples if r["patient_id"]}),
               "unique_samples": len({r["sample_id"] for r in samples if r["sample_id"]}),
+              "sample_type_counts": dict(sample_types),
               "access_values": sorted({r["access"] for r in files}),
               "workflow_values": sorted({r["workflow_type"] for r in files}),
               "file_bytes_total": sum(int(r["file_size"]) for r in files),
@@ -74,19 +77,27 @@ jobs:
                       "file_size": int(r["file_size"]),
                       "patient_ids": r["patient_submitter_ids"],
                       "sample_ids": r["sample_submitter_ids"],
+                      "sample_types": r["sample_types"],
                   }
                   for r in files[:5]
               ],
           }
+          if not files or not samples:
+              raise SystemExit("GDC returned no primary-tumour files/samples.")
+          if report["access_values"] != ["open"]:
+              raise SystemExit("Non-open access record detected.")
+          if set(sample_types) != {"Primary Tumor"}:
+              raise SystemExit(f"Unexpected specimen types in primary-tumour cohort: {sample_types}")
           Path("audit-output/cohort_audit_report.json").write_text(
               json.dumps(report, indent=2) + "\n", encoding="utf-8"
           )
           print(json.dumps(report, indent=2))
           with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
-              summary.write("# TCGA-BRCA open-data metadata audit\n\n")
+              summary.write("# TCGA-BRCA primary-tumour metadata audit\n\n")
               summary.write(f"- File records: **{report['file_records']}**\n")
-              summary.write(f"- Unique patients represented: **{report['unique_patients']}**\n")
-              summary.write(f"- Unique samples represented: **{report['unique_samples']}**\n")
+              summary.write(f"- Unique patients: **{report['unique_patients']}**\n")
+              summary.write(f"- Unique primary-tumour samples: **{report['unique_samples']}**\n")
+              summary.write(f"- Sample type counts: **{report['sample_type_counts']}**\n")
               summary.write(f"- Total selected file bytes: **{report['file_bytes_total']:,}**\n")
               summary.write("- Access class: open only\n")
               summary.write("- No expression files or participant-level clinical data were uploaded.\n")
@@ -94,7 +105,7 @@ jobs:
       - name: Upload metadata-only audit artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tcga-brca-open-metadata-audit
+          name: tcga-brca-primary-tumour-metadata-audit
           path: audit-output/
           if-no-files-found: error
           retention-days: 14

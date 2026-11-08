@@ -58,6 +58,7 @@ def run_gdc_query(args: argparse.Namespace) -> Path:
         workflow_type=args.workflow_type,
         page_size=args.page_size,
         max_results=args.max_results,
+        sample_type=getattr(args, "sample_type", None),
     )
     metadata_path = Path(args.metadata_output)
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,6 +73,7 @@ def run_gdc_query(args: argparse.Namespace) -> Path:
         "case_ids",
         "patient_submitter_ids",
         "sample_submitter_ids",
+        "sample_types",
     ]
     with metadata_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
@@ -89,6 +91,7 @@ def run_gdc_query(args: argparse.Namespace) -> Path:
                     "case_ids": "|".join(item.case_ids),
                     "patient_submitter_ids": "|".join(item.patient_submitter_ids),
                     "sample_submitter_ids": "|".join(item.sample_submitter_ids),
+                    "sample_types": "|".join(item.sample_types),
                 }
             )
 
@@ -107,6 +110,8 @@ def run_gdc_query(args: argparse.Namespace) -> Path:
         print(f"WARNING: {warning}")
     for error in audit.errors:
         print(f"ERROR: {error}")
+    if not audit.passed:
+        raise RuntimeError("GDC sample manifest failed validation.")
     return metadata_path
 
 
@@ -155,6 +160,7 @@ def run_gdc_download_open(args: argparse.Namespace) -> Path:
             filter(None, row.get("sample_submitter_ids", "").split("|"))
         ),
         associated_samples=(),
+        sample_types=tuple(filter(None, row.get("sample_types", "").split("|"))),
     )
     downloaded = GDCClient(timeout=args.timeout).download_open_file(
         metadata, args.destination
@@ -202,6 +208,7 @@ def build_parser() -> argparse.ArgumentParser:
     gdc.add_argument("--project-id", default="TCGA-BRCA")
     gdc.add_argument("--data-type", default="Gene Expression Quantification")
     gdc.add_argument("--workflow-type", default=None)
+    gdc.add_argument("--sample-type", default=None)
     gdc.add_argument("--page-size", type=int, default=100)
     gdc.add_argument("--max-results", type=int, default=100)
     gdc.add_argument("--timeout", type=float, default=60.0)

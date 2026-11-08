@@ -33,6 +33,8 @@ class GDCFile:
     patient_submitter_ids: tuple[str, ...]
     sample_submitter_ids: tuple[str, ...]
     associated_samples: tuple[tuple[str, str, str], ...]
+    sample_types: tuple[str, ...] = ()
+    associated_sample_metadata: tuple[tuple[str, str, str, str], ...] = ()
 
 
 class GDCClient:
@@ -69,7 +71,9 @@ class GDCClient:
         case_ids: list[str] = []
         patient_ids: list[str] = []
         sample_ids: list[str] = []
+        sample_types: list[str] = []
         associated_samples: list[tuple[str, str, str]] = []
+        associated_sample_metadata: list[tuple[str, str, str, str]] = []
         for case in cases:
             case_id = str(case.get("case_id") or "")
             patient_id = str(case.get("submitter_id") or "")
@@ -79,9 +83,15 @@ class GDCClient:
                 patient_ids.append(patient_id)
             for sample in case.get("samples") or []:
                 sample_id = str(sample.get("submitter_id") or "")
+                sample_type = str(sample.get("sample_type") or "")
                 if sample_id:
                     sample_ids.append(sample_id)
                     associated_samples.append((case_id, patient_id, sample_id))
+                    associated_sample_metadata.append(
+                        (case_id, patient_id, sample_id, sample_type)
+                    )
+                    if sample_type:
+                        sample_types.append(sample_type)
         return GDCFile(
             file_id=str(hit.get("file_id") or hit.get("id") or ""),
             file_name=str(hit.get("file_name") or ""),
@@ -94,6 +104,8 @@ class GDCClient:
             patient_submitter_ids=tuple(patient_ids),
             sample_submitter_ids=tuple(sample_ids),
             associated_samples=tuple(associated_samples),
+            sample_types=tuple(sample_types),
+            associated_sample_metadata=tuple(associated_sample_metadata),
         )
 
     def query_open_files(
@@ -103,14 +115,17 @@ class GDCClient:
         workflow_type: str | None = None,
         page_size: int = 100,
         max_results: int | None = 100,
+        sample_type: str | None = None,
     ) -> list[GDCFile]:
-        """Search file metadata with an explicit open-access filter.
+        """Search open file metadata, optionally restricting the linked specimen type.
 
         Results are metadata only. This method does not download files or request
         controlled-access records. Set max_results=None to page through all matches.
         """
         if not project_id.strip() or not data_type.strip():
             raise ValueError("project_id and data_type must be non-empty.")
+        if sample_type is not None and not sample_type.strip():
+            raise ValueError("sample_type must be non-empty when supplied.")
         if not 1 <= page_size <= 500:
             raise ValueError("page_size must be between 1 and 500.")
         if max_results is not None and max_results < 1:
@@ -143,6 +158,16 @@ class GDCClient:
                     },
                 }
             )
+        if sample_type:
+            clauses.append(
+                {
+                    "op": "=",
+                    "content": {
+                        "field": "cases.samples.sample_type",
+                        "value": sample_type,
+                    },
+                }
+            )
 
         fields = [
             "file_id",
@@ -155,6 +180,7 @@ class GDCClient:
             "cases.case_id",
             "cases.submitter_id",
             "cases.samples.submitter_id",
+            "cases.samples.sample_type",
         ]
         results: list[GDCFile] = []
         offset = 0
@@ -188,6 +214,12 @@ class GDCClient:
                     )
                 if not item.file_id or not item.file_name:
                     raise RuntimeError("GDC response omitted file identity metadata.")
+                if sample_type and (
+                    not item.sample_types or any(value != sample_type for value in item.sample_types)
+                ):
+                    raise RuntimeError(
+                        "GDC response included a file without the requested linked sample type."
+                    )
             results.extend(parsed)
             if not hits:
                 break
@@ -252,6 +284,7 @@ def write_sample_manifest(
         "patient_id",
         "specimen_id",
         "sample_id",
+        "sample_type",
         "assay_type",
         "modality",
         "data_access",
@@ -264,6 +297,10 @@ def write_sample_manifest(
         for file in files:
             if file.access != "open":
                 raise PermissionError("Manifest export accepts open-access file metadata only.")
+            sample_type_by_id = {
+                sample_id: sample_type
+                for _, _, sample_id, sample_type in file.associated_sample_metadata
+            }
             for case_id, patient_id, sample_id in file.associated_samples:
                 association = (case_id, patient_id, sample_id)
                 if association in seen:
@@ -275,6 +312,7 @@ def write_sample_manifest(
                         "patient_id": patient_id,
                         "specimen_id": sample_id,
                         "sample_id": sample_id,
+                        "sample_type": sample_type_by_id.get(sample_id, ""),
                         "assay_type": file.data_type,
                         "modality": modality,
                         "data_access": file.access,
