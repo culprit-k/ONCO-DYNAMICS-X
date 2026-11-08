@@ -5,6 +5,10 @@ from onco_dynamics_x.data_engine.cbioportal import (
 )
 
 
+def test_client_uses_cbioportal_api_root():
+    assert CBioPortalClient().base_url == "https://www.cbioportal.org/api"
+
+
 def test_candidate_endpoint_identifies_overall_survival_fields():
     assert _candidate_endpoint({
         "clinicalAttributeId": "OS_MONTHS",

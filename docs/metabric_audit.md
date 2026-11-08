@@ -4,7 +4,7 @@
 
 This audit checks whether the public cBioPortal METABRIC study has the cohort structure, molecular profiles and patient-level clinical fields needed to plan a defensible external prognostic validation.
 
-The audit uses the public cBioPortal REST API v3 and exports aggregate counts plus a clinical-attribute coverage inventory. It does not export patient IDs, sample IDs, or individual clinical values.
+The audit uses the public cBioPortal REST API and exports aggregate counts plus a clinical-attribute coverage inventory. It does not export patient IDs, sample IDs, or individual clinical values.
 
 ## Reproduce
 
@@ -18,7 +18,7 @@ Or run the GitHub Actions workflow named METABRIC independent cohort audit. Its 
 - report.json: study metadata, aggregate cohort/linkage counts, molecular profile metadata, sample-list metadata, endpoint-field candidates and audit checks.
 - clinical_attribute_coverage.csv: attribute identifiers/names, patient/sample level and aggregate non-missing coverage counts.
 
-The API base URL defaults to https://www.cbioportal.org/api/v3. The client uses standard-library HTTP/JSON functionality and does not require credentials for public study data.
+The API base URL defaults to https://www.cbioportal.org/api. The client uses standard-library HTTP/JSON functionality and does not require credentials for public study data.
 
 ## What the audit checks
 

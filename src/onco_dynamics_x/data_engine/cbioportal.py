@@ -18,10 +18,15 @@ class CBioPortalError(RuntimeError):
 
 
 class CBioPortalClient:
-    """Small standard-library client for public cBioPortal API v3 endpoints."""
+    """Small standard-library client for public cBioPortal REST endpoints."""
 
-    def __init__(self, base_url="https://www.cbioportal.org/api/v3", timeout=45.0,
-                 retries=3, retry_delay=1.0):
+    def __init__(
+        self,
+        base_url: str = "https://www.cbioportal.org/api",
+        timeout: float = 45.0,
+        retries: int = 3,
+        retry_delay: float = 1.0,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.retries = retries
@@ -30,10 +35,13 @@ class CBioPortalClient:
     def get_json(self, path: str, params: dict[str, Any] | None = None) -> Any:
         query = f"?{urlencode(params)}" if params else ""
         url = f"{self.base_url}/{path.lstrip('/')}{query}"
-        request = Request(url, headers={
-            "Accept": "application/json",
-            "User-Agent": "ONCO-DYNAMICS-X-cohort-audit/1.0",
-        })
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "ONCO-DYNAMICS-X-cohort-audit/1.0",
+            },
+        )
         last_error = None
         for attempt in range(self.retries + 1):
             try:
@@ -54,14 +62,22 @@ class CBioPortalClient:
             time.sleep(self.retry_delay * (2**attempt))
         raise CBioPortalError(f"Could not retrieve {path}: {last_error}") from last_error
 
-    def get_all(self, path: str, params: dict[str, Any] | None = None,
-                page_size: int = 1000) -> list[dict[str, Any]]:
+    def get_all(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        page_size: int = 1000,
+    ) -> list[dict[str, Any]]:
         """Retrieve a paginated list endpoint, stopping on a short page."""
         base_params = dict(params or {})
         records = []
         page_number = 0
         while True:
-            page_params = {**base_params, "pageSize": page_size, "pageNumber": page_number}
+            page_params = {
+                **base_params,
+                "pageSize": page_size,
+                "pageNumber": page_number,
+            }
             page = self.get_json(path, page_params)
             if not isinstance(page, list):
                 raise CBioPortalError(
@@ -89,9 +105,15 @@ def _candidate_endpoint(attribute: dict[str, Any]) -> str | None:
     )
     if any(key in token for key in ("OVERALLSURVIVAL", "OSSTATUS", "OSMONTHS", "OSYEARS")):
         return "overall_survival_candidate"
-    if any(key in token for key in ("DISEASESPECIFICSURVIVAL", "DSSSTATUS", "DSSMONTHS", "DSSYEARS")):
+    if any(
+        key in token
+        for key in ("DISEASESPECIFICSURVIVAL", "DSSSTATUS", "DSSMONTHS", "DSSYEARS")
+    ):
         return "disease_specific_survival_candidate"
-    if any(key in token for key in ("RELAPSEFREESURVIVAL", "RELAPSEFREE", "RFSSTATUS", "RFSMONTHS")):
+    if any(
+        key in token
+        for key in ("RELAPSEFREESURVIVAL", "RELAPSEFREE", "RFSSTATUS", "RFSMONTHS")
+    ):
         return "relapse_free_candidate"
     if any(key in token for key in ("DISEASEFREE", "DFSSTATUS", "DFSMONTHS")):
         return "disease_free_candidate"
@@ -105,14 +127,27 @@ def _candidate_treatment_field(attribute: dict[str, Any]) -> bool:
         f"{attribute.get('clinicalAttributeId', '')} "
         f"{attribute.get('displayName', '')} {attribute.get('description', '')}"
     )
-    return any(term in token for term in (
-        "TREATMENT", "CHEMOTHERAPY", "RADIOTHERAPY", "RADIATION",
-        "ENDOCRINE", "HORMONETHERAPY", "TARGETEDTHERAPY",
-        "TREATMENTTYPE", "THERAPYTYPE",
-    ))
+    return any(
+        term in token
+        for term in (
+            "TREATMENT",
+            "CHEMOTHERAPY",
+            "RADIOTHERAPY",
+            "RADIATION",
+            "ENDOCRINE",
+            "HORMONETHERAPY",
+            "TARGETEDTHERAPY",
+            "TREATMENTTYPE",
+            "THERAPYTYPE",
+        )
+    )
 
 
-def summarize_clinical_coverage(attributes, patient_data, sample_data):
+def summarize_clinical_coverage(
+    attributes: list[dict[str, Any]],
+    patient_data: list[dict[str, Any]],
+    sample_data: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Return per-attribute aggregate coverage without exposing entity IDs."""
     summaries = []
     for attribute in attributes:
@@ -121,21 +156,34 @@ def summarize_clinical_coverage(attributes, patient_data, sample_data):
             continue
         is_patient = bool(attribute.get("patientAttribute"))
         rows = patient_data if is_patient else sample_data
-        matching = [row for row in rows if row.get("clinicalAttributeId") == attribute_id]
+        matching = [
+            row for row in rows if row.get("clinicalAttributeId") == attribute_id
+        ]
         populated = [row for row in matching if _nonempty(row.get("value"))]
         entity_key = "patientId" if is_patient else "sampleId"
-        summaries.append({
-            "attribute_id": attribute_id,
-            "display_name": attribute.get("displayName") or attribute.get("description") or attribute_id,
-            "data_type": attribute.get("datatype") or attribute.get("dataType"),
-            "level": "PATIENT" if is_patient else "SAMPLE",
-            "records_with_value": len(populated),
-            "unique_entities_with_value": len({
-                row.get(entity_key) for row in populated if row.get(entity_key)
-            }),
-            "candidate_survival_endpoint": _candidate_endpoint(attribute),
-            "candidate_treatment_field": _candidate_treatment_field(attribute),
-        })
+        display_name = (
+            attribute.get("displayName")
+            or attribute.get("description")
+            or attribute_id
+        )
+        summaries.append(
+            {
+                "attribute_id": attribute_id,
+                "display_name": display_name,
+                "data_type": attribute.get("datatype") or attribute.get("dataType"),
+                "level": "PATIENT" if is_patient else "SAMPLE",
+                "records_with_value": len(populated),
+                "unique_entities_with_value": len(
+                    {
+                        row.get(entity_key)
+                        for row in populated
+                        if row.get(entity_key)
+                    }
+                ),
+                "candidate_survival_endpoint": _candidate_endpoint(attribute),
+                "candidate_treatment_field": _candidate_treatment_field(attribute),
+            }
+        )
     return sorted(summaries, key=lambda item: (item["level"], item["attribute_id"]))
 
 
@@ -144,8 +192,12 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     api = client or CBioPortalClient()
     study_id = "brca_metabric"
     study = api.get_json(f"studies/{study_id}")
-    patients = api.get_all(f"studies/{study_id}/patients", {"projection": "SUMMARY"})
-    samples = api.get_all(f"studies/{study_id}/samples", {"projection": "SUMMARY"})
+    patients = api.get_all(
+        f"studies/{study_id}/patients", {"projection": "SUMMARY"}
+    )
+    samples = api.get_all(
+        f"studies/{study_id}/samples", {"projection": "SUMMARY"}
+    )
     attributes = api.get_all(f"studies/{study_id}/clinical-attributes")
     profiles = api.get_all(f"studies/{study_id}/molecular-profiles")
     sample_lists = api.get_all(f"studies/{study_id}/sample-lists")
@@ -156,32 +208,50 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
         f"studies/{study_id}/clinical-data", {"clinicalDataType": "SAMPLE"}
     )
 
-    patient_ids = {item.get("patientId") for item in patients if item.get("patientId")}
-    sample_ids = {item.get("sampleId") for item in samples if item.get("sampleId")}
-    sample_patient_ids = {item.get("patientId") for item in samples if item.get("patientId")}
+    patient_ids = {
+        item.get("patientId") for item in patients if item.get("patientId")
+    }
+    sample_ids = {
+        item.get("sampleId") for item in samples if item.get("sampleId")
+    }
+    sample_patient_ids = {
+        item.get("patientId") for item in samples if item.get("patientId")
+    }
     sample_patient_links = sum(
-        1 for item in samples
+        1
+        for item in samples
         if item.get("sampleId") and item.get("patientId") in patient_ids
     )
     orphan_samples = len(samples) - sample_patient_links
-    coverage = summarize_clinical_coverage(attributes, patient_clinical, sample_clinical)
-    survival_candidates = [row for row in coverage if row["candidate_survival_endpoint"]]
-    treatment_candidates = [row for row in coverage if row["candidate_treatment_field"]]
-    profile_summaries = [{
-        "molecular_profile_id": profile.get("molecularProfileId"),
-        "name": profile.get("name"),
-        "description": profile.get("description"),
-        "molecular_alteration_type": profile.get("molecularAlterationType"),
-        "datatype": profile.get("datatype"),
-        "patient_level": profile.get("patientLevel"),
-        "generic_assay_type": profile.get("genericAssayType"),
-    } for profile in profiles]
+    coverage = summarize_clinical_coverage(
+        attributes, patient_clinical, sample_clinical
+    )
+    survival_candidates = [
+        row for row in coverage if row["candidate_survival_endpoint"]
+    ]
+    treatment_candidates = [
+        row for row in coverage if row["candidate_treatment_field"]
+    ]
+    profile_summaries = [
+        {
+            "molecular_profile_id": profile.get("molecularProfileId"),
+            "name": profile.get("name"),
+            "description": profile.get("description"),
+            "molecular_alteration_type": profile.get("molecularAlterationType"),
+            "datatype": profile.get("datatype"),
+            "patient_level": profile.get("patientLevel"),
+            "generic_assay_type": profile.get("genericAssayType"),
+        }
+        for profile in profiles
+    ]
     patient_endpoint_candidates = [
-        row for row in survival_candidates
+        row
+        for row in survival_candidates
         if row["level"] == "PATIENT" and row["unique_entities_with_value"] > 0
     ]
     patient_treatment_candidates = [
-        row for row in treatment_candidates
+        row
+        for row in treatment_candidates
         if row["level"] == "PATIENT" and row["unique_entities_with_value"] > 0
     ]
 
@@ -200,17 +270,22 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
         "cohort_counts": {
             "unique_patients": len(patient_ids),
             "unique_samples": len(sample_ids),
-            "patients_with_at_least_one_sample": len(sample_patient_ids & patient_ids),
+            "patients_with_at_least_one_sample": len(
+                sample_patient_ids & patient_ids
+            ),
             "samples_linked_to_known_patient": sample_patient_links,
             "samples_without_patient_link": orphan_samples,
         },
         "molecular_profiles": profile_summaries,
-        "sample_lists": [{
-            "sample_list_id": item.get("sampleListId"),
-            "name": item.get("name"),
-            "description": item.get("description"),
-            "category": item.get("category"),
-        } for item in sample_lists],
+        "sample_lists": [
+            {
+                "sample_list_id": item.get("sampleListId"),
+                "name": item.get("name"),
+                "description": item.get("description"),
+                "category": item.get("category"),
+            }
+            for item in sample_lists
+        ],
         "clinical_inventory": {
             "clinical_attribute_count": len(attributes),
             "patient_clinical_records": len(patient_clinical),
@@ -228,8 +303,12 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
             "has_patient_clinical_attributes": any(
                 bool(item.get("patientAttribute")) for item in attributes
             ),
-            "has_patient_survival_field_candidate": bool(patient_endpoint_candidates),
-            "has_patient_treatment_field_candidate": bool(patient_treatment_candidates),
+            "has_patient_survival_field_candidate": bool(
+                patient_endpoint_candidates
+            ),
+            "has_patient_treatment_field_candidate": bool(
+                patient_treatment_candidates
+            ),
         },
         "interpretation": {
             "endpoint_candidates_are_name_based_only": True,
@@ -247,7 +326,9 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     }
 
 
-def write_audit_outputs(report: dict[str, Any], json_path: str, csv_path: str) -> None:
+def write_audit_outputs(
+    report: dict[str, Any], json_path: str, csv_path: str
+) -> None:
     """Write aggregate-only JSON and clinical-attribute coverage CSV."""
     import csv
     from pathlib import Path
@@ -256,11 +337,20 @@ def write_audit_outputs(report: dict[str, Any], json_path: str, csv_path: str) -
     csv_output = Path(csv_path)
     json_output.parent.mkdir(parents=True, exist_ok=True)
     csv_output.parent.mkdir(parents=True, exist_ok=True)
-    json_output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    json_output.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     rows = report["clinical_inventory"]["attribute_coverage"]
     fields = [
-        "attribute_id", "display_name", "data_type", "level", "records_with_value",
-        "unique_entities_with_value", "candidate_survival_endpoint", "candidate_treatment_field",
+        "attribute_id",
+        "display_name",
+        "data_type",
+        "level",
+        "records_with_value",
+        "unique_entities_with_value",
+        "candidate_survival_endpoint",
+        "candidate_treatment_field",
     ]
     with csv_output.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
