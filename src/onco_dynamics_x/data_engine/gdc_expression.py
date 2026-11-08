@@ -18,15 +18,23 @@ def read_gdc_expression_table(
     """Read one tab-separated gene-expression table with explicit column names."""
     source = Path(path)
     with source.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
         required = {gene_id_column, expression_column}
-        missing = required - set(reader.fieldnames or [])
-        if missing:
+        header_fields: list[str] | None = None
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            candidate = [field.strip().lstrip("#").strip() for field in line.rstrip("\r\n").split("\t")]
+            if required.issubset(candidate):
+                header_fields = candidate
+                break
+        if header_fields is None:
             raise ValueError(
-                f"{source.name} is missing columns: {', '.join(sorted(missing))}."
+                f"{source.name} has no tab-separated header containing "
+                f"{gene_id_column!r} and {expression_column!r}."
             )
+        reader = csv.DictReader(handle, fieldnames=header_fields, delimiter="\t")
         values: dict[str, float] = {}
-        for line_number, row in enumerate(reader, start=2):
+        for line_number, row in enumerate(reader, start=line_number + 1):
             gene_id = (row.get(gene_id_column) or "").strip()
             if not gene_id:
                 raise ValueError(f"{source.name}:{line_number}: empty gene identifier.")
