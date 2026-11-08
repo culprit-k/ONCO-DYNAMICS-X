@@ -1,7 +1,7 @@
 from onco_dynamics_x.data_engine.cbioportal import (
     CBioPortalClient,
     _candidate_endpoint,
-    summarize_clinical_coverage,
+    summarize_clinical_coverage,\n    summarize_survival_endpoint_pairs,
 )
 
 
@@ -59,3 +59,24 @@ def test_client_pagination_stops_on_short_page():
     client.get_json = fake_get_json
     assert client.get_all("fake", page_size=3) == [{"id": "a"}, {"id": "b"}]
     assert calls == [0]
+
+\n\ndef test_survival_pair_summary_checks_patient_level_overlap_and_time_quality():
+    records = [
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P2", "value": "0"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P2", "value": "0:LIVING"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P3", "value": "not-a-number"},
+        {"clinicalAttributeId": "RFS_MONTHS", "patientId": "P1", "value": "9"},
+        {"clinicalAttributeId": "RFS_STATUS", "patientId": "P1", "value": "1:Recurred"},
+    ]
+    result = summarize_survival_endpoint_pairs(records)
+    overall = next(row for row in result if row["endpoint"] == "overall_survival")
+    assert overall["patients_with_time"] == 3
+    assert overall["patients_with_status"] == 2
+    assert overall["patients_with_both_fields"] == 2
+    assert overall["positive_time_count"] == 1
+    assert overall["zero_or_negative_time_count"] == 1
+    assert overall["unparseable_time_count"] == 0
+    relapse = next(row for row in result if row["endpoint"] == "relapse_free_survival")
+    assert relapse["patients_with_both_fields"] == 1

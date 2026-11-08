@@ -187,6 +187,74 @@ def summarize_clinical_coverage(
     return sorted(summaries, key=lambda item: (item["level"], item["attribute_id"]))
 
 
+def _patient_attribute_values(records, attribute_id):
+    grouped = {}
+    for row in records:
+        patient_id = row.get("patientId")
+        value = row.get("value")
+        if patient_id and row.get("clinicalAttributeId") == attribute_id and _nonempty(value):
+            grouped.setdefault(patient_id, set()).add(str(value).strip())
+    values = {}
+    ambiguous = 0
+    for patient_id, observed in grouped.items():
+        if len(observed) == 1:
+            values[patient_id] = next(iter(observed))
+        else:
+            ambiguous += 1
+    return values, ambiguous
+
+
+def summarize_survival_endpoint_pairs(patient_data):
+    """Measure paired survival-field completeness without exporting patient IDs."""
+    definitions = (
+        ("overall_survival", "OS_MONTHS", "OS_STATUS"),
+        ("relapse_free_survival", "RFS_MONTHS", "RFS_STATUS"),
+    )
+    summaries = []
+    for endpoint, time_field, status_field in definitions:
+        times, ambiguous_times = _patient_attribute_values(patient_data, time_field)
+        statuses, ambiguous_statuses = _patient_attribute_values(
+            patient_data, status_field
+        )
+        complete_ids = set(times) & set(statuses)
+        parsed_times = []
+        unparseable = 0
+        for patient_id in complete_ids:
+            try:
+                parsed_times.append(float(times[patient_id]))
+            except (TypeError, ValueError):
+                unparseable += 1
+        positive = [value for value in parsed_times if value > 0]
+        status_counts = {}
+        for value in statuses.values():
+            status_counts[value] = status_counts.get(value, 0) + 1
+        summaries.append(
+            {
+                "endpoint": endpoint,
+                "time_field": time_field,
+                "status_field": status_field,
+                "patients_with_time": len(times),
+                "patients_with_status": len(statuses),
+                "patients_with_both_fields": len(complete_ids),
+                "ambiguous_time_patient_count": ambiguous_times,
+                "ambiguous_status_patient_count": ambiguous_statuses,
+                "complete_pairs_with_numeric_time": len(parsed_times),
+                "positive_time_count": len(positive),
+                "zero_or_negative_time_count": len(
+                    [value for value in parsed_times if value <= 0]
+                ),
+                "unparseable_time_count": unparseable,
+                "time_range_months": (
+                    [round(min(positive), 4), round(max(positive), 4)]
+                    if positive
+                    else None
+                ),
+                "status_value_counts": dict(sorted(status_counts.items())),
+            }
+        )
+    return summaries
+
+
 def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     """Audit METABRIC study metadata, molecular profiles and clinical coverage."""
     api = client or CBioPortalClient()
@@ -292,7 +360,7 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
             "sample_clinical_records": len(sample_clinical),
             "attribute_coverage": coverage,
             "patient_level_survival_field_candidates": patient_endpoint_candidates,
-            "patient_level_treatment_field_candidates": patient_treatment_candidates,
+            "patient_level_treatment_field_candidates": patient_treatment_candidates,\n            "survival_endpoint_pair_summary": summarize_survival_endpoint_pairs(\n                patient_clinical\n            ),
         },
         "audit_checks": {
             "study_metadata_present": study.get("studyId") == study_id,
