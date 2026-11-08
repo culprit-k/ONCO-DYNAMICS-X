@@ -6,7 +6,7 @@ from torch import Tensor, nn
 
 
 class MessagePassingLayer(nn.Module):
-    """Neighbour aggregation using directed edges and a residual update."""
+    """Neighbour aggregation using directed edges and a learned update."""
 
     def __init__(self, input_features: int, output_features: int) -> None:
         super().__init__()
@@ -28,11 +28,11 @@ class MessagePassingLayer(nn.Module):
             raise ValueError("node_features must have shape [nodes, features].")
         if edge_index.ndim != 2 or edge_index.shape[0] != 2:
             raise ValueError("edge_index must have shape [2, edges].")
-        source, target = edge_index.long()
-        if source.numel() and (
-            int(source.max()) >= len(node_features) or int(target.max()) >= len(node_features)
+        if edge_index.numel() and (
+            int(edge_index.min()) < 0 or int(edge_index.max()) >= len(node_features)
         ):
-            raise ValueError("edge_index contains a node index outside the feature array.")
+            raise ValueError("edge_index contains a negative or out-of-range node index.")
+        source, target = edge_index.long()
         messages = self.message(
             torch.cat([node_features[source], node_features[target]], dim=1)
         )
