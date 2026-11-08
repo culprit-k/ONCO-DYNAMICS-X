@@ -23,7 +23,10 @@ def read_gdc_expression_table(
         for line_number, line in enumerate(handle, start=1):
             if not line.strip():
                 continue
-            candidate = [field.strip().lstrip("#").strip() for field in line.rstrip("\r\n").split("\t")]
+            candidate = [
+                field.strip().lstrip("#").strip()
+                for field in line.rstrip("\r\n").split("\t")
+            ]
             if required.issubset(candidate):
                 header_fields = candidate
                 break
