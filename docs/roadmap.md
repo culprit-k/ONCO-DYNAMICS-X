@@ -1,26 +1,25 @@
 # Implementation roadmap
 
-The complete architecture is retained. Phases are dependency-aware implementation order, not feature removal.
+All original workstreams are retained. Phases describe implementation dependency, not feature removal.
 
 | Phase | Workstream | Acceptance evidence | Status |
 |---|---|---|---|
-| 0 | Repository, docs, package, CI, tests | Reproducible install; passing tests | Implemented |
-| 1 | Coupled PDE/ODE engine | Verified solver, positivity, convergence | Prototype implemented; refinement diagnostics added |
-| 2 | PINNs, Bayesian inference, neural operators | Benchmarked against numerical solver | Planned |
-| 3 | Agent-based model and spatial GNN | Reproducible cell-level experiments | Initial NumPy ABM implemented; GNN planned |
-| 4 | Multi-omics and cohort integration | Cohort audit, sample linkage, provenance | Manifest audit implemented; modality ingestion planned |
-| 5 | Optimal control, causal analysis, uncertainty | Declared assumptions and robustness checks | Local sensitivity implemented; advanced methods planned |
-| 6 | 3D digital twin and dashboard | Computed fields, interactive display, logs | 2D solver dashboard and 3D surface view implemented |
-| 7 | Breast phantom and hardware console | Safe controls, protocol, integration tests | ESP32 sketch and validated serial parser implemented |
-| 8 | End-to-end research demonstration | Reproducible demo, limitations, validation report | Planned |
+| 0 | Repository, docs, package, CI and tests | Reproducible install; automated tests | Implemented |
+| 1 | Coupled PDE/ODE engine | Solver checks, positivity, timestep/grid convergence, independent solver | Dimensionless 2D baseline and timestep diagnostic implemented; independent-solver study pending |
+| 2 | PINNs, Bayesian inference, neural operators | Trained models benchmarked against numerical solver; posterior diagnostics | PINN/FNO architectures and PyMC model builder implemented; scientific training/calibration pending |
+| 3 | Agent-based model and spatial GNN | Cell-level reproducible experiments and spatial validation | Initial NumPy ABM and GNN architecture implemented; richer validation/training pending |
+| 4 | Multi-omics and cohort integration | Cohort audit, sample linkage, preprocessing provenance, external cohort | Manifest audit, expression preprocessing and transformer architecture implemented; cohort ingestion/validation pending |
+| 5 | Optimal control, causal analysis, uncertainty | Declared assumptions, identifiable estimands, robust sensitivity | Parameter sensitivity, range-based Monte Carlo, DoWhy wrapper and toy CasADi OCP implemented; real-data analyses pending |
+| 6 | 3D digital twin and dashboard | Computed spatial fields, interaction, uncertainty and experiment logs | Streamlit dashboard with 2D maps and 3D surface of a 2D field; true 3D solver pending |
+| 7 | Breast phantom and hardware console | Safe electronics, serial protocol and physical integration test | ESP32 sketch, parser and dashboard serial hook implemented; physical fabrication/bench test pending |
+| 8 | End-to-end university demonstration | Reproducible integrated demo and validation report | Pending |
 
 ## Immediate next tasks
-1. Add automated grid/timestep convergence experiments and an independent numerical solver comparison.
-2. Add spatial image/mask ingestion with metadata validation.
-3. Add a cohort audit pipeline and download only permitted public data.
-4. Implement PINN and neural-operator challengers; benchmark them against the numerical reference.
-5. Add Bayesian calibration and identifiability analysis.
-6. Expand the ABM and implement spatial graph message passing.
-7. Integrate multi-omics only with patient/sample provenance.
-8. Add causal and optimal-control modules with explicit assumptions.
-9. Add 3D tissue simulation and then connect the physical console to live parameter control.
+
+1. Run the expanded GitHub Actions suite on the current branch and resolve any failures.
+2. Add grid-refinement and independent-solver comparison reports.
+3. Audit a permitted cohort and build a complete, reproducible sample manifest.
+4. Train the optional AI modules on synthetic benchmark tasks before introducing biological data.
+5. Evaluate the PINN, FNO and GNN against transparent numerical/statistical baselines.
+6. Build a 3D tissue model only after the 2D solver and spatial data flow are verified.
+7. Bench-test the ESP32 serial interface locally and then build the physical console/phantom.

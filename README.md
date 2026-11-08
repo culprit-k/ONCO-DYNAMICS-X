@@ -8,7 +8,17 @@ ONCO-DYNAMICS X links mathematical modelling, computational tumour biology, mach
 
 ## Current software milestone
 
-The first milestone is a transparent runnable numerical baseline: an eight-field 2D reaction-diffusion model (cancer, immune, fibroblast, oxygen, nutrients, drug, immune-evasion activity, and vasculature), no-flux finite differences, explicit time stepping, a diffusion stability guard, bounded fields, tests, a CLI demo, and an optional dashboard. Values are dimensionless teaching proxies, not calibrated biological concentrations.
+The runnable numerical baseline is an eight-field 2D reaction-diffusion model (cancer, immune, fibroblast, oxygen, nutrients, drug, immune-evasion activity, and vasculature), no-flux finite differences, explicit time stepping, a diffusion stability guard, bounded fields, and a command-line demo.
+
+Additional implemented components include:
+- Stochastic cell-agent simulation using the PDE fields as a local environment.
+- Cohort manifest validation and identifier-aware expression preprocessing.
+- Local parameter sensitivity and Monte Carlo parameter-range uncertainty.
+- Optional PyTorch PINN, spatial GNN, Fourier neural operator and expression-transformer architectures.
+- Optional PyMC posterior builder, DoWhy causal wrapper and CasADi mean-field control demonstration.
+- Streamlit simulation dashboard, computed 2D fields rendered as a 3D surface, and ESP32 serial-control integration scaffold.
+
+The values are dimensionless teaching proxies, not calibrated biological concentrations. See [implementation status](docs/implementation_status.md) for the exact boundary between implemented components and remaining work.
 
 ## Quick start
 
@@ -25,7 +35,14 @@ pytest
 onco-dynamics simulate --grid-size 51 --steps 400 --dt 0.0003
 ```
 
-The CLI writes `results/simulation_summary.csv`. Launch the optional dashboard with `pip install -e ".[dashboard]" && streamlit run dashboard/app.py`.
+The CLI writes `results/simulation_summary.csv`. Launch the optional dashboard with:
+
+```bash
+pip install -e ".[dashboard,hardware]"
+streamlit run dashboard/app.py
+```
+
+For optional AI and research methods, install the relevant extras in pyproject.toml. For example, `pip install -e ".[pinn,spatial]"` installs PyTorch. Do not install every extra blindly; some frameworks require substantial platform-specific dependencies.
 
 ## Mathematical core
 
@@ -36,29 +53,11 @@ du/dt = div(D grad(u)) + R(u,theta) + B q_D(t)
 
 The current implementation is a 2D Cartesian-grid prototype with constant diagonal diffusion, no-flux boundaries, and explicit Euler updates. Read [the mathematical model](docs/mathematical_model.md) and [assumptions and units](docs/assumptions_and_units.md) before interpreting output.
 
-## Full feature architecture (retained roadmap)
+## Full feature architecture retained
 
-1. Coupled reaction-diffusion PDEs and ODEs.
-2. Physics-informed neural networks (PINNs), benchmarked against conventional numerical solvers.
-3. Agent-based modelling of cancer, immune, fibroblast, and endothelial cells.
-4. Spatial graph neural networks for neighbourhood interactions.
-5. Bayesian parameter estimation, identifiability, and posterior uncertainty.
-6. Multi-omics AI (genomic, transcriptomic, proteomic, pathology and spatial data), including transformer representations.
-7. Hypoxia, oxygen and nutrient dynamics.
-8. Tumour-immune interactions and immune evasion.
-9. Fibroblasts, stroma and extracellular-matrix interactions.
-10. Drug diffusion and hypothetical therapeutic-effect simulation.
-11. Optimal control of abstract simulation inputs only.
-12. Causal analysis with explicit estimands and assumptions.
-13. Uncertainty quantification and sensitivity analysis.
-14. Neural operators as an advanced extension.
-15. Interactive 3D digital twin visualization.
-16. Physical hardware console and breast anatomy phantom.
-17. Multi-cohort integration and independent biological evaluation.
-18. Reproducible configs, tests, versioning, provenance and documentation.
-19. Educational pathology correlation where data and access permit.
+Coupled PDE/ODEs; PINNs; agent-based cancer, immune and stromal cells; spatial GNNs; Bayesian estimation; multi-omics AI and transformers; hypoxia and nutrient dynamics; immune evasion; fibroblast/stroma/ECM; drug diffusion; optimal control; causal analysis; uncertainty and sensitivity; neural operators; interactive 3D digital twin; physical console and breast phantom; multi-cohort integration; external validation; reproducible experiments and pathology correlation.
 
-See [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), and [hardware console plan](docs/hardware_console.md). Workstreams are staged for verification, not removed; a planned module is not claimed to be implemented.
+See [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), [hardware console plan](docs/hardware_console.md), and [deployment instructions](docs/deployment.md). Workstreams are staged for verification, not removed. A planned or optional architecture is not a trained/validated model.
 
 ## Potential research datasets
 
@@ -69,10 +68,6 @@ Never commit controlled, identifiable, or restricted participant-level data. Kee
 ## Reproducibility
 
 Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic software tests from biological validation. Report uncertainty, negative results, limitations and failures.
-
-## Status
-
-**Current milestone:** repository foundation and initial 2D numerical baseline. Further solver verification, calibration, external validation, AI and hardware integration remain future work.
 
 ## License
 

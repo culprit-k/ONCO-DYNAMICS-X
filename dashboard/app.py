@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import streamlit as st
 
+from onco_dynamics_x.hardware.serial_protocol import (
+    ControlMessage,
+    apply_controls,
+    read_control_message,
+)
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import simulate
 from onco_dynamics_x.state import initial_state
@@ -14,17 +19,58 @@ st.title("ONCO-DYNAMICS X | Research simulation console")
 st.caption("Educational, dimensionless model only — not a diagnostic, prognostic, or treatment tool.")
 
 with st.sidebar:
+    st.header("Physical console")
+    serial_port = st.text_input("ESP32 serial port", value="/dev/ttyUSB0")
+    if st.button("Read controls from ESP32"):
+        try:
+            message = read_control_message(serial_port)
+            st.session_state["tumour_growth_knob"] = message.tumour_growth
+            st.session_state["immune_activity_knob"] = message.immune_activity
+            st.session_state["hardware_run"] = message.run
+            st.session_state["hardware_reset"] = message.reset
+            st.success("Validated console controls received.")
+        except (ImportError, ValueError, TimeoutError, ConnectionError) as error:
+            st.error(str(error))
+
+    if st.session_state.pop("hardware_reset", False):
+        st.session_state["tumour_growth_knob"] = 0.4
+        st.session_state["immune_activity_knob"] = 0.5
+
     st.header("Simulation controls")
+    if "tumour_growth_knob" not in st.session_state:
+        st.session_state["tumour_growth_knob"] = 0.4
+    if "immune_activity_knob" not in st.session_state:
+        st.session_state["immune_activity_knob"] = 0.5
+
+    tumour_growth = st.slider(
+        "Tumour growth scenario control",
+        0.0,
+        1.0,
+        key="tumour_growth_knob",
+        help="Dimensionless scenario control; not a patient measurement.",
+    )
+    immune_activity = st.slider(
+        "Immune activity scenario control",
+        0.0,
+        1.0,
+        key="immune_activity_knob",
+        help="Dimensionless scenario control; not a patient measurement.",
+    )
     grid_size = st.slider("Grid size", 21, 81, 41, step=10)
     steps = st.slider("Time steps", 20, 500, 200, step=20)
     dt = st.number_input(
         "Time increment (dimensionless)", value=0.0003, min_value=0.00001, format="%.5f"
     )
     infusion = st.slider("Illustrative drug-field input", 0.0, 0.5, 0.0, 0.01)
-    run = st.button("Run simulation", type="primary")
+    manual_run = st.button("Run simulation", type="primary")
+    hardware_run = st.session_state.pop("hardware_run", False)
+    run = manual_run or hardware_run
 
 if run:
-    params = ModelParameters()
+    parameters = apply_controls(
+        ModelParameters(),
+        ControlMessage(tumour_growth, immune_activity),
+    )
     dx = 2.0 / (grid_size - 1)
 
     def schedule(_time: float) -> float:
@@ -33,7 +79,7 @@ if run:
     try:
         _, snapshots = simulate(
             initial_state(grid_size),
-            params,
+            parameters,
             dx=dx,
             dt=float(dt),
             steps=steps,
@@ -94,4 +140,4 @@ if run:
     except ValueError as error:
         st.error(str(error))
 else:
-    st.info("Adjust the controls and press **Run simulation** to calculate a new state.")
+    st.info("Adjust the controls or connect the ESP32 and run the simulation.")

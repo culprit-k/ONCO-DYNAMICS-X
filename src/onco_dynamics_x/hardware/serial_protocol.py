@@ -73,3 +73,30 @@ def apply_controls(
     )
     updated.validate()
     return updated
+
+
+def read_control_message(
+    port: str,
+    baudrate: int = 115200,
+    timeout: float = 2.0,
+) -> ControlMessage:
+    """Read and validate one message from an optional USB serial device."""
+    if not port.strip():
+        raise ValueError("A serial port name is required.")
+    if baudrate < 1 or timeout <= 0:
+        raise ValueError("baudrate and timeout must be positive.")
+    try:
+        import serial
+    except ImportError as error:
+        raise ImportError(
+            "Install the hardware extra with pip install -e .[hardware]."
+        ) from error
+
+    try:
+        with serial.Serial(port, baudrate=baudrate, timeout=timeout) as connection:
+            raw_line = connection.readline()
+    except serial.SerialException as error:
+        raise ConnectionError(f"Unable to read from serial port {port}: {error}") from error
+    if not raw_line:
+        raise TimeoutError(f"No console message received from {port} within {timeout} seconds.")
+    return parse_control_message(raw_line.decode("utf-8", errors="strict").strip())
