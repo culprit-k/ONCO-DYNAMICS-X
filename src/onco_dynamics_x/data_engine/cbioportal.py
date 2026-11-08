@@ -319,6 +319,47 @@ def summarize_patient_covariate_coverage(patient_data, attribute_ids):
     }
 
 
+def _summarize_available_tcga_covariates(attributes, patient_clinical):
+    """Only report TCGA-specific covariate sets when their fields exist."""
+    patient_attribute_ids = {
+        item.get("clinicalAttributeId")
+        for item in attributes
+        if item.get("patientAttribute")
+    }
+    candidate_fields = (
+        "AGE",
+        "AJCC_PATHOLOGIC_TUMOR_STAGE",
+        "PATH_T_STAGE",
+        "PATH_N_STAGE",
+        "PATH_M_STAGE",
+        "WINTER_HYPOXIA_SCORE",
+    )
+    available = tuple(
+        field for field in candidate_fields if field in patient_attribute_ids
+    )
+    result = {}
+    if available:
+        result["field_inventory"] = summarize_patient_covariate_coverage(
+            patient_clinical, available
+        )
+    if {"AGE", "AJCC_PATHOLOGIC_TUMOR_STAGE"} <= patient_attribute_ids:
+        result["age_and_stage_complete_case"] = summarize_patient_covariate_coverage(
+            patient_clinical, ("AGE", "AJCC_PATHOLOGIC_TUMOR_STAGE")
+        )
+    if {
+        "AGE",
+        "AJCC_PATHOLOGIC_TUMOR_STAGE",
+        "WINTER_HYPOXIA_SCORE",
+    } <= patient_attribute_ids:
+        result["age_stage_and_hypoxia_complete_case"] = (
+            summarize_patient_covariate_coverage(
+                patient_clinical,
+                ("AGE", "AJCC_PATHOLOGIC_TUMOR_STAGE", "WINTER_HYPOXIA_SCORE"),
+            )
+        )
+    return result
+
+
 def summarize_expression_survival_linkage(
     samples, expression_sample_ids, patient_clinical
 ):
@@ -363,7 +404,7 @@ def summarize_expression_survival_linkage(
     )
     age_stage = set(age) & set(stage)
     age_stage_hypoxia = age_stage & set(hypoxia)
-    return {
+    result = {
         "expression_sample_list_sample_count": len(expression_ids),
         "expression_samples_linked_to_patient": sum(
             sample_id in sample_to_patient for sample_id in expression_ids
@@ -378,16 +419,19 @@ def summarize_expression_survival_linkage(
         "expression_positive_time_overall_survival_status_counts": dict(
             sorted(expression_os_status_counts.items())
         ),
-        "expression_patients_with_positive_os_age_and_stage": len(
-            expression_patient_ids & os_positive & age_stage
-        ),
-        "expression_patients_with_positive_os_age_stage_and_hypoxia": len(
-            expression_patient_ids & os_positive & age_stage_hypoxia
-        ),
         "expression_patients_with_complete_relapse_free_survival": len(
             expression_patient_ids & rfs_complete
         ),
     }
+    if age and stage:
+        result["expression_patients_with_positive_os_age_and_stage"] = len(
+            expression_patient_ids & os_positive & age_stage
+        )
+    if age and stage and hypoxia:
+        result["expression_patients_with_positive_os_age_stage_and_hypoxia"] = len(
+            expression_patient_ids & os_positive & age_stage_hypoxia
+        )
+    return result
 
 
 def audit_cbioportal_study(
@@ -514,27 +558,9 @@ def audit_cbioportal_study(
             "survival_endpoint_pair_summary": summarize_survival_endpoint_pairs(
                 patient_clinical
             ),
-            "candidate_patient_covariate_coverage": {
-                "field_inventory": summarize_patient_covariate_coverage(
-                    patient_clinical,
-                    (
-                        "AGE",
-                        "AJCC_PATHOLOGIC_TUMOR_STAGE",
-                        "PATH_T_STAGE",
-                        "PATH_N_STAGE",
-                        "PATH_M_STAGE",
-                        "WINTER_HYPOXIA_SCORE",
-                    ),
-                ),
-                "age_and_stage_complete_case": summarize_patient_covariate_coverage(
-                    patient_clinical,
-                    ("AGE", "AJCC_PATHOLOGIC_TUMOR_STAGE"),
-                ),
-                "age_stage_and_hypoxia_complete_case": summarize_patient_covariate_coverage(
-                    patient_clinical,
-                    ("AGE", "AJCC_PATHOLOGIC_TUMOR_STAGE", "WINTER_HYPOXIA_SCORE"),
-                ),
-            },
+            "candidate_patient_covariate_coverage": _summarize_available_tcga_covariates(
+                attributes, patient_clinical
+            ),
         },
         "audit_checks": {
             "study_metadata_present": study.get("studyId") == study_id,

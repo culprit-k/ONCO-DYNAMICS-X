@@ -223,3 +223,14 @@ def test_expression_linkage_counts_positive_followup_and_event_categories():
     }
     assert result["expression_patients_with_positive_os_age_and_stage"] == 1
     assert result["expression_patients_with_positive_os_age_stage_and_hypoxia"] == 1
+
+
+def test_expression_linkage_omits_unavailable_tcga_covariate_intersections():
+    samples = [{"sampleId": "S1", "patientId": "P1"}]
+    clinical = [
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
+    ]
+    result = summarize_expression_survival_linkage(samples, ["S1"], clinical)
+    assert "expression_patients_with_positive_os_age_and_stage" not in result
+    assert "expression_patients_with_positive_os_age_stage_and_hypoxia" not in result
