@@ -51,7 +51,7 @@ def test_survival_record_builder_excludes_nonpositive_time_and_missing_stage():
         stage_level="PATIENT",
     )
     assert len(frame) == 1
-    assert frame.iloc[0]["patient_id"] == "P1"
+    assert frame[0]["patient_id"] == "P1"
     assert summary["patients_retained_for_model"] == 1
     assert summary["exclusion_counts"]["nonpositive_os_time"] == 1
     assert summary["exclusion_counts"]["missing_or_unrecognized_stage"] == 1

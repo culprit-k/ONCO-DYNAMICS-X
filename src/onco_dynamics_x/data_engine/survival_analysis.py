@@ -10,9 +10,6 @@ import re
 from collections import Counter
 from typing import Any
 
-import numpy as np
-import pandas as pd
-
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 
 
@@ -67,7 +64,7 @@ def build_survival_records(
     age_attribute: str,
     stage_attribute: str,
     stage_level: str,
-) -> tuple[pd.DataFrame, dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Assemble a de-identified-in-memory patient table and aggregate QC."""
     patient_ids = {row.get("patientId") for row in patients if row.get("patientId")}
     sample_to_patient = {
@@ -144,29 +141,30 @@ def build_survival_records(
         stage_counts[str(stage)] += 1
         event_counts["deceased" if event else "censored"] += 1
 
-    frame = pd.DataFrame(rows)
+    ages = [row["age_years"] for row in rows]
+    durations = [row["duration_months"] for row in rows]
     summary = {
         "expression_sample_list_count": len(expression_sample_ids),
         "unique_expression_patients_seen": len(seen_patients),
-        "patients_retained_for_model": len(frame),
+        "patients_retained_for_model": len(rows),
         "event_counts": dict(sorted(event_counts.items())),
         "stage_group_counts": dict(sorted(stage_counts.items())),
         "exclusion_counts": dict(sorted(counts.items())),
         "age_range_years": (
-            [round(float(frame["age_years"].min()), 3),
-             round(float(frame["age_years"].max()), 3)]
-            if not frame.empty else None
+            [round(min(ages), 3), round(max(ages), 3)]
+            if ages else None
         ),
         "followup_range_months": (
-            [round(float(frame["duration_months"].min()), 4),
-             round(float(frame["duration_months"].max()), 4)]
-            if not frame.empty else None
+            [round(min(durations), 4), round(max(durations), 4)]
+            if durations else None
         ),
     }
-    return frame, summary
+    return rows, summary
 
 
-def _design_matrix(frame: pd.DataFrame, age_mean: float, age_sd: float) -> pd.DataFrame:
+def _design_matrix(frame, age_mean: float, age_sd: float):
+    import pandas as pd
+
     design = pd.DataFrame(index=frame.index)
     design["age_z"] = (frame["age_years"] - age_mean) / age_sd
     for stage in (2, 3, 4):
@@ -175,11 +173,16 @@ def _design_matrix(frame: pd.DataFrame, age_mean: float, age_sd: float) -> pd.Da
 
 
 def run_cross_cohort_cox(
-    tcga: pd.DataFrame,
-    metabric: pd.DataFrame,
+    tcga_records: list[dict[str, Any]],
+    metabric_records: list[dict[str, Any]],
     penalizer: float = 0.1,
 ) -> dict[str, Any]:
     """Fit age+stage Cox in TCGA and evaluate once on untouched METABRIC."""
+    import numpy as np
+    import pandas as pd
+
+    tcga = pd.DataFrame(tcga_records)
+    metabric = pd.DataFrame(metabric_records)
     try:
         from lifelines import CoxPHFitter
         from lifelines.statistics import proportional_hazard_test
