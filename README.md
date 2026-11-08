@@ -8,15 +8,15 @@ ONCO-DYNAMICS X links mathematical modelling, computational tumour biology, mach
 
 ## Current software milestone
 
-The runnable numerical baseline is an eight-field 2D reaction-diffusion model (cancer, immune, fibroblast, oxygen, nutrients, drug, immune-evasion activity, and vasculature), no-flux finite differences, explicit time stepping, a diffusion stability guard, bounded fields, and a command-line demo.
+The numerical baseline is an eight-field reaction-diffusion model with both 2D slice and 3D voxel-grid solvers, no-flux finite differences, explicit time stepping, a dimension-aware diffusion stability guard, bounded fields, and a command-line demo.
 
 Additional implemented components include:
-- Stochastic cell-agent simulation using the PDE fields as a local environment.
+- Stochastic cell-agent simulation using 2D PDE fields as a local environment.
 - Cohort manifest validation and identifier-aware expression preprocessing.
 - Local parameter sensitivity and Monte Carlo parameter-range uncertainty.
 - Optional PyTorch PINN, spatial GNN, Fourier neural operator and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy causal wrapper and CasADi mean-field control demonstration.
-- Streamlit simulation dashboard, computed 2D fields rendered as a 3D surface, and ESP32 serial-control integration scaffold.
+- Streamlit simulation dashboard with a true 3D voxel volume view, as well as ESP32 serial-control integration.
 
 The values are dimensionless teaching proxies, not calibrated biological concentrations. See [implementation status](docs/implementation_status.md) for the exact boundary between implemented components and remaining work.
 
@@ -47,11 +47,11 @@ For optional AI and research methods, install the relevant extras in pyproject.t
 ## Mathematical core
 
 ```
-u(x,y,t) = [C,I,F,O,N,D,E,V]^T
+u(x,y[,z],t) = [C,I,F,O,N,D,E,V]^T
 du/dt = div(D grad(u)) + R(u,theta) + B q_D(t)
 ```
 
-The current implementation is a 2D Cartesian-grid prototype with constant diagonal diffusion, no-flux boundaries, and explicit Euler updates. Read [the mathematical model](docs/mathematical_model.md) and [assumptions and units](docs/assumptions_and_units.md) before interpreting output.
+The baseline supports 2D and 3D Cartesian-grid models with constant diagonal diffusion, no-flux boundaries, and explicit Euler updates. Read [the mathematical model](docs/mathematical_model.md) and [assumptions and units](docs/assumptions_and_units.md) before interpreting output.
 
 ## Full feature architecture retained
 

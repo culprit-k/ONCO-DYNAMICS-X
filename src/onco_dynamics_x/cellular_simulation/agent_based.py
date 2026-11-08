@@ -154,6 +154,8 @@ def advance_agents(
         raise ValueError("maximum_agents cannot be lower than the current population.")
     population.validate()
     environment.validate()
+    if environment.cancer.ndim != 2:
+        raise ValueError("The current agent-based implementation requires a 2D environment.")
     parameters.validate()
     rng = np.random.default_rng(seed)
     result = population.copy()

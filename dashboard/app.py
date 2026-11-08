@@ -1,7 +1,8 @@
-"""Optional Streamlit interface for the dimensionless numerical demonstration."""
+"""Streamlit research console for the 2D and 3D dimensionless model."""
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -56,8 +57,13 @@ with st.sidebar:
         key="immune_activity_knob",
         help="Dimensionless scenario control; not a patient measurement.",
     )
-    grid_size = st.slider("Grid size", 21, 81, 41, step=10)
-    steps = st.slider("Time steps", 20, 500, 200, step=20)
+    spatial_mode = st.selectbox("Spatial simulation", ["2D slice", "3D tissue volume"])
+    if spatial_mode == "3D tissue volume":
+        grid_size = st.slider("Voxel grid edge length", 11, 41, 21, step=10)
+        steps = st.slider("Time steps", 20, 250, 100, step=20)
+    else:
+        grid_size = st.slider("Grid size", 21, 81, 41, step=10)
+        steps = st.slider("Time steps", 20, 500, 200, step=20)
     dt = st.number_input(
         "Time increment (dimensionless)", value=0.0003, min_value=0.00001, format="%.5f"
     )
@@ -67,6 +73,7 @@ with st.sidebar:
     run = manual_run or hardware_run
 
 if run:
+    dimensions = 3 if spatial_mode == "3D tissue volume" else 2
     parameters = apply_controls(
         ModelParameters(),
         ControlMessage(tumour_growth, immune_activity),
@@ -78,7 +85,7 @@ if run:
 
     try:
         _, snapshots = simulate(
-            initial_state(grid_size),
+            initial_state(grid_size, spatial_dimensions=dimensions),
             parameters,
             dx=dx,
             dt=float(dt),
@@ -89,30 +96,67 @@ if run:
         final = snapshots[-1]
         fields = final.as_dict()
 
-        st.subheader("Computed tumour field — 2D spatial map")
-        figure, axis = plt.subplots(figsize=(6, 4))
-        image = axis.imshow(fields["cancer"], origin="lower")
-        axis.set_xlabel("Grid x")
-        axis.set_ylabel("Grid y")
-        figure.colorbar(image, ax=axis, label="Dimensionless cancer field")
-        st.pyplot(figure, clear_figure=True)
-        plt.close(figure)
+        if dimensions == 3:
+            st.subheader("Computed cancer-cell field — 3D voxel volume")
+            coordinates = np.linspace(-1.0, 1.0, grid_size)
+            xx, yy, zz = np.meshgrid(
+                coordinates, coordinates, coordinates, indexing="ij"
+            )
+            volume = go.Figure(
+                data=[
+                    go.Volume(
+                        x=xx.ravel(),
+                        y=yy.ravel(),
+                        z=zz.ravel(),
+                        value=fields["cancer"].ravel(),
+                        isomin=float(fields["cancer"].min()),
+                        isomax=float(fields["cancer"].max()),
+                        opacity=0.12,
+                        surface_count=14,
+                        caps={"x_show": False, "y_show": False, "z_show": False},
+                    )
+                ]
+            )
+            volume.update_layout(
+                height=650,
+                scene={
+                    "xaxis_title": "x (dimensionless)",
+                    "yaxis_title": "y (dimensionless)",
+                    "zaxis_title": "z (dimensionless)",
+                    "aspectmode": "cube",
+                },
+                margin={"l": 0, "r": 0, "t": 20, "b": 0},
+            )
+            st.plotly_chart(volume, use_container_width=True)
+            st.caption("This is a true 3D numerical grid, but its biological parameters remain illustrative.")
+            slice_index = grid_size // 2
+            st.subheader("Central tissue slice for the other state fields")
+        else:
+            st.subheader("Computed cancer-cell field — 2D spatial map")
+            figure, axis = plt.subplots(figsize=(6, 4))
+            image = axis.imshow(fields["cancer"], origin="lower")
+            axis.set_xlabel("Grid x")
+            axis.set_ylabel("Grid y")
+            figure.colorbar(image, ax=axis, label="Dimensionless cancer field")
+            st.pyplot(figure, clear_figure=True)
+            plt.close(figure)
 
-        st.subheader("3D surface rendering of the same 2D field")
-        st.caption("Surface height represents the computed 2D field; this is not a 3D tissue solver.")
-        surface = go.Figure(
-            data=[go.Surface(z=fields["cancer"], colorscale="Viridis")]
-        )
-        surface.update_layout(
-            height=520,
-            scene={
-                "xaxis_title": "Grid x",
-                "yaxis_title": "Grid y",
-                "zaxis_title": "Dimensionless cancer field",
-            },
-            margin={"l": 0, "r": 0, "t": 20, "b": 0},
-        )
-        st.plotly_chart(surface, use_container_width=True)
+            st.subheader("3D surface rendering of the same 2D field")
+            st.caption("Surface height represents the computed 2D field; this is not a 3D tissue solver.")
+            surface = go.Figure(
+                data=[go.Surface(z=fields["cancer"], colorscale="Viridis")]
+            )
+            surface.update_layout(
+                height=520,
+                scene={
+                    "xaxis_title": "Grid x",
+                    "yaxis_title": "Grid y",
+                    "zaxis_title": "Dimensionless cancer field",
+                },
+                margin={"l": 0, "r": 0, "t": 20, "b": 0},
+            )
+            st.plotly_chart(surface, use_container_width=True)
+            slice_index = None
 
         st.subheader("Other computed spatial fields")
         columns = st.columns(3)
@@ -125,9 +169,11 @@ if run:
             ("Immune-evasion proxy (E)", "evasion"),
         ]
         for index, (title, key) in enumerate(display_fields):
+            field = fields[key]
+            image_field = field if dimensions == 2 else field[:, :, slice_index]
             with columns[index % 3]:
                 figure, axis = plt.subplots(figsize=(4, 3))
-                image = axis.imshow(fields[key], origin="lower")
+                image = axis.imshow(image_field, origin="lower")
                 axis.set_title(title)
                 axis.set_xticks([])
                 axis.set_yticks([])
@@ -140,4 +186,4 @@ if run:
     except ValueError as error:
         st.error(str(error))
 else:
-    st.info("Adjust the controls or connect the ESP32 and run the simulation.")
+    st.info("Choose a 2D slice or 3D tissue volume, then run the simulation or connect the ESP32.")

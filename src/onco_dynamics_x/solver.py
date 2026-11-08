@@ -1,4 +1,4 @@
-"""Explicit Euler reaction-diffusion solver for the 2D prototype."""
+"""Explicit Euler reaction-diffusion solver for 2D or 3D model grids."""
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -11,12 +11,22 @@ from onco_dynamics_x.reactions import reaction_terms
 from onco_dynamics_x.state import TumourState
 
 
-def diffusion_timestep_limit(parameters: ModelParameters, dx: float) -> float:
-    """2D explicit diffusion limit dx^2 / (4 * max(D))."""
+def diffusion_timestep_limit(
+    parameters: ModelParameters,
+    dx: float,
+    spatial_dimensions: int = 2,
+) -> float:
+    """Explicit diffusion limit dx^2 / (2*d*max(D)) for d spatial dimensions."""
     if dx <= 0:
         raise ValueError("dx must be positive.")
+    if spatial_dimensions not in (2, 3):
+        raise ValueError("spatial_dimensions must be either 2 or 3.")
     maximum = max(parameters.diffusion_coefficients.values())
-    return float("inf") if maximum == 0 else dx**2 / (4.0 * maximum)
+    return (
+        float("inf")
+        if maximum == 0
+        else dx**2 / (2.0 * spatial_dimensions * maximum)
+    )
 
 
 def _bound_state(state: TumourState, parameters: ModelParameters) -> TumourState:
@@ -41,7 +51,7 @@ def step(
     *,
     enforce_diffusion_stability: bool = True,
 ) -> TumourState:
-    """Advance one explicit Euler step.
+    """Advance one explicit Euler step on a 2D or 3D grid.
 
     The stability guard covers diffusion only; reaction stiffness requires
     additional timestep-refinement and convergence analysis.
@@ -50,7 +60,8 @@ def step(
         raise ValueError("dx and dt must be positive.")
     parameters.validate()
     state.validate()
-    limit = diffusion_timestep_limit(parameters, dx)
+    dimensions = state.cancer.ndim
+    limit = diffusion_timestep_limit(parameters, dx, dimensions)
     if enforce_diffusion_stability and dt > limit * (1.0 + 1e-12):
         raise ValueError(
             f"dt={dt:g} exceeds the explicit diffusion limit {limit:g}; "
@@ -73,7 +84,7 @@ def simulate(
     infusion_schedule: Callable[[float], float] | None = None,
     save_every: int = 10,
 ) -> tuple[np.ndarray, list[TumourState]]:
-    """Run a deterministic simulation and retain regularly spaced state snapshots."""
+    """Run a deterministic simulation and retain regularly spaced snapshots."""
     if steps < 1:
         raise ValueError("steps must be at least 1.")
     if save_every < 1:

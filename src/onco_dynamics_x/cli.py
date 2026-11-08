@@ -14,7 +14,7 @@ from onco_dynamics_x.state import initial_state
 
 def run_simulation(args: argparse.Namespace) -> Path:
     parameters = ModelParameters()
-    state = initial_state(args.grid_size)
+    state = initial_state(args.grid_size, spatial_dimensions=args.dimensions)
     dx = 2.0 / (args.grid_size - 1)
     times, snapshots = simulate(
         state,
@@ -45,11 +45,12 @@ def run_simulation(args: argparse.Namespace) -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="onco-dynamics",
-        description="Run the ONCO-DYNAMICS X dimensionless 2D demonstration model.",
+        description="Run the ONCO-DYNAMICS X dimensionless 2D/3D demonstration model.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     sim = subparsers.add_parser("simulate", help="run the reaction-diffusion demo")
     sim.add_argument("--grid-size", type=int, default=51)
+    sim.add_argument("--dimensions", type=int, choices=(2, 3), default=2)
     sim.add_argument("--steps", type=int, default=400)
     sim.add_argument("--dt", type=float, default=0.0003)
     sim.add_argument("--save-every", type=int, default=20)
