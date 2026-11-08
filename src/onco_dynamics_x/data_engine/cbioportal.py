@@ -255,6 +255,42 @@ def summarize_survival_endpoint_pairs(patient_data):
     return summaries
 
 
+def summarize_expression_survival_linkage(
+    samples, expression_sample_ids, patient_clinical
+):
+    """Summarize expression-sample overlap with complete patient survival fields."""
+    sample_to_patient = {
+        row.get("sampleId"): row.get("patientId")
+        for row in samples
+        if row.get("sampleId") and row.get("patientId")
+    }
+    expression_ids = set(expression_sample_ids)
+    expression_patient_ids = {
+        sample_to_patient[sample_id]
+        for sample_id in expression_ids
+        if sample_id in sample_to_patient
+    }
+    os_time, _ = _patient_attribute_values(patient_clinical, "OS_MONTHS")
+    os_status, _ = _patient_attribute_values(patient_clinical, "OS_STATUS")
+    rfs_time, _ = _patient_attribute_values(patient_clinical, "RFS_MONTHS")
+    rfs_status, _ = _patient_attribute_values(patient_clinical, "RFS_STATUS")
+    os_complete = set(os_time) & set(os_status)
+    rfs_complete = set(rfs_time) & set(rfs_status)
+    return {
+        "expression_sample_list_sample_count": len(expression_ids),
+        "expression_samples_linked_to_patient": sum(
+            sample_id in sample_to_patient for sample_id in expression_ids
+        ),
+        "unique_expression_patients": len(expression_patient_ids),
+        "expression_patients_with_complete_overall_survival": len(
+            expression_patient_ids & os_complete
+        ),
+        "expression_patients_with_complete_relapse_free_survival": len(
+            expression_patient_ids & rfs_complete
+        ),
+    }
+
+
 def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     """Audit METABRIC study metadata, molecular profiles and clinical coverage."""
     api = client or CBioPortalClient()
@@ -268,7 +304,7 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     )
     attributes = api.get_all(f"studies/{study_id}/clinical-attributes")
     profiles = api.get_all(f"studies/{study_id}/molecular-profiles")
-    sample_lists = api.get_all(f"studies/{study_id}/sample-lists")
+    sample_lists = api.get_all(f"studies/{study_id}/sample-lists")\n    expression_sample_list = api.get_json("sample-lists/brca_metabric_mrna")
     patient_clinical = api.get_all(
         f"studies/{study_id}/clinical-data", {"clinicalDataType": "PATIENT"}
     )
@@ -344,7 +380,7 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
             "samples_linked_to_known_patient": sample_patient_links,
             "samples_without_patient_link": orphan_samples,
         },
-        "molecular_profiles": profile_summaries,
+        "molecular_profiles": profile_summaries,\n        "expression_survival_linkage": summarize_expression_survival_linkage(\n            samples, expression_sample_list.get("sampleIds", []), patient_clinical\n        ),
         "sample_lists": [
             {
                 "sample_list_id": item.get("sampleListId"),

@@ -2,7 +2,7 @@ from onco_dynamics_x.data_engine.cbioportal import (
     CBioPortalClient,
     _candidate_endpoint,
     summarize_clinical_coverage,
-    summarize_survival_endpoint_pairs,
+    summarize_survival_endpoint_pairs,\n    summarize_expression_survival_linkage,
 )
 
 
@@ -84,3 +84,25 @@ def test_survival_pair_summary_checks_patient_level_overlap_and_time_quality():
     assert overall["unparseable_time_count"] == 0
     relapse = next(row for row in result if row["endpoint"] == "relapse_free_survival")
     assert relapse["patients_with_both_fields"] == 1
+
+
+def test_expression_survival_linkage_uses_patient_sample_mapping():
+    samples = [
+        {"sampleId": "S1", "patientId": "P1"},
+        {"sampleId": "S2", "patientId": "P2"},
+        {"sampleId": "S3", "patientId": "P3"},
+    ]
+    expression_ids = ["S1", "S2", "UNKNOWN"]
+    clinical = [
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P2", "value": "24"},
+        {"clinicalAttributeId": "RFS_MONTHS", "patientId": "P1", "value": "10"},
+        {"clinicalAttributeId": "RFS_STATUS", "patientId": "P1", "value": "1:Recurred"},
+    ]
+    result = summarize_expression_survival_linkage(samples, expression_ids, clinical)
+    assert result["expression_sample_list_sample_count"] == 3
+    assert result["expression_samples_linked_to_patient"] == 2
+    assert result["unique_expression_patients"] == 2
+    assert result["expression_patients_with_complete_overall_survival"] == 1
+    assert result["expression_patients_with_complete_relapse_free_survival"] == 1
