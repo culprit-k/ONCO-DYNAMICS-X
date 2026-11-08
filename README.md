@@ -12,11 +12,11 @@ The numerical baseline is an eight-field reaction-diffusion model with both 2D s
 
 Additional implemented components include:
 - Stochastic cell-agent simulation using 2D PDE fields as a local environment.
-- Public-only GDC file-metadata query and sample-manifest export, plus cohort-manifest validation and identifier-aware expression preprocessing.
-- Local parameter sensitivity and Monte Carlo parameter-range uncertainty.
+- Public-only GDC file-metadata query, sample-manifest export, manifest audit, and explicit single-file open-data download with checksum verification.
+- Identifier-aware expression preprocessing, local parameter sensitivity, and Monte Carlo parameter-range uncertainty.
 - Optional PyTorch PINN, spatial GNN, Fourier neural operator and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy causal wrapper and CasADi mean-field control demonstration.
-- Streamlit simulation dashboard with a true 3D voxel volume view, as well as ESP32 serial-control integration.
+- Streamlit dashboard with true 3D voxel-volume rendering and ESP32 serial-control integration.
 
 The values are dimensionless teaching proxies, not calibrated biological concentrations. See [implementation status](docs/implementation_status.md) for the exact boundary between implemented components and remaining work.
 
@@ -35,22 +35,15 @@ pytest
 onco-dynamics simulate --grid-size 51 --steps 400 --dt 0.0003
 ```
 
-Run a true 3D voxel simulation from the CLI:
+Run a true 3D voxel simulation:
 
 ```bash
 onco-dynamics simulate --dimensions 3 --grid-size 21 --steps 200 --dt 0.0003
 ```
 
-The CLI writes `results/simulation_summary.csv`. Launch the optional dashboard with:
+## TCGA-BRCA public metadata audit
 
-```bash
-pip install -e ".[dashboard,hardware]"
-streamlit run dashboard/app.py
-```
-
-## Cohort metadata audit
-
-The optional GDC metadata query uses the official API and restricts results to files marked open-access. It does not download the files.
+Query open-access GDC metadata (no file downloads):
 
 ```bash
 onco-dynamics gdc-query \
@@ -60,9 +53,25 @@ onco-dynamics gdc-query \
   --max-results 100
 ```
 
-See [cohort data sources and GDC workflow](docs/data_sources.md). Generated metadata CSVs are local and ignored by Git. Never commit controlled or identifiable participant-level data.
+After reviewing the local metadata CSV, download one explicitly selected open-access file by its GDC UUID:
 
-For optional AI and research methods, install the relevant extras in pyproject.toml. For example, `pip install -e ".[pinn,spatial]"` installs PyTorch. Do not install every extra blindly; some frameworks require substantial platform-specific dependencies.
+```bash
+onco-dynamics gdc-download-open \
+  --metadata-csv data/metadata/gdc_open_files.csv \
+  --file-id YOUR-GDC-FILE-UUID \
+  --destination data/raw/gdc
+```
+
+The downloader refuses non-open files and verifies the byte count and MD5 checksum before finalizing a file. It does not provide controlled-access data or bypass access requirements. Generated CSVs and raw data are ignored by Git. See [cohort data sources](docs/data_sources.md).
+
+## Dashboard
+
+```bash
+pip install -e ".[dashboard,hardware]"
+streamlit run dashboard/app.py
+```
+
+The dashboard can run locally without hardware. For the ESP32 controls, connect the development board over USB to the same computer running Streamlit and use the detected serial device path. Cloud-hosted dashboards cannot directly access a USB port attached to a separate computer.
 
 ## Mathematical core
 
@@ -79,14 +88,10 @@ Coupled PDE/ODEs; PINNs; agent-based cancer, immune and stromal cells; spatial G
 
 See [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), [hardware console plan](docs/hardware_console.md), and [deployment instructions](docs/deployment.md). Workstreams are staged for verification, not removed. A planned or optional architecture is not a trained/validated model.
 
-## Potential research datasets
-
-Potential sources include [TCGA-BRCA](https://portal.gdc.cancer.gov/), [METABRIC via cBioPortal](https://www.cbioportal.org/study/summary?id=brca_metabric), [NCBI GEO](https://www.ncbi.nlm.nih.gov/geo/), and [Proteomic Data Commons](https://proteomic.datacommons.cancer.gov/). Each cohort must be audited for endpoints, modality, permissions, identifiers, missingness and compatibility. Do not combine modalities from different patients as if paired. Bulk RNA data alone cannot establish spatial positions, oxygen gradients, or direct cell contact.
-
 ## Reproducibility
 
 Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic simulation tests from biological validation. Report uncertainty, negative results, limitations and failures.
 
 ## License
 
-No open-source license has been selected. Until one is added, ordinary copyright restrictions apply.
+No open-source license has been selected. Until a license is added, ordinary copyright restrictions apply.

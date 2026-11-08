@@ -7,7 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
-from onco_dynamics_x.data_engine.gdc import GDCClient, write_sample_manifest
+from onco_dynamics_x.data_engine.gdc import (
+    GDCClient,
+    GDCFile,
+    write_sample_manifest,
+)
 from onco_dynamics_x.data_engine.manifest import audit_manifest
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import simulate
@@ -105,6 +109,59 @@ def run_gdc_query(args: argparse.Namespace) -> Path:
     return metadata_path
 
 
+def run_gdc_download_open(args: argparse.Namespace) -> Path:
+    """Download one explicitly selected open GDC file from a prior metadata CSV."""
+    metadata_path = Path(args.metadata_csv)
+    if not metadata_path.exists():
+        raise FileNotFoundError(metadata_path)
+    required = {
+        "file_id",
+        "file_name",
+        "md5sum",
+        "file_size",
+        "access",
+        "data_type",
+        "workflow_type",
+    }
+    with metadata_path.open("r", newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(
+                f"Metadata CSV is missing columns: {', '.join(sorted(missing))}."
+            )
+        rows = [row for row in reader if row.get("file_id") == args.file_id]
+    if len(rows) != 1:
+        raise ValueError(
+            f"Expected exactly one metadata row for file ID {args.file_id}; found {len(rows)}."
+        )
+    row = rows[0]
+    if row["access"].lower() != "open":
+        raise PermissionError("Selected GDC file is not marked open-access.")
+    metadata = GDCFile(
+        file_id=row["file_id"],
+        file_name=row["file_name"],
+        md5sum=row["md5sum"],
+        file_size=int(row["file_size"]),
+        access=row["access"].lower(),
+        data_type=row["data_type"],
+        workflow_type=row["workflow_type"],
+        case_ids=tuple(filter(None, row.get("case_ids", "").split("|"))),
+        patient_submitter_ids=tuple(
+            filter(None, row.get("patient_submitter_ids", "").split("|"))
+        ),
+        sample_submitter_ids=tuple(
+            filter(None, row.get("sample_submitter_ids", "").split("|"))
+        ),
+        associated_samples=(),
+    )
+    downloaded = GDCClient(timeout=args.timeout).download_open_file(
+        metadata, args.destination
+    )
+    print(f"Downloaded and checksum-verified open file: {downloaded}")
+    return downloaded
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="onco-dynamics",
@@ -123,7 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     gdc = subparsers.add_parser(
         "gdc-query",
-        help="query open-access GDC file metadata (no file downloads)",
+        help="query open-access GDC file metadata (does not download files)",
     )
     gdc.add_argument("--project-id", default="TCGA-BRCA")
     gdc.add_argument("--data-type", default="Gene Expression Quantification")
@@ -132,13 +189,19 @@ def build_parser() -> argparse.ArgumentParser:
     gdc.add_argument("--max-results", type=int, default=100)
     gdc.add_argument("--timeout", type=float, default=60.0)
     gdc.add_argument("--modality", default="transcriptomics")
-    gdc.add_argument(
-        "--metadata-output", default="data/metadata/gdc_open_files.csv"
-    )
-    gdc.add_argument(
-        "--manifest-output", default="data/metadata/gdc_sample_manifest.csv"
-    )
+    gdc.add_argument("--metadata-output", default="data/metadata/gdc_open_files.csv")
+    gdc.add_argument("--manifest-output", default="data/metadata/gdc_sample_manifest.csv")
     gdc.set_defaults(func=run_gdc_query)
+
+    download = subparsers.add_parser(
+        "gdc-download-open",
+        help="download one explicitly selected, metadata-verified open GDC file",
+    )
+    download.add_argument("--metadata-csv", required=True)
+    download.add_argument("--file-id", required=True)
+    download.add_argument("--destination", default="data/raw/gdc")
+    download.add_argument("--timeout", type=float, default=120.0)
+    download.set_defaults(func=run_gdc_download_open)
     return parser
 
 
