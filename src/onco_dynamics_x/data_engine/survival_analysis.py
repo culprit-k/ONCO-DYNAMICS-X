@@ -298,7 +298,7 @@ def fetch_survival_cohort(
     age_attribute: str,
     stage_attribute: str,
     stage_level: str,
-) -> tuple[pd.DataFrame, dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch one public cBioPortal cohort and assemble its endpoint/covariates."""
     patients = client.get_all(
         f"studies/{study_id}/patients", {"projection": "SUMMARY"}
