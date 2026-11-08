@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import http.client
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -227,8 +229,14 @@ class GDCClient:
             offset += len(hits)
         return results
 
-    def download_open_file(self, metadata: GDCFile, destination: str | Path) -> Path:
-        """Download one verified open file and check byte count and MD5 checksum."""
+    def download_open_file(
+        self,
+        metadata: GDCFile,
+        destination: str | Path,
+        retries: int = 4,
+        retry_delay: float = 1.0,
+    ) -> Path:
+        """Download one open file, retry transient failures, and verify size and MD5."""
         if metadata.access != "open":
             raise PermissionError("Only open-access GDC files can be downloaded by this client.")
         if not _UUID_PATTERN.fullmatch(metadata.file_id):
@@ -237,6 +245,10 @@ class GDCClient:
             raise ValueError("file_name must be a plain filename without path components.")
         if metadata.file_size < 0 or not re.fullmatch(r"[0-9a-fA-F]{32}", metadata.md5sum):
             raise ValueError("Expected file size and MD5 checksum are required.")
+        if retries < 0:
+            raise ValueError("retries must be non-negative.")
+        if retry_delay < 0:
+            raise ValueError("retry_delay must be non-negative.")
 
         destination_path = Path(destination)
         destination_path.mkdir(parents=True, exist_ok=True)
@@ -244,29 +256,48 @@ class GDCClient:
         partial_path = final_path.with_suffix(final_path.suffix + ".partial")
         request = urllib.request.Request(
             f"{self.base_url}/data/{metadata.file_id}",
-            headers={"Accept": "application/octet-stream"},
+            headers={
+                "Accept": "application/octet-stream",
+                "User-Agent": "ONCO-DYNAMICS-X/0.1 research data client",
+            },
         )
-        digest = hashlib.md5(usedforsecurity=False)
-        bytes_written = 0
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                with partial_path.open("wb") as output:
-                    while chunk := response.read(1024 * 1024):
-                        output.write(chunk)
-                        digest.update(chunk)
-                        bytes_written += len(chunk)
-            if bytes_written != metadata.file_size:
-                raise RuntimeError(
-                    f"Downloaded size {bytes_written} does not match metadata "
-                    f"size {metadata.file_size}."
-                )
-            if digest.hexdigest().lower() != metadata.md5sum.lower():
-                raise RuntimeError("Downloaded file MD5 does not match GDC metadata.")
-            os.replace(partial_path, final_path)
-        except (OSError, urllib.error.URLError, RuntimeError):
-            partial_path.unlink(missing_ok=True)
-            raise
-        return final_path
+        last_error: Exception | None = None
+        for attempt in range(retries + 1):
+            digest = hashlib.md5(usedforsecurity=False)
+            bytes_written = 0
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    with partial_path.open("wb") as output:
+                        while chunk := response.read(1024 * 1024):
+                            output.write(chunk)
+                            digest.update(chunk)
+                            bytes_written += len(chunk)
+                if bytes_written != metadata.file_size:
+                    raise RuntimeError(
+                        f"Downloaded size {bytes_written} does not match metadata "
+                        f"size {metadata.file_size}."
+                    )
+                if digest.hexdigest().lower() != metadata.md5sum.lower():
+                    raise RuntimeError("Downloaded file MD5 does not match GDC metadata.")
+                os.replace(partial_path, final_path)
+                return final_path
+            except (
+                OSError,
+                urllib.error.URLError,
+                http.client.HTTPException,
+                TimeoutError,
+                RuntimeError,
+            ) as error:
+                last_error = error
+                partial_path.unlink(missing_ok=True)
+                if attempt >= retries:
+                    break
+                if retry_delay:
+                    time.sleep(retry_delay * (2**attempt))
+        raise RuntimeError(
+            f"Could not download and verify GDC file {metadata.file_id} "
+            f"after {retries + 1} attempts: {last_error}"
+        ) from last_error
 
 
 def write_sample_manifest(

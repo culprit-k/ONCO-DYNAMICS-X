@@ -1,5 +1,6 @@
 import csv
 import hashlib
+from http.client import RemoteDisconnected
 from io import BytesIO
 from unittest.mock import patch
 
@@ -165,3 +166,56 @@ def test_gdc_manifest_export_passes_sample_audit_and_preserves_specimen_type(tmp
     with path.open(newline="", encoding="utf-8") as handle:
         row = next(csv.DictReader(handle))
     assert row["sample_type"] == "Primary Tumor"
+
+
+
+def test_gdc_download_retries_transient_remote_disconnect(tmp_path):
+    content = b"retry-expression"
+    metadata = GDCFile(
+        file_id=SAMPLE_FILE_ID,
+        file_name="retry.tsv",
+        md5sum=hashlib.md5(content, usedforsecurity=False).hexdigest(),
+        file_size=len(content),
+        access="open",
+        data_type="Gene Expression Quantification",
+        workflow_type="STAR - Counts",
+        case_ids=(),
+        patient_submitter_ids=(),
+        sample_submitter_ids=(),
+        associated_samples=(),
+    )
+    with (
+        patch(
+            "urllib.request.urlopen",
+            side_effect=[RemoteDisconnected("server closed connection"), BytesIO(content)],
+        ),
+        patch("time.sleep") as sleep,
+    ):
+        path = GDCClient().download_open_file(
+            metadata, tmp_path, retries=2, retry_delay=0.25
+        )
+    assert path.read_bytes() == content
+    sleep.assert_called_once_with(0.25)
+
+
+def test_gdc_download_removes_partial_file_after_final_failure(tmp_path):
+    metadata = GDCFile(
+        file_id=SAMPLE_FILE_ID,
+        file_name="broken.tsv",
+        md5sum="d41d8cd98f00b204e9800998ecf8427e",
+        file_size=5,
+        access="open",
+        data_type="Gene Expression Quantification",
+        workflow_type="STAR - Counts",
+        case_ids=(),
+        patient_submitter_ids=(),
+        sample_submitter_ids=(),
+        associated_samples=(),
+    )
+    with (
+        patch("urllib.request.urlopen", return_value=BytesIO(b"bad!!")),
+        patch("time.sleep"),
+    ):
+        with pytest.raises(RuntimeError, match="after 1 attempts"):
+            GDCClient().download_open_file(metadata, tmp_path, retries=0)
+    assert not (tmp_path / "broken.tsv.partial").exists()

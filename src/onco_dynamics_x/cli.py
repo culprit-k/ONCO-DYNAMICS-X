@@ -163,7 +163,10 @@ def run_gdc_download_open(args: argparse.Namespace) -> Path:
         sample_types=tuple(filter(None, row.get("sample_types", "").split("|"))),
     )
     downloaded = GDCClient(timeout=args.timeout).download_open_file(
-        metadata, args.destination
+        metadata,
+        args.destination,
+        retries=getattr(args, "retries", 4),
+        retry_delay=getattr(args, "retry_delay", 1.0),
     )
     print(f"Downloaded and checksum-verified open file: {downloaded}")
     return downloaded
@@ -225,6 +228,8 @@ def build_parser() -> argparse.ArgumentParser:
     download.add_argument("--file-id", required=True)
     download.add_argument("--destination", default="data/raw/gdc")
     download.add_argument("--timeout", type=float, default=120.0)
+    download.add_argument("--retries", type=int, default=4)
+    download.add_argument("--retry-delay", type=float, default=1.0)
     download.set_defaults(func=run_gdc_download_open)
 
     matrix = subparsers.add_parser(

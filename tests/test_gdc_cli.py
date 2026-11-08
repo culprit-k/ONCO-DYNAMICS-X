@@ -52,7 +52,7 @@ def test_gdc_download_command_uses_verified_metadata_row(tmp_path, monkeypatch):
         def __init__(self, timeout):
             assert timeout == 5.0
 
-        def download_open_file(self, record, destination):
+        def download_open_file(self, record, destination, retries=4, retry_delay=1.0):
             assert isinstance(record, GDCFile)
             assert record.access == "open"
             assert record.sample_submitter_ids == ("sample-1",)
