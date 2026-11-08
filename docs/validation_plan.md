@@ -1,19 +1,21 @@
-# Validation and verification plan
+# Numerical validation plan
 
-## Software verification
-- Unit tests for diffusion, reactions, constraints and state shapes.
-- Finite-value and positivity checks; deterministic output for deterministic inputs.
-- Limiting cases: zero diffusion, zero source and spatially uniform initial states.
-- Timestep refinement: compare dt, dt/2 and dt/4.
-- Grid refinement on a common observation scale.
-- Independent numerical solver comparison.
-- Record config, environment, seed and commit SHA.
+## Software verification already in CI
+- Constant-field Laplacian is zero under the no-flux finite-difference operator.
+- 2D and 3D state arrays remain finite and dimensionally consistent.
+- Explicit diffusion timestep guard rejects a time increment above the dimension-dependent bound.
+- The PDE solver is deterministic for a fixed initial state and parameter set.
+- Timestep refinement compares dt and dt/2 at equal final time.
+- Grid refinement compares nested grids at equal final time by sampling the fine-grid solution at coarse-grid nodes; this is tested for 2D and 3D.
+- Agent simulation tests cover deterministic seeds, boundary constraints, cell phenotypes and 2D/3D environment matching.
+- Cohort/GDC tests cover open-access enforcement, sample linkage, metadata parsing, checksums and expression-matrix alignment.
+
+## Required next numerical studies
+1. Run a grid-refinement ladder (at least three resolutions) and report field-wise error norms.
+2. Compare the current explicit finite-difference solver against an independent method-of-lines stiff integrator and, later, an independent spatial discretization.
+3. Test positivity, clipping frequency, mass-balance effects and reaction stiffness.
+4. Check parameter identifiability and confidence/credible intervals under synthetic known-parameter recovery experiments.
+5. Benchmark PINNs and neural operators against the finite-difference reference on held-out initial conditions and parameter settings.
 
 ## Biological validation
-A biological claim requires observations corresponding to the quantity modelled. Oxygen dynamics need appropriate oxygen measurements or defensible proxies; spatial immune interactions need spatially resolved assays or validated histology segmentation. Bulk RNA-seq alone cannot establish spatial geometry.
-
-## Cohort strategy
-TCGA-BRCA, METABRIC, GEO and CPTAC/PDC are potential resources, not interchangeable datasets. Audit platforms, sample types, endpoints, treatment history, inclusion criteria and permissions. Harmonize only after documenting what is comparable. Reserve an independent cohort for external evaluation.
-
-## Reporting
-Report calibration and uncertainty, not only accuracy. Include confidence/credible intervals, failure cases, subgroup limitations and dataset shift. Prognostic performance is not treatment-predictive performance.
+Numerical convergence is not biological validity. Biological validation requires permitted, compatible, independent datasets with correctly linked sample identifiers, endpoint definitions and modality-specific ground truth. Spatial claims require spatially resolved observations. Report limitations and failure cases; do not infer treatment benefit from prognostic associations.

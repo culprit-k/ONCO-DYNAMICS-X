@@ -14,7 +14,7 @@ Additional implemented components include:
 - Stochastic 2D/3D cell-agent simulation using PDE fields as a local environment.
 - Spatial cell-graph builder for GNN input and patient-grouped train/test splitting.
 - Public-only GDC metadata query, audited sample-manifest export, selected open-file download with checksum verification, and TCGA expression-matrix assembly.
-- Identifier-aware expression preprocessing, local parameter sensitivity, and Monte Carlo parameter-range uncertainty.
+- Identifier-aware expression preprocessing, local parameter sensitivity, nested-grid refinement and Monte Carlo parameter-range uncertainty.
 - Optional PyTorch PINN, spatial GNN, Fourier neural operator and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy causal wrapper and CasADi mean-field control demonstration.
 - Streamlit dashboard with true 3D voxel-volume rendering and ESP32 serial-control integration.
@@ -63,7 +63,7 @@ onco-dynamics gdc-download-open \
   --destination data/raw/gdc
 ```
 
-3. After downloading all selected files and reviewing patient/sample linkage, assemble them into a common gene matrix:
+3. After downloading selected files, assemble them into a common gene matrix:
 
 ```bash
 onco-dynamics gdc-build-expression-matrix \
@@ -102,7 +102,7 @@ See [architecture](docs/architecture.md), [roadmap](docs/roadmap.md), [hardware 
 
 ## Reproducibility
 
-Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic simulation tests from biological validation. Report uncertainty, negative results, limitations and failures.
+Record configs, dataset versions, inclusion criteria, preprocessing, random seeds, model checkpoints, environment and commit SHA. Separate synthetic software tests from biological validation. Report uncertainty, negative results, limitations and failures.
 
 ## License
 

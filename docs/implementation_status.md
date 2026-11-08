@@ -4,7 +4,7 @@ This document separates code that exists from work that remains planned or requi
 
 ## Implemented and covered by base CI
 - Dimensionless 2D and 3D reaction-diffusion solver with eight spatial fields, no-flux finite differences and dimension-aware explicit diffusion stability guard.
-- Synthetic initial fields, state validation, CLI simulation in 2D or 3D, timestep refinement, and Streamlit 2D/3D visualization.
+- Synthetic initial fields, state validation, CLI simulation in 2D or 3D, timestep and nested-grid refinement diagnostics, and Streamlit 2D/3D visualization.
 - NumPy 2D/3D agent-based model with cancer-agent division/death, local oxygen/nutrient dependence, immune recruitment and gradient-directed migration, fibroblast movement, reflecting boundaries and reproducible random seeds.
 - Spatial cell-graph builder using cell coordinates, phenotype, age and local PDE fields; patient-grouped train/test split utility.
 - Public-only GDC API metadata query, sample-manifest export, manifest audit, selected open-file download with checksum verification, and strict TCGA expression-matrix assembly with sample/gene alignment.
@@ -29,6 +29,7 @@ Optional modules are not installed by the core package. Install the appropriate 
 - Calibration of parameters against breast-cancer datasets and biological measurements.
 - Independent cohort validation and patient/sample linkage across modalities.
 - End-to-end PINN/FNO training and numerical benchmark report.
+- Independent numerical solver comparison and grid-refinement convergence study across three or more grid levels.
 - PhysiCell integration or externally validated agent rules.
 - Spatial GNN training with registered spatial ground truth.
 - Bayesian posterior estimation on real observations, including identifiability and convergence diagnostics.
