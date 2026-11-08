@@ -215,7 +215,8 @@ class GDCClient:
                 if not item.file_id or not item.file_name:
                     raise RuntimeError("GDC response omitted file identity metadata.")
                 if sample_type and (
-                    not item.sample_types or any(value != sample_type for value in item.sample_types)
+                    not item.sample_types
+                    or any(value != sample_type for value in item.sample_types)
                 ):
                     raise RuntimeError(
                         "GDC response included a file without the requested linked sample type."
