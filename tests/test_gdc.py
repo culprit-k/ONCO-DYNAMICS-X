@@ -4,12 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
-from onco_dynamics_x.data_engine.gdc import GDCClient, GDCFile, write_sample_manifest
+from onco_dynamics_x.data_engine.gdc import (
+    GDCClient,
+    GDCFile,
+    write_sample_manifest,
+)
 from onco_dynamics_x.data_engine.manifest import audit_manifest
-
-
-SAMPLE_FILE_ID = "11111111-2222-3333-4444-555555555555"
-
+\nSAMPLE_FILE_ID = "11111111-2222-3333-4444-555555555555"
 
 def _metadata_response(access="open"):
     return {
