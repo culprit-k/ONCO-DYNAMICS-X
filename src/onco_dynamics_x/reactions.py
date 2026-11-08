@@ -1,13 +1,20 @@
 """Local reaction terms for the illustrative tumour-microenvironment model."""
 from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
+
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.state import TumourState
 
 FloatArray = NDArray[np.float64]
 
-def reaction_terms(state: TumourState, parameters: ModelParameters, infusion_rate: float = 0.0) -> dict[str, FloatArray]:
+
+def reaction_terms(
+    state: TumourState,
+    parameters: ModelParameters,
+    infusion_rate: float = 0.0,
+) -> dict[str, FloatArray]:
     """Evaluate dimensionless local reactions.
 
     infusion_rate is an abstract spatially uniform drug-field input, not a dose.
@@ -36,7 +43,10 @@ def reaction_terms(state: TumourState, parameters: ModelParameters, infusion_rat
         - p.fibroblast_immune_suppression * fibro * immune
         - p.evasion_immune_suppression * evasion * immune
     )
-    fibroblast = p.fibroblast_activation * c / (p.fibroblast_activation_half + c) - p.fibroblast_decay * fibro
+    fibroblast = (
+        p.fibroblast_activation * c / (p.fibroblast_activation_half + c)
+        - p.fibroblast_decay * fibro
+    )
     oxygen_change = (
         -p.oxygen_consumption * c * oxygen / (p.oxygen_half_saturation + oxygen)
         + p.oxygen_supply * (p.oxygen_reference * vessels - oxygen)
@@ -51,10 +61,18 @@ def reaction_terms(state: TumourState, parameters: ModelParameters, infusion_rat
         - p.evasion_decay * evasion
     )
     hypoxia_signal = np.maximum(p.hypoxia_reference - oxygen, 0.0)
-    vascular_change = p.vascular_adaptation * hypoxia_signal - p.vascular_return * (vessels - 1.0)
+    vascular_change = (
+        p.vascular_adaptation * hypoxia_signal
+        - p.vascular_return * (vessels - 1.0)
+    )
 
     return {
-        "cancer": cancer, "immune": immune_change, "fibroblast": fibroblast,
-        "oxygen": oxygen_change, "nutrient": nutrient_change, "drug": drug_change,
-        "evasion": evasion_change, "vasculature": vascular_change,
+        "cancer": cancer,
+        "immune": immune_change,
+        "fibroblast": fibroblast,
+        "oxygen": oxygen_change,
+        "nutrient": nutrient_change,
+        "drug": drug_change,
+        "evasion": evasion_change,
+        "vasculature": vascular_change,
     }

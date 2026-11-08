@@ -1,11 +1,15 @@
 """Explicit Euler reaction-diffusion solver for the 2D prototype."""
 from __future__ import annotations
+
 from collections.abc import Callable
+
 import numpy as np
+
 from onco_dynamics_x.diffusion import diffusion_term
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.reactions import reaction_terms
 from onco_dynamics_x.state import TumourState
+
 
 def diffusion_timestep_limit(parameters: ModelParameters, dx: float) -> float:
     """2D explicit diffusion limit dx^2 / (4 * max(D))."""
@@ -13,6 +17,7 @@ def diffusion_timestep_limit(parameters: ModelParameters, dx: float) -> float:
         raise ValueError("dx must be positive.")
     maximum = max(parameters.diffusion_coefficients.values())
     return float("inf") if maximum == 0 else dx**2 / (4.0 * maximum)
+
 
 def _bound_state(state: TumourState, parameters: ModelParameters) -> TumourState:
     p = parameters
@@ -26,9 +31,15 @@ def _bound_state(state: TumourState, parameters: ModelParameters) -> TumourState
     state.vasculature = np.clip(state.vasculature, 0.1, p.maximum_field)
     return state
 
+
 def step(
-    state: TumourState, parameters: ModelParameters, dx: float, dt: float,
-    infusion_rate: float = 0.0, *, enforce_diffusion_stability: bool = True
+    state: TumourState,
+    parameters: ModelParameters,
+    dx: float,
+    dt: float,
+    infusion_rate: float = 0.0,
+    *,
+    enforce_diffusion_stability: bool = True,
 ) -> TumourState:
     """Advance one explicit Euler step.
 
@@ -42,7 +53,8 @@ def step(
     limit = diffusion_timestep_limit(parameters, dx)
     if enforce_diffusion_stability and dt > limit * (1.0 + 1e-12):
         raise ValueError(
-            f"dt={dt:g} exceeds the explicit diffusion limit {limit:g}; reduce dt or refine the grid."
+            f"dt={dt:g} exceeds the explicit diffusion limit {limit:g}; "
+            "reduce dt or refine the grid."
         )
     reactions = reaction_terms(state, parameters, infusion_rate)
     next_fields = {}
@@ -51,9 +63,15 @@ def step(
         next_fields[name] = field + dt * (diffusion + reactions[name])
     return _bound_state(TumourState(**next_fields), parameters)
 
+
 def simulate(
-    initial: TumourState, parameters: ModelParameters, dx: float, dt: float, steps: int,
-    infusion_schedule: Callable[[float], float] | None = None, save_every: int = 10
+    initial: TumourState,
+    parameters: ModelParameters,
+    dx: float,
+    dt: float,
+    steps: int,
+    infusion_schedule: Callable[[float], float] | None = None,
+    save_every: int = 10,
 ) -> tuple[np.ndarray, list[TumourState]]:
     """Run a deterministic simulation and retain regularly spaced state snapshots."""
     if steps < 1:

@@ -1,15 +1,19 @@
 """State variables and reproducible synthetic initial conditions."""
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import ClassVar
+
 import numpy as np
 from numpy.typing import NDArray
 
 FloatArray = NDArray[np.float64]
 
+
 @dataclass
 class TumourState:
     """Eight dimensionless spatial fields on a shared 2D grid."""
+
     cancer: FloatArray
     immune: FloatArray
     fibroblast: FloatArray
@@ -20,8 +24,14 @@ class TumourState:
     vasculature: FloatArray
 
     FIELD_NAMES: ClassVar[tuple[str, ...]] = (
-        "cancer", "immune", "fibroblast", "oxygen",
-        "nutrient", "drug", "evasion", "vasculature"
+        "cancer",
+        "immune",
+        "fibroblast",
+        "oxygen",
+        "nutrient",
+        "drug",
+        "evasion",
+        "vasculature",
     )
 
     def as_dict(self) -> dict[str, FloatArray]:
@@ -43,6 +53,7 @@ class TumourState:
         for name, array in arrays.items():
             if not np.isfinite(array).all():
                 raise ValueError(f"State field '{name}' contains NaN or infinite values.")
+
 
 def initial_state(grid_size: int = 51) -> TumourState:
     """Create a deterministic synthetic field, not a reconstruction of a real tumour."""

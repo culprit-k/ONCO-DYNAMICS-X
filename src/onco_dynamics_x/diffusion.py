@@ -1,9 +1,11 @@
 """Finite-difference spatial operators with no-flux edge conditions."""
 from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
 
 FloatArray = NDArray[np.float64]
+
 
 def laplacian_no_flux(field: FloatArray, dx: float) -> FloatArray:
     """Return the 2D five-point Laplacian with edge-value (zero-flux) padding."""
@@ -16,6 +18,7 @@ def laplacian_no_flux(field: FloatArray, dx: float) -> FloatArray:
     north, south = padded[:-2, 1:-1], padded[2:, 1:-1]
     west, east = padded[1:-1, :-2], padded[1:-1, 2:]
     return (north + south + west + east - 4.0 * centre) / dx**2
+
 
 def diffusion_term(field: FloatArray, coefficient: float, dx: float) -> FloatArray:
     if coefficient < 0:

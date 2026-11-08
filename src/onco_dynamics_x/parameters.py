@@ -1,10 +1,13 @@
 """Dimensionless parameters for the illustrative reaction-diffusion model."""
 from __future__ import annotations
+
 from dataclasses import dataclass, fields
+
 
 @dataclass(frozen=True)
 class ModelParameters:
     """Provisional dimensionless parameters; none are clinically calibrated."""
+
     diffusion_cancer: float = 0.010
     diffusion_immune: float = 0.018
     diffusion_fibroblast: float = 0.006
