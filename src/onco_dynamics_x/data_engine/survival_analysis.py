@@ -221,13 +221,44 @@ def run_cross_cohort_cox(
     model = CoxPHFitter(penalizer=penalizer)
     model.fit(train, duration_col="duration_months", event_col="event")
     test_hazard = model.predict_partial_hazard(test[features]).to_numpy().reshape(-1)
+    test_durations = test["duration_months"].to_numpy()
+    test_events = test["event"].to_numpy()
     external_c_index = float(
-        concordance_index(
-            test["duration_months"].to_numpy(),
-            -test_hazard,
-            test["event"].to_numpy(),
-        )
+        concordance_index(test_durations, -test_hazard, test_events)
     )
+
+    age_train = train[["age_z", "duration_months", "event"]].copy()
+    age_test = test[["age_z"]].copy()
+    age_model = CoxPHFitter(penalizer=penalizer)
+    age_model.fit(age_train, duration_col="duration_months", event_col="event")
+    age_hazard = age_model.predict_partial_hazard(age_test).to_numpy().reshape(-1)
+    age_only_c_index = float(
+        concordance_index(test_durations, -age_hazard, test_events)
+    )
+
+    def bootstrap_ci(predicted_hazard):
+        rng = np.random.default_rng(42)
+        estimates = []
+        n = len(test_durations)
+        for _ in range(500):
+            indices = rng.integers(0, n, size=n)
+            try:
+                estimate = concordance_index(
+                    test_durations[indices],
+                    -predicted_hazard[indices],
+                    test_events[indices],
+                )
+            except (ZeroDivisionError, ValueError):
+                continue
+            if np.isfinite(estimate):
+                estimates.append(float(estimate))
+        if not estimates:
+            return None
+        return [
+            float(np.quantile(estimates, 0.025)),
+            float(np.quantile(estimates, 0.975)),
+        ]
+
     ph_test = proportional_hazard_test(
         model, train, time_transform="rank"
     ).summary
@@ -255,11 +286,16 @@ def run_cross_cohort_cox(
             "events": int(metabric["event"].sum()),
             "censored": int((1 - metabric["event"]).sum()),
             "harrell_c_index": external_c_index,
+            "harrell_c_index_bootstrap_95ci": bootstrap_ci(test_hazard),
+            "age_only_harrell_c_index": age_only_c_index,
+            "age_only_harrell_c_index_bootstrap_95ci": bootstrap_ci(age_hazard),
         },
         "configuration": {
             "age_mean_from_tcga": age_mean,
             "age_sd_from_tcga": age_sd,
             "penalizer": penalizer,
+            "bootstrap_replicates": 500,
+            "bootstrap_seed": 42,
             "features": features,
             "stage_reference_group": 1,
             "stage_mapping": "Broad AJCC stage I-IV; unknown/0 excluded",
