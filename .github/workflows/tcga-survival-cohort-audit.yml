@@ -1,0 +1,47 @@
+name: TCGA-BRCA survival development cohort audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/onco_dynamics_x/data_engine/cbioportal.py"
+      - "scripts/audit_cbioportal_tcga.py"
+      - "tests/test_cbioportal_audit.py"
+      - ".github/workflows/tcga-survival-cohort-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit-tcga-development-cohort:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run cBioPortal audit unit tests
+        run: pytest tests/test_cbioportal_audit.py
+      - name: Query public TCGA-BRCA PanCancer Atlas metadata
+        run: |
+          python scripts/audit_cbioportal_tcga.py \
+            --output-json results/tcga_cbioportal_audit/report.json \
+            --output-csv results/tcga_cbioportal_audit/clinical_attribute_coverage.csv
+      - name: Publish aggregate audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tcga-brca-survival-cohort-audit
+          path: |
+            results/tcga_cbioportal_audit/report.json
+            results/tcga_cbioportal_audit/clinical_attribute_coverage.csv
+          if-no-files-found: error
+          retention-days: 14

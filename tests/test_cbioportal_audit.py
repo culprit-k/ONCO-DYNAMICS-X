@@ -107,3 +107,39 @@ def test_expression_survival_linkage_uses_patient_sample_mapping():
     assert result["unique_expression_patients"] == 2
     assert result["expression_patients_with_complete_overall_survival"] == 1
     assert result["expression_patients_with_complete_relapse_free_survival"] == 1
+
+
+def test_generic_study_audit_supports_non_metabric_study_without_expression_list():
+    class FakeClient:
+        def get_json(self, path, params=None):
+            assert path == "studies/example_study"
+            return {"studyId": "example_study", "name": "Example"}
+
+        def get_all(self, path, params=None, page_size=1000):
+            if path.endswith("/patients"):
+                return [{"patientId": "P1"}]
+            if path.endswith("/samples"):
+                return [{"sampleId": "S1", "patientId": "P1"}]
+            if path.endswith("/clinical-attributes"):
+                return [
+                    {"clinicalAttributeId": "OS_MONTHS", "displayName": "OS months",
+                     "datatype": "NUMBER", "patientAttribute": True},
+                    {"clinicalAttributeId": "OS_STATUS", "displayName": "OS status",
+                     "datatype": "STRING", "patientAttribute": True},
+                ]
+            if path.endswith("/clinical-data"):
+                if params and params.get("clinicalDataType") == "PATIENT":
+                    return [
+                        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+                        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1",
+                         "value": "0:LIVING"},
+                    ]
+                return []
+            return []
+
+    from onco_dynamics_x.data_engine.cbioportal import audit_cbioportal_study
+
+    result = audit_cbioportal_study(FakeClient(), study_id="example_study")
+    assert result["study"]["study_id"] == "example_study"
+    assert result["cohort_counts"]["unique_patients"] == 1
+    assert result["expression_survival_linkage"] is None

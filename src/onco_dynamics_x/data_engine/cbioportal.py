@@ -291,10 +291,13 @@ def summarize_expression_survival_linkage(
     }
 
 
-def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
-    """Audit METABRIC study metadata, molecular profiles and clinical coverage."""
+def audit_cbioportal_study(
+    client: CBioPortalClient | None = None,
+    study_id: str = "brca_metabric",
+    expression_sample_list_id: str | None = None,
+) -> dict[str, Any]:
+    """Audit a cBioPortal study without exporting row-level patient data."""
     api = client or CBioPortalClient()
-    study_id = "brca_metabric"
     study = api.get_json(f"studies/{study_id}")
     patients = api.get_all(
         f"studies/{study_id}/patients", {"projection": "SUMMARY"}
@@ -305,7 +308,11 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     attributes = api.get_all(f"studies/{study_id}/clinical-attributes")
     profiles = api.get_all(f"studies/{study_id}/molecular-profiles")
     sample_lists = api.get_all(f"studies/{study_id}/sample-lists")
-    expression_sample_list = api.get_json("sample-lists/brca_metabric_mrna")
+    expression_sample_list = (
+        api.get_json(f"sample-lists/{expression_sample_list_id}")
+        if expression_sample_list_id
+        else None
+    )
     patient_clinical = api.get_all(
         f"studies/{study_id}/clinical-data", {"clinicalDataType": "PATIENT"}
     )
@@ -382,8 +389,12 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
             "samples_without_patient_link": orphan_samples,
         },
         "molecular_profiles": profile_summaries,
-        "expression_survival_linkage": summarize_expression_survival_linkage(
-            samples, expression_sample_list.get("sampleIds", []), patient_clinical
+        "expression_survival_linkage": (
+            summarize_expression_survival_linkage(
+                samples, expression_sample_list.get("sampleIds", []), patient_clinical
+            )
+            if expression_sample_list is not None
+            else None
         ),
         "sample_lists": [
             {
@@ -437,7 +448,16 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
     }
 
 
-def write_audit_outputs(
+
+
+def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
+    """Audit the METABRIC study and its mRNA-expression sample-list overlap."""
+    return audit_cbioportal_study(
+        client=client,
+        study_id="brca_metabric",
+        expression_sample_list_id="brca_metabric_mrna",
+    )
+\n\ndef write_audit_outputs(
     report: dict[str, Any], json_path: str, csv_path: str
 ) -> None:
     """Write aggregate-only JSON and clinical-attribute coverage CSV."""
