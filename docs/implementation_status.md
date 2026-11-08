@@ -5,8 +5,8 @@ This document separates code that exists from work that remains planned or requi
 ## Implemented and covered by base CI
 - Dimensionless 2D and 3D reaction-diffusion solver with eight spatial fields, no-flux finite differences and dimension-aware explicit diffusion stability guard.
 - Synthetic initial fields, state validation, CLI simulation in 2D or 3D, timestep refinement, and Streamlit 2D/3D visualization.
-- NumPy agent-based model with cancer-agent division/death, local oxygen/nutrient dependence, immune recruitment and gradient-directed migration, and fibroblast migration (2D environment).
-- Public-only GDC API file-metadata query, sample-manifest export, manifest audit, and an individual open-file download method with checksum/size verification.
+- NumPy 2D/3D agent-based model with cancer-agent division/death, local oxygen/nutrient dependence, immune recruitment and gradient-directed migration, fibroblast movement, reflecting boundaries and reproducible random seeds.
+- Public-only GDC API metadata query, sample-manifest export, manifest audit, and explicit single-file open-data download with checksum verification.
 - Identifier-aware expression matrix validation and train-only variance filtering/scaling.
 - Local finite-difference sensitivity and Monte Carlo propagation of user-specified parameter ranges.
 - Validated JSON serial parser, normalized knob mapping, ESP32 firmware sketch and dashboard serial-input hook.
@@ -34,7 +34,7 @@ Optional modules are not installed by the core package. Install the appropriate 
 - End-to-end multi-omics training and external cohort evaluation.
 - Causal graph justification, negative-control analyses and unmeasured-confounding robustness.
 - PDE-constrained optimal control; current CasADi example is a toy mean-field problem.
-- Full 3D cell-agent model, clonal evolution, matrix mechanics and vascular topology.
+- Fully coupled PDE-ABM feedback with cell-state heterogeneity, clonal evolution and ECM mechanics.
 - Physical breast phantom fabrication and hardware bench integration.
 - Hosted dashboard deployment; instructions are provided, but repository owner must configure hosting.
 
