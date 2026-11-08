@@ -198,3 +198,22 @@ def test_patient_covariate_coverage_reports_complete_cases_without_ids():
     assert result["complete_case_patients_across_all_fields"] == 1
     assert result["fields"]["AGE"]["patients_with_value"] == 2
     assert "P1" not in str(result)
+
+
+def test_expression_linkage_counts_positive_followup_and_event_categories():
+    samples = [{"sampleId": "S1", "patientId": "P1"},
+               {"sampleId": "S2", "patientId": "P2"}]
+    clinical = [
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P2", "value": "0"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P2", "value": "0:LIVING"},
+    ]
+    result = summarize_expression_survival_linkage(
+        samples, ["S1", "S2"], clinical
+    )
+    assert result["expression_patients_with_complete_overall_survival"] == 2
+    assert result["expression_patients_with_positive_overall_survival_time"] == 1
+    assert result["expression_positive_time_overall_survival_status_counts"] == {
+        "1:DECEASED": 1
+    }
