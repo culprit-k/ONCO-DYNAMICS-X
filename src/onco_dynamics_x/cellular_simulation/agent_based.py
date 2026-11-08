@@ -101,6 +101,37 @@ def _sample(field: FloatArray, x: FloatArray, y: FloatArray) -> FloatArray:
     return field[rows, cols]
 
 
+def _reflect(values: FloatArray) -> FloatArray:
+    """Reflect arbitrary overshoots back into the closed unit interval."""
+    reflected = np.mod(values + 1.0, 4.0)
+    return np.where(reflected > 2.0, 3.0 - reflected, reflected - 1.0)
+
+
+def _append_agents(
+    population: AgentPopulation,
+    x: FloatArray,
+    y: FloatArray,
+    cell_type: int,
+    maximum_agents: int,
+    rng: np.random.Generator,
+) -> AgentPopulation:
+    """Append a capped number of new agents at perturbed seed positions."""
+    available = max(0, maximum_agents - len(population.x))
+    count = min(available, len(x))
+    if count == 0:
+        return population
+    new_x = np.clip(x[:count] + rng.normal(0.0, 0.012, count), -1.0, 1.0)
+    new_y = np.clip(y[:count] + rng.normal(0.0, 0.012, count), -1.0, 1.0)
+    return AgentPopulation(
+        np.concatenate([population.x, new_x]),
+        np.concatenate([population.y, new_y]),
+        np.concatenate(
+            [population.cell_type, np.full(count, cell_type, dtype=np.int64)]
+        ),
+        np.concatenate([population.age, np.zeros(count)]),
+    )
+
+
 def advance_agents(
     population: AgentPopulation,
     environment: TumourState,
@@ -112,8 +143,10 @@ def advance_agents(
 ) -> AgentPopulation:
     """Advance agents by one stochastic step under local field-dependent rules.
 
-    This illustrative ABM is not a validated model of cell kinetics.
-    Daughter cells are placed near parents. Boundaries are reflecting.
+    Cancer agents divide and die, immune agents are recruited and die, and
+    fibroblast agents move in a stromal-density-dependent environment. Immune
+    chemotaxis is approximated from the cancer-field gradient. This illustrative
+    ABM is not a validated model of cell kinetics.
     """
     if dt <= 0:
         raise ValueError("dt must be positive.")
@@ -130,19 +163,32 @@ def advance_agents(
     immune_mask = result.cell_type == IMMUNE
     fibro_mask = result.cell_type == FIBROBLAST
 
+    cancer_field = _sample(environment.cancer, result.x, result.y)
     oxygen = _sample(environment.oxygen, result.x, result.y)
     nutrient = _sample(environment.nutrient, result.x, result.y)
     local_immune = _sample(environment.immune, result.x, result.y)
     drug = _sample(environment.drug, result.x, result.y)
+    fibro_field = _sample(environment.fibroblast, result.x, result.y)
     evasion = _sample(environment.evasion, result.x, result.y)
 
-    motility = np.where(cancer_mask, 0.008, np.where(immune_mask, 0.025, 0.006))
-    result.x += rng.normal(0.0, 1.0, len(result.x)) * np.sqrt(2.0 * motility * dt)
-    result.y += rng.normal(0.0, 1.0, len(result.y)) * np.sqrt(2.0 * motility * dt)
-    result.x = np.where(result.x > 1.0, 2.0 - result.x, result.x)
-    result.x = np.where(result.x < -1.0, -2.0 - result.x, result.x)
-    result.y = np.where(result.y > 1.0, 2.0 - result.y, result.y)
-    result.y = np.where(result.y < -1.0, -2.0 - result.y, result.y)
+    motility = np.where(
+        cancer_mask, 0.008, np.where(immune_mask, 0.025, 0.006 / (1.0 + fibro_field))
+    )
+    grad_y, grad_x = np.gradient(
+        environment.cancer, 2.0 / (environment.cancer.shape[0] - 1)
+    )
+    immune_chemotaxis_x = _sample(grad_x, result.x, result.y)
+    immune_chemotaxis_y = _sample(grad_y, result.x, result.y)
+    result.x += (
+        rng.normal(0.0, 1.0, len(result.x)) * np.sqrt(2.0 * motility * dt)
+        + np.where(immune_mask, 0.01 * immune_chemotaxis_x * dt, 0.0)
+    )
+    result.y += (
+        rng.normal(0.0, 1.0, len(result.y)) * np.sqrt(2.0 * motility * dt)
+        + np.where(immune_mask, 0.01 * immune_chemotaxis_y * dt, 0.0)
+    )
+    result.x = _reflect(result.x)
+    result.y = _reflect(result.y)
 
     oxygen_factor = oxygen / (parameters.oxygen_half_saturation + oxygen)
     nutrient_factor = nutrient / (parameters.nutrient_half_saturation + nutrient)
@@ -157,17 +203,30 @@ def advance_agents(
 
     death_probability = 1.0 - np.exp(-cancer_hazard * dt)
     birth_probability = 1.0 - np.exp(-cancer_birth_hazard * dt)
-    random_values = rng.random(len(result.x))
-    deaths = cancer_mask & (random_values < death_probability)
+    deaths = cancer_mask & (rng.random(len(result.x)) < death_probability)
     daughter_mask = (
         cancer_mask
         & ~deaths
         & (rng.random(len(result.x)) < birth_probability)
     )
     daughter_indices = np.flatnonzero(daughter_mask)
-    if len(result.x) + len(daughter_indices) > maximum_agents:
-        allowed = max(0, maximum_agents - len(result.x))
-        daughter_indices = daughter_indices[:allowed]
+
+    immune_recruitment = (
+        parameters.immune_recruitment
+        * cancer_field
+        / (parameters.immune_recruitment_half + cancer_field)
+    )
+    recruit_immune_mask = (
+        rng.random(len(result.x)) < (1.0 - np.exp(-immune_recruitment * dt))
+    )
+    fibroblast_recruitment = (
+        parameters.fibroblast_activation
+        * cancer_field
+        / (parameters.fibroblast_activation_half + cancer_field)
+    )
+    recruit_fibro_mask = (
+        rng.random(len(result.x)) < (1.0 - np.exp(-fibroblast_recruitment * dt))
+    )
 
     immune_death_probability = 1.0 - np.exp(-parameters.immune_decay * dt)
     fibro_death_probability = 1.0 - np.exp(-parameters.fibroblast_decay * dt)
@@ -177,6 +236,13 @@ def advance_agents(
     fibro_deaths = fibro_mask & (
         rng.random(len(result.x)) < fibro_death_probability
     )
+
+    daughter_x, daughter_y = result.x[daughter_indices], result.y[daughter_indices]
+    immune_x = result.x[recruit_immune_mask]
+    immune_y = result.y[recruit_immune_mask]
+    fibro_x = result.x[recruit_fibro_mask]
+    fibro_y = result.y[recruit_fibro_mask]
+
     keep = ~(deaths | immune_deaths | fibro_deaths)
     result = AgentPopulation(
         x=result.x[keep],
@@ -184,21 +250,14 @@ def advance_agents(
         cell_type=result.cell_type[keep],
         age=result.age[keep],
     )
-    if len(daughter_indices):
-        daughters_x = (
-            population.x[daughter_indices]
-            + rng.normal(0.0, 0.015, len(daughter_indices))
-        )
-        daughters_y = (
-            population.y[daughter_indices]
-            + rng.normal(0.0, 0.015, len(daughter_indices))
-        )
-        result.x = np.concatenate([result.x, np.clip(daughters_x, -1.0, 1.0)])
-        result.y = np.concatenate([result.y, np.clip(daughters_y, -1.0, 1.0)])
-        result.cell_type = np.concatenate(
-            [result.cell_type, np.full(len(daughter_indices), CANCER, dtype=np.int64)]
-        )
-        result.age = np.concatenate([result.age, np.zeros(len(daughter_indices))])
-
+    result = _append_agents(
+        result, daughter_x, daughter_y, CANCER, maximum_agents, rng
+    )
+    result = _append_agents(
+        result, immune_x, immune_y, IMMUNE, maximum_agents, rng
+    )
+    result = _append_agents(
+        result, fibro_x, fibro_y, FIBROBLAST, maximum_agents, rng
+    )
     result.validate()
     return result
