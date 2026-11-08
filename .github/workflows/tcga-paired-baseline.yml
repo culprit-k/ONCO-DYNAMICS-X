@@ -1,0 +1,107 @@
+name: TCGA-BRCA paired expression baseline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/onco_dynamics_x/data_engine/**"
+      - "scripts/prepare_tcga_paired_subset.py"
+      - "scripts/evaluate_tcga_tumour_normal.py"
+      - ".github/workflows/tcga-paired-baseline.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  paired-expression-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install science dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[science]"
+      - name: Query primary tumour metadata
+        run: |
+          mkdir -p cohort-work
+          onco-dynamics gdc-query \
+            --project-id TCGA-BRCA \
+            --workflow-type "STAR - Counts" \
+            --sample-type "Primary Tumor" \
+            --page-size 100 --max-results 500 \
+            --metadata-output cohort-work/primary_tumour.csv \
+            --manifest-output cohort-work/primary_tumour_manifest.csv
+      - name: Query solid tissue normal metadata
+        run: |
+          onco-dynamics gdc-query \
+            --project-id TCGA-BRCA \
+            --workflow-type "STAR - Counts" \
+            --sample-type "Solid Tissue Normal" \
+            --page-size 100 --max-results 500 \
+            --metadata-output cohort-work/normal.csv \
+            --manifest-output cohort-work/normal_manifest.csv
+      - name: Select paired patients
+        run: |
+          python scripts/prepare_tcga_paired_subset.py \
+            --tumour-metadata cohort-work/primary_tumour.csv \
+            --normal-metadata cohort-work/normal.csv \
+            --output-metadata cohort-work/selected_files.csv \
+            --output-manifest cohort-work/selected_manifest.csv \
+            --max-pairs 20
+      - name: Download selected open expression files with checksum verification
+        run: |
+          python - <<'PY'
+          import csv
+          import subprocess
+          from pathlib import Path
+
+          metadata = Path("cohort-work/selected_files.csv")
+          with metadata.open(newline="", encoding="utf-8") as handle:
+              rows = list(csv.DictReader(handle))
+          for index, row in enumerate(rows, start=1):
+              print(f"Downloading {index}/{len(rows)}: {row['sample_submitter_ids']}")
+              subprocess.run(
+                  [
+                      "onco-dynamics", "gdc-download-open",
+                      "--metadata-csv", str(metadata),
+                      "--file-id", row["file_id"],
+                      "--destination", "data/raw/gdc",
+                  ],
+                  check=True,
+              )
+          PY
+      - name: Assemble expression matrix
+        run: |
+          onco-dynamics gdc-build-expression-matrix \
+            --metadata-csv cohort-work/selected_files.csv \
+            --data-directory data/raw/gdc \
+            --gene-id-column gene_id \
+            --expression-column tpm_unstranded \
+            --output data/processed/tcga_brca_paired_expression.npz
+      - name: Run patient-grouped expression baseline
+        run: |
+          python scripts/evaluate_tcga_tumour_normal.py \
+            --matrix data/processed/tcga_brca_paired_expression.npz \
+            --manifest cohort-work/selected_manifest.csv \
+            --output cohort-work/baseline_metrics.json \
+            --seed 42 --folds 5 --top-k 100
+      - name: Publish metadata and metrics artifact (no expression matrix)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tcga-brca-paired-baseline-report
+          path: |
+            cohort-work/primary_tumour_manifest.csv
+            cohort-work/normal_manifest.csv
+            cohort-work/selected_manifest.csv
+            cohort-work/selected_files.csv
+            cohort-work/baseline_metrics.json
+          if-no-files-found: error
+          retention-days: 14
