@@ -42,7 +42,8 @@ class AgentPopulation:
             raise ValueError("Agent coordinates must be finite.")
         if not np.isfinite(self.age).all():
             raise ValueError("Agent ages must be finite.")
-        for axis_name, values in zip(("x", "y", "z"), coordinates, strict=True):
+        axis_names = ("x", "y") if self.z is None else ("x", "y", "z")
+        for axis_name, values in zip(axis_names, coordinates, strict=True):
             if np.any((values < -1.0) | (values > 1.0)):
                 raise ValueError(f"Agent {axis_name} coordinates must lie in [-1, 1].")
         if np.any(self.age < 0):
