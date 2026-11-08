@@ -257,7 +257,9 @@ def evaluate_tumour_normal_baseline(
             "fold_roc_auc": [float(x) for x in cv_results["test_roc_auc"]],
         },
         "model": {
-            "algorithm": "variance filter + ANOVA top-k + standardization + balanced logistic regression",
+            "algorithm": (
+                "variance filter + ANOVA top-k + standardization + balanced logistic regression"
+            ),
             "top_k_genes": feature_count,
             "input_transform": "log1p(TPM)",
             "feature_selection_fit_within_each_training_fold": True,
