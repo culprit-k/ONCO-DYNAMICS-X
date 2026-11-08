@@ -12,6 +12,7 @@ from onco_dynamics_x.data_engine.gdc import (
     GDCFile,
     write_sample_manifest,
 )
+from onco_dynamics_x.data_engine.gdc_expression import build_gdc_expression_matrix
 from onco_dynamics_x.data_engine.manifest import audit_manifest
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import simulate
@@ -162,6 +163,22 @@ def run_gdc_download_open(args: argparse.Namespace) -> Path:
     return downloaded
 
 
+def run_gdc_build_expression_matrix(args: argparse.Namespace) -> Path:
+    """Assemble downloaded sample-level open GDC expression files."""
+    matrix = build_gdc_expression_matrix(
+        metadata_csv=args.metadata_csv,
+        data_directory=args.data_directory,
+        gene_id_column=args.gene_id_column,
+        expression_column=args.expression_column,
+        output_npz=args.output,
+    )
+    print(
+        f"Saved expression matrix {matrix.values.shape[0]} samples x "
+        f"{matrix.values.shape[1]} genes to {args.output}"
+    )
+    return Path(args.output)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="onco-dynamics",
@@ -202,6 +219,17 @@ def build_parser() -> argparse.ArgumentParser:
     download.add_argument("--destination", default="data/raw/gdc")
     download.add_argument("--timeout", type=float, default=120.0)
     download.set_defaults(func=run_gdc_download_open)
+
+    matrix = subparsers.add_parser(
+        "gdc-build-expression-matrix",
+        help="assemble downloaded open GDC expression files into a sample matrix",
+    )
+    matrix.add_argument("--metadata-csv", required=True)
+    matrix.add_argument("--data-directory", default="data/raw/gdc")
+    matrix.add_argument("--gene-id-column", default="gene_id")
+    matrix.add_argument("--expression-column", default="tpm_unstranded")
+    matrix.add_argument("--output", default="data/processed/tcga_brca_expression.npz")
+    matrix.set_defaults(func=run_gdc_build_expression_matrix)
     return parser
 
 

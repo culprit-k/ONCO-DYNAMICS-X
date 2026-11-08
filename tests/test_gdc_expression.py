@@ -1,0 +1,74 @@
+import csv
+
+import numpy as np
+import pytest
+
+from onco_dynamics_x.data_engine.gdc_expression import (
+    build_gdc_expression_matrix,
+    read_gdc_expression_table,
+)
+
+
+def _write_expression(path, rows):
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, delimiter="\t")
+        writer.writerow(["gene_id", "tpm_unstranded"])
+        writer.writerows(rows)
+
+
+def _write_metadata(path, names, samples, access="open"):
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["file_name", "access", "sample_submitter_ids"],
+        )
+        writer.writeheader()
+        for name, sample in zip(names, samples, strict=True):
+            writer.writerow({
+                "file_name": name,
+                "access": access,
+                "sample_submitter_ids": sample,
+            })
+
+
+def test_gdc_expression_matrix_aligns_gene_order_and_saves_npz(tmp_path):
+    data_dir = tmp_path / "raw"
+    data_dir.mkdir()
+    _write_expression(data_dir / "one.tsv", [("ENSG1", 1.5), ("ENSG2", 2.0), ("N_unmapped", 8)])
+    _write_expression(data_dir / "two.tsv", [("ENSG2", 4.0), ("ENSG1", 3.0)])
+    metadata = tmp_path / "metadata.csv"
+    _write_metadata(metadata, ["one.tsv", "two.tsv"], ["S1", "S2"])
+    output = tmp_path / "processed" / "matrix.npz"
+
+    matrix = build_gdc_expression_matrix(metadata, data_dir, output_npz=output)
+    assert matrix.sample_ids == ("S1", "S2")
+    assert matrix.gene_ids == ("ENSG1", "ENSG2")
+    assert np.allclose(matrix.values, [[1.5, 2.0], [3.0, 4.0]])
+    saved = np.load(output, allow_pickle=False)
+    assert tuple(saved["gene_ids"]) == matrix.gene_ids
+
+
+def test_gdc_expression_matrix_rejects_controlled_file(tmp_path):
+    data_dir = tmp_path / "raw"
+    data_dir.mkdir()
+    metadata = tmp_path / "metadata.csv"
+    _write_metadata(metadata, ["sample.tsv"], ["S1"], access="controlled")
+    with pytest.raises(PermissionError, match="open-access"):
+        build_gdc_expression_matrix(metadata, data_dir)
+
+
+def test_gdc_expression_matrix_rejects_multiple_sample_linkage(tmp_path):
+    data_dir = tmp_path / "raw"
+    data_dir.mkdir()
+    _write_expression(data_dir / "sample.tsv", [("ENSG1", 1)])
+    metadata = tmp_path / "metadata.csv"
+    _write_metadata(metadata, ["sample.tsv"], ["S1|S2"])
+    with pytest.raises(ValueError, match="exactly one"):
+        build_gdc_expression_matrix(metadata, data_dir)
+
+
+def test_gdc_expression_reader_rejects_duplicate_genes(tmp_path):
+    path = tmp_path / "duplicate.tsv"
+    _write_expression(path, [("ENSG1", 1.0), ("ENSG1", 2.0)])
+    with pytest.raises(ValueError, match="duplicate gene"):
+        read_gdc_expression_table(path)

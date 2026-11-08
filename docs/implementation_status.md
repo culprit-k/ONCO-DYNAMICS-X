@@ -6,7 +6,8 @@ This document separates code that exists from work that remains planned or requi
 - Dimensionless 2D and 3D reaction-diffusion solver with eight spatial fields, no-flux finite differences and dimension-aware explicit diffusion stability guard.
 - Synthetic initial fields, state validation, CLI simulation in 2D or 3D, timestep refinement, and Streamlit 2D/3D visualization.
 - NumPy 2D/3D agent-based model with cancer-agent division/death, local oxygen/nutrient dependence, immune recruitment and gradient-directed migration, fibroblast movement, reflecting boundaries and reproducible random seeds.
-- Public-only GDC API metadata query, sample-manifest export, manifest audit, and explicit single-file open-data download with checksum verification.
+- Spatial cell-graph builder using cell coordinates, phenotype, age and local PDE fields; patient-grouped train/test split utility.
+- Public-only GDC API metadata query, sample-manifest export, manifest audit, selected open-file download with checksum verification, and strict TCGA expression-matrix assembly with sample/gene alignment.
 - Identifier-aware expression matrix validation and train-only variance filtering/scaling.
 - Local finite-difference sensitivity and Monte Carlo propagation of user-specified parameter ranges.
 - Validated JSON serial parser, normalized knob mapping, ESP32 firmware sketch and dashboard serial-input hook.

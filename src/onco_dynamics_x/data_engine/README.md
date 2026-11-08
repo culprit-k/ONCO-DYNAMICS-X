@@ -1,7 +1,11 @@
 # Data engine
 
 Implemented:
-- `manifest.py`: required metadata columns, unique sample IDs, access-label checks and warnings for controlled/restricted data.
-- `expression.py`: identifier-aware samples-by-genes validation, variance filtering and train-only scaling with explicit gene reordering.
+- GDC public/open file metadata search, sample linkage export and selected open-file download with checksum verification.
+- Strict expression table parsing and matrix assembly from downloaded files. Sample IDs remain attached to rows and gene columns are aligned by stable gene ID.
+- Cohort manifest checks and train-only expression preprocessing.
+- Patient-grouped train/test splitting.
 
-Planned: cohort downloads, assay-specific QC, modality pairing, image/mask metadata and approved controlled-data workflows. Never commit restricted raw source data. Fit preprocessing on training data only and apply the frozen transform to validation/test cohorts.
+The matrix assembler defaults to GDC STAR Counts column `tpm_unstranded`; verify the actual file headers and intended quantification scale for the selected workflow. It rejects mismatched gene sets and multi-sample linkage within a file rather than silently guessing.
+
+Controlled, restricted or identifiable participant data must remain in approved storage and must not be committed to this public repository.
