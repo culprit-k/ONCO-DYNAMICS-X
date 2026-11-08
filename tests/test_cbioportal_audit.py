@@ -1,7 +1,8 @@
 from onco_dynamics_x.data_engine.cbioportal import (
     CBioPortalClient,
     _candidate_endpoint,
-    summarize_clinical_coverage,\n    summarize_survival_endpoint_pairs,
+    summarize_clinical_coverage,
+    summarize_survival_endpoint_pairs,
 )
 
 

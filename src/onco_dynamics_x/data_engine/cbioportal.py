@@ -360,7 +360,10 @@ def audit_metabric(client: CBioPortalClient | None = None) -> dict[str, Any]:
             "sample_clinical_records": len(sample_clinical),
             "attribute_coverage": coverage,
             "patient_level_survival_field_candidates": patient_endpoint_candidates,
-            "patient_level_treatment_field_candidates": patient_treatment_candidates,\n            "survival_endpoint_pair_summary": summarize_survival_endpoint_pairs(\n                patient_clinical\n            ),
+            "patient_level_treatment_field_candidates": patient_treatment_candidates,
+            "survival_endpoint_pair_summary": summarize_survival_endpoint_pairs(
+                patient_clinical
+            ),
         },
         "audit_checks": {
             "study_metadata_present": study.get("studyId") == study_id,
