@@ -8,7 +8,6 @@ from onco_dynamics_x.data_engine.tcga_baseline import (
     select_paired_samples,
 )
 
-
 FIELDS = [
     "file_id", "file_name", "md5sum", "file_size", "access", "data_type",
     "workflow_type", "case_ids", "patient_submitter_ids",
@@ -81,10 +80,22 @@ def test_tumour_normal_evaluation_groups_patients_and_writes_report(tmp_path):
         patient = f"P{i:03d}"
         normal_id = f"{patient}-N"
         tumour_id = f"{patient}-T"
-        samples.extend([
-            {"patient_id": patient, "sample_id": normal_id, "sample_type": "Solid Tissue Normal", "label": "0"},
-            {"patient_id": patient, "sample_id": tumour_id, "sample_type": "Primary Tumor", "label": "1"},
-        ])
+        samples.extend(
+            [
+                {
+                    "patient_id": patient,
+                    "sample_id": normal_id,
+                    "sample_type": "Solid Tissue Normal",
+                    "label": "0",
+                },
+                {
+                    "patient_id": patient,
+                    "sample_id": tumour_id,
+                    "sample_type": "Primary Tumor",
+                    "label": "1",
+                },
+            ]
+        )
         rng = np.random.default_rng(i)
         normal = rng.lognormal(mean=0.5, sigma=0.2, size=len(genes))
         tumour = rng.lognormal(mean=0.5, sigma=0.2, size=len(genes))
