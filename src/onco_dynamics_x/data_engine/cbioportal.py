@@ -123,22 +123,27 @@ def _candidate_endpoint(attribute: dict[str, Any]) -> str | None:
 
 
 def _candidate_treatment_field(attribute: dict[str, Any]) -> bool:
+    """Flag likely exposure attributes, not outcome descriptions mentioning treatment."""
+    if _candidate_endpoint(attribute):
+        return False
     token = _normalise(
         f"{attribute.get('clinicalAttributeId', '')} "
-        f"{attribute.get('displayName', '')} {attribute.get('description', '')}"
+        f"{attribute.get('displayName', '')}"
     )
+    if "NEWTUMOREVENT" in token or "NEWNEOPLASM" in token:
+        return False
     return any(
         term in token
         for term in (
-            "TREATMENT",
-            "CHEMOTHERAPY",
-            "RADIOTHERAPY",
+            "CHEMO",
             "RADIATION",
-            "ENDOCRINE",
+            "RADIOTHERAPY",
             "HORMONETHERAPY",
-            "TARGETEDTHERAPY",
-            "TREATMENTTYPE",
-            "THERAPYTYPE",
+            "ENDOCRINE",
+            "NEOADJUVANT",
+            "ADJUVANT",
+            "TREATMENT",
+            "THERAPY",
         )
     )
 
@@ -208,6 +213,9 @@ def summarize_survival_endpoint_pairs(patient_data):
     """Measure paired survival-field completeness without exporting patient IDs."""
     definitions = (
         ("overall_survival", "OS_MONTHS", "OS_STATUS"),
+        ("disease_specific_survival", "DSS_MONTHS", "DSS_STATUS"),
+        ("disease_free_survival", "DFS_MONTHS", "DFS_STATUS"),
+        ("progression_free_survival", "PFS_MONTHS", "PFS_STATUS"),
         ("relapse_free_survival", "RFS_MONTHS", "RFS_STATUS"),
     )
     summaries = []
@@ -225,9 +233,15 @@ def summarize_survival_endpoint_pairs(patient_data):
             except (TypeError, ValueError):
                 unparseable += 1
         positive = [value for value in parsed_times if value > 0]
-        status_counts = {}
+        status_counts_all = {}
         for value in statuses.values():
-            status_counts[value] = status_counts.get(value, 0) + 1
+            status_counts_all[value] = status_counts_all.get(value, 0) + 1
+        status_counts_complete = {}
+        for patient_id in complete_ids:
+            value = statuses[patient_id]
+            status_counts_complete[value] = (
+                status_counts_complete.get(value, 0) + 1
+            )
         summaries.append(
             {
                 "endpoint": endpoint,
@@ -249,7 +263,12 @@ def summarize_survival_endpoint_pairs(patient_data):
                     if positive
                     else None
                 ),
-                "status_value_counts": dict(sorted(status_counts.items())),
+                "status_value_counts_all_available": dict(
+                    sorted(status_counts_all.items())
+                ),
+                "status_value_counts_complete_pairs": dict(
+                    sorted(status_counts_complete.items())
+                ),
             }
         )
     return summaries

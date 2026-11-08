@@ -143,3 +143,40 @@ def test_generic_study_audit_supports_non_metabric_study_without_expression_list
     assert result["study"]["study_id"] == "example_study"
     assert result["cohort_counts"]["unique_patients"] == 1
     assert result["expression_survival_linkage"] is None
+
+
+def test_endpoint_fields_are_not_misclassified_as_treatment_exposure():
+    from onco_dynamics_x.data_engine.cbioportal import _candidate_treatment_field
+
+    assert not _candidate_treatment_field({
+        "clinicalAttributeId": "DFS_MONTHS",
+        "displayName": "Disease Free (Months)",
+        "description": "Disease free survival since initial treatment",
+    })
+    assert _candidate_treatment_field({
+        "clinicalAttributeId": "HISTORY_NEOADJUVANT_TRTYN",
+        "displayName": "Neoadjuvant Therapy Type Administered",
+    })
+    assert not _candidate_treatment_field({
+        "clinicalAttributeId": "NEW_TUMOR_EVENT_AFTER_INITIAL_TREATMENT",
+        "displayName": "New Neoplasm Event Post Initial Therapy Indicator",
+    })
+
+
+def test_survival_summary_includes_disease_specific_and_progression_endpoints():
+    records = [
+        {"clinicalAttributeId": "DSS_MONTHS", "patientId": "P1", "value": "20"},
+        {"clinicalAttributeId": "DSS_STATUS", "patientId": "P1", "value": "0:CENSORED"},
+        {"clinicalAttributeId": "DFS_MONTHS", "patientId": "P1", "value": "10"},
+        {"clinicalAttributeId": "DFS_STATUS", "patientId": "P1", "value": "1:RECURRED"},
+        {"clinicalAttributeId": "PFS_MONTHS", "patientId": "P1", "value": "8"},
+        {"clinicalAttributeId": "PFS_STATUS", "patientId": "P1", "value": "1:PROGRESSED"},
+    ]
+    result = summarize_survival_endpoint_pairs(records)
+    by_endpoint = {row["endpoint"]: row for row in result}
+    assert by_endpoint["disease_specific_survival"]["patients_with_both_fields"] == 1
+    assert by_endpoint["disease_free_survival"]["patients_with_both_fields"] == 1
+    assert by_endpoint["progression_free_survival"]["patients_with_both_fields"] == 1
+    assert by_endpoint["disease_free_survival"]["status_value_counts_complete_pairs"] == {
+        "1:RECURRED": 1
+    }

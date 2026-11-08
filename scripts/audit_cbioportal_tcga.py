@@ -20,6 +20,9 @@ def main() -> None:
     report = audit_cbioportal_study(
         client=CBioPortalClient(),
         study_id="brca_tcga_pan_can_atlas_2018",
+        expression_sample_list_id=(
+            "brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna"
+        ),
     )
     write_audit_outputs(report, args.output_json, args.output_csv)
     print(f"Study: {report['study'].get('name')}")
