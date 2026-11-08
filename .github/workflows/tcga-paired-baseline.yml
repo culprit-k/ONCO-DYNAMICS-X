@@ -55,7 +55,7 @@ jobs:
             --normal-metadata cohort-work/normal.csv \
             --output-metadata cohort-work/selected_files.csv \
             --output-manifest cohort-work/selected_manifest.csv \
-            --max-pairs 20
+            --max-pairs 48
       - name: Download selected open expression files with checksum verification
         run: |
           python - <<'PY'

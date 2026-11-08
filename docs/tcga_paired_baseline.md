@@ -15,7 +15,7 @@ The GitHub Actions workflow queries the NCI Genomic Data Commons for:
 - Access: `open`
 - Sample classes: `Primary Tumor` and `Solid Tissue Normal`
 
-It queries up to 500 metadata records per class, then selects one expression file per patient for each specimen class among patients present in both sets. The selected subset defaults to 20 paired patients (up to 40 samples). The exact selected patient/sample IDs, GDC file UUIDs, file names, sizes and checksums are recorded in the workflow artifact. No expression matrices or raw expression files are committed to Git.
+It queries up to 500 metadata records per class, then selects one expression file per patient for each specimen class among patients present in both sets. The selected subset selects up to 48 paired patients (up to 96 samples). The initial metadata audit found 499 primary-tumour sample records and 113 normal sample records, representing 48 patients shared across the two queried sets. The workflow therefore selects up to 48 matched patient pairs from the current query window. The exact selected patient/sample IDs, GDC file UUIDs, file names, sizes and checksums are recorded in the workflow artifact. No expression matrices or raw expression files are committed to Git.
 
 A patient with both a tumour and normal sample is treated as one indivisible group. All samples from that patient must remain in the same training, validation or test partition.
 
