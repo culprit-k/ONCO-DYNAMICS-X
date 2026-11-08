@@ -64,6 +64,7 @@ def build_survival_records(
     age_attribute: str,
     stage_attribute: str,
     stage_level: str,
+    require_stage: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Assemble a de-identified-in-memory patient table and aggregate QC."""
     patient_ids = {row.get("patientId") for row in patients if row.get("patientId")}
@@ -128,7 +129,8 @@ def build_survival_records(
         stage = normalise_stage(stage_value)
         if stage is None:
             counts["missing_or_unrecognized_stage"] += 1
-            continue
+            if require_stage:
+                continue
         rows.append(
             {
                 "patient_id": patient_id,
@@ -138,7 +140,8 @@ def build_survival_records(
                 "stage_group": stage,
             }
         )
-        stage_counts[str(stage)] += 1
+        if stage is not None:
+            stage_counts[str(stage)] += 1
         event_counts["deceased" if event else "censored"] += 1
 
     ages = [row["age_years"] for row in rows]
@@ -176,6 +179,8 @@ def run_cross_cohort_cox(
     tcga_records: list[dict[str, Any]],
     metabric_records: list[dict[str, Any]],
     penalizer: float = 0.1,
+    tcga_age_records: list[dict[str, Any]] | None = None,
+    metabric_age_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Fit age+stage Cox in TCGA and evaluate once on untouched METABRIC."""
     import numpy as np
@@ -259,6 +264,99 @@ def run_cross_cohort_cox(
             float(np.quantile(estimates, 0.975)),
         ]
 
+    def bootstrap_ci_for_records(durations, events, predicted_hazard):
+        rng = np.random.default_rng(42)
+        estimates = []
+        n = len(durations)
+        for _ in range(500):
+            indices = rng.integers(0, n, size=n)
+            try:
+                estimate = concordance_index(
+                    durations[indices], -predicted_hazard[indices], events[indices]
+                )
+            except (ZeroDivisionError, ValueError):
+                continue
+            if np.isfinite(estimate):
+                estimates.append(float(estimate))
+        if not estimates:
+            return None
+        return [float(np.quantile(estimates, 0.025)), float(np.quantile(estimates, 0.975))]
+
+    sensitivity_models = {}
+
+    # Stage-only comparator checks whether the transported stage mapping carries signal.
+    stage_features = ["stage_2", "stage_3", "stage_4"]
+    stage_train = train_design[stage_features].copy()
+    stage_train["duration_months"] = tcga["duration_months"].to_numpy()
+    stage_train["event"] = tcga["event"].to_numpy()
+    stage_test = test_design[stage_features].copy()
+    stage_test["duration_months"] = metabric["duration_months"].to_numpy()
+    stage_test["event"] = metabric["event"].to_numpy()
+    stage_model = CoxPHFitter(penalizer=penalizer)
+    stage_model.fit(stage_train, duration_col="duration_months", event_col="event")
+    stage_hazard = stage_model.predict_partial_hazard(stage_test[stage_features]).to_numpy().reshape(-1)
+    sensitivity_models["stage_only"] = {
+        "harrell_c_index": float(concordance_index(test_durations, -stage_hazard, test_events)),
+        "harrell_c_index_bootstrap_95ci": bootstrap_ci(stage_hazard),
+        "features": stage_features,
+    }
+
+    # Collapse stages III-IV to reduce dependence on the sparse stage-IV category.
+    late_train = pd.DataFrame({
+        "age_z": train_design["age_z"],
+        "late_stage_III_IV": tcga["stage_group"].isin([3, 4]).astype(float),
+    })
+    late_test = pd.DataFrame({
+        "age_z": test_design["age_z"],
+        "late_stage_III_IV": metabric["stage_group"].isin([3, 4]).astype(float),
+    })
+    late_train["duration_months"] = tcga["duration_months"].to_numpy()
+    late_train["event"] = tcga["event"].to_numpy()
+    late_test["duration_months"] = metabric["duration_months"].to_numpy()
+    late_test["event"] = metabric["event"].to_numpy()
+    late_model = CoxPHFitter(penalizer=penalizer)
+    late_model.fit(late_train, duration_col="duration_months", event_col="event")
+    late_hazard = late_model.predict_partial_hazard(late_test[["age_z", "late_stage_III_IV"]]).to_numpy().reshape(-1)
+    sensitivity_models["age_plus_stage_III_IV_collapsed"] = {
+        "harrell_c_index": float(concordance_index(test_durations, -late_hazard, test_events)),
+        "harrell_c_index_bootstrap_95ci": bootstrap_ci(late_hazard),
+        "stage_grouping": "I-II versus III-IV",
+    }
+
+    missing_stage_sensitivity = None
+    if tcga_age_records is not None and metabric_age_records is not None:
+        tcga_age = pd.DataFrame(tcga_age_records)
+        metabric_age = pd.DataFrame(metabric_age_records)
+        if len(tcga_age) >= 100 and int(tcga_age["event"].sum()) >= 30 and len(metabric_age) >= 100 and int(metabric_age["event"].sum()) >= 30:
+            age_mean_all = float(tcga_age["age_years"].mean())
+            age_sd_all = float(tcga_age["age_years"].std(ddof=0))
+            if np.isfinite(age_sd_all) and age_sd_all > 0:
+                age_train_all = pd.DataFrame({
+                    "age_z": (tcga_age["age_years"] - age_mean_all) / age_sd_all,
+                    "duration_months": tcga_age["duration_months"],
+                    "event": tcga_age["event"],
+                })
+                age_test_all = pd.DataFrame({
+                    "age_z": (metabric_age["age_years"] - age_mean_all) / age_sd_all,
+                })
+                age_all_model = CoxPHFitter(penalizer=penalizer)
+                age_all_model.fit(age_train_all, duration_col="duration_months", event_col="event")
+                age_all_hazard = age_all_model.predict_partial_hazard(age_test_all).to_numpy().reshape(-1)
+                missing_stage_sensitivity = {
+                    "training_cohort": {"patients": len(tcga_age), "events": int(tcga_age["event"].sum())},
+                    "external_cohort": {
+                        "patients": len(metabric_age),
+                        "events": int(metabric_age["event"].sum()),
+                        "harrell_c_index": float(concordance_index(metabric_age["duration_months"], -age_all_hazard, metabric_age["event"])),
+                        "harrell_c_index_bootstrap_95ci": bootstrap_ci_for_records(
+                            metabric_age["duration_months"].to_numpy(),
+                            metabric_age["event"].to_numpy(),
+                            age_all_hazard,
+                        ),
+                    },
+                    "interpretation": "Age-only model trained/evaluated without requiring stage; this quantifies the complete-case selection effect but is not a stage-adjusted model.",
+                }
+
     ph_test = proportional_hazard_test(
         model, train, time_transform="rank"
     ).summary
@@ -289,6 +387,8 @@ def run_cross_cohort_cox(
             "harrell_c_index_bootstrap_95ci": bootstrap_ci(test_hazard),
             "age_only_harrell_c_index": age_only_c_index,
             "age_only_harrell_c_index_bootstrap_95ci": bootstrap_ci(age_hazard),
+            "stage_sensitivity_models": sensitivity_models,
+            "age_only_without_stage_requirement": missing_stage_sensitivity,
         },
         "configuration": {
             "age_mean_from_tcga": age_mean,
@@ -334,6 +434,7 @@ def fetch_survival_cohort(
     age_attribute: str,
     stage_attribute: str,
     stage_level: str,
+    require_stage: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch one public cBioPortal cohort and assemble its endpoint/covariates."""
     patients = client.get_all(
@@ -358,4 +459,5 @@ def fetch_survival_cohort(
         age_attribute=age_attribute,
         stage_attribute=stage_attribute,
         stage_level=stage_level,
+        require_stage=require_stage,
     )

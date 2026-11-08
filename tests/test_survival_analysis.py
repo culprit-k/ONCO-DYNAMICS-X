@@ -55,3 +55,36 @@ def test_survival_record_builder_excludes_nonpositive_time_and_missing_stage():
     assert summary["patients_retained_for_model"] == 1
     assert summary["exclusion_counts"]["nonpositive_os_time"] == 1
     assert summary["exclusion_counts"]["missing_or_unrecognized_stage"] == 1
+
+
+def test_survival_record_builder_can_retain_patients_without_stage_for_age_only_sensitivity():
+    patients = [{"patientId": "P1"}, {"patientId": "P2"}]
+    samples = [
+        {"sampleId": "S1", "patientId": "P1"},
+        {"sampleId": "S2", "patientId": "P2"},
+    ]
+    clinical = [
+        {"clinicalAttributeId": "AGE", "patientId": "P1", "value": "50"},
+        {"clinicalAttributeId": "AGE", "patientId": "P2", "value": "60"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P1", "value": "12"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P1", "value": "1:DECEASED"},
+        {"clinicalAttributeId": "OS_MONTHS", "patientId": "P2", "value": "24"},
+        {"clinicalAttributeId": "OS_STATUS", "patientId": "P2", "value": "0:LIVING"},
+        {"clinicalAttributeId": "STAGE", "patientId": "P1", "value": "Stage II"},
+    ]
+    rows, summary = build_survival_records(
+        patients=patients,
+        samples=samples,
+        expression_sample_ids=["S1", "S2"],
+        patient_clinical=clinical,
+        sample_clinical=[],
+        age_attribute="AGE",
+        stage_attribute="STAGE",
+        stage_level="PATIENT",
+        require_stage=False,
+    )
+    assert len(rows) == 2
+    assert rows[0]["stage_group"] == 2
+    assert rows[1]["stage_group"] is None
+    assert summary["patients_retained_for_model"] == 2
+    assert summary["exclusion_counts"]["missing_or_unrecognized_stage"] == 1

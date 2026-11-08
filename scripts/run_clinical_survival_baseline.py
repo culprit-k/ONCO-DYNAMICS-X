@@ -25,6 +25,7 @@ def main() -> None:
         age_attribute="AGE",
         stage_attribute="AJCC_PATHOLOGIC_TUMOR_STAGE",
         stage_level="PATIENT",
+        require_stage=False,
     )
     metabric, metabric_qc = fetch_survival_cohort(
         client=client,
@@ -33,8 +34,17 @@ def main() -> None:
         age_attribute="AGE_AT_DIAGNOSIS",
         stage_attribute="TUMOR_STAGE",
         stage_level="SAMPLE",
+        require_stage=False,
     )
-    model_report = run_cross_cohort_cox(tcga, metabric, penalizer=args.penalizer)
+    tcga_complete = [row for row in tcga if row["stage_group"] is not None]
+    metabric_complete = [row for row in metabric if row["stage_group"] is not None]
+    model_report = run_cross_cohort_cox(
+        tcga_complete,
+        metabric_complete,
+        penalizer=args.penalizer,
+        tcga_age_records=tcga,
+        metabric_age_records=metabric,
+    )
     report = {
         "tcga_data_quality": tcga_qc,
         "metabric_data_quality": metabric_qc,
@@ -46,8 +56,10 @@ def main() -> None:
         },
     }
     write_survival_report(report, args.output)
-    print("TCGA patients retained:", tcga_qc["patients_retained_for_model"])
-    print("METABRIC patients retained:", metabric_qc["patients_retained_for_model"])
+    print("TCGA age-only eligible patients:", tcga_qc["patients_retained_for_model"])
+    print("METABRIC age-only eligible patients:", metabric_qc["patients_retained_for_model"])
+    print("TCGA age+stage complete cases:", len(tcga_complete))
+    print("METABRIC age+stage complete cases:", len(metabric_complete))
     print("External METABRIC Harrell C-index:", model_report["external_cohort"]["harrell_c_index"])
     print("Aggregate report:", args.output)
 
