@@ -180,3 +180,21 @@ def test_survival_summary_includes_disease_specific_and_progression_endpoints():
     assert by_endpoint["disease_free_survival"]["status_value_counts_complete_pairs"] == {
         "1:RECURRED": 1
     }
+
+
+def test_patient_covariate_coverage_reports_complete_cases_without_ids():
+    from onco_dynamics_x.data_engine.cbioportal import summarize_patient_covariate_coverage
+
+    records = [
+        {"clinicalAttributeId": "AGE", "patientId": "P1", "value": "55"},
+        {"clinicalAttributeId": "AGE", "patientId": "P2", "value": "61"},
+        {"clinicalAttributeId": "STAGE", "patientId": "P1", "value": "II"},
+        {"clinicalAttributeId": "STAGE", "patientId": "P2", "value": ""},
+        {"clinicalAttributeId": "HYPOXIA", "patientId": "P1", "value": "0.7"},
+    ]
+    result = summarize_patient_covariate_coverage(
+        records, ("AGE", "STAGE", "HYPOXIA")
+    )
+    assert result["complete_case_patients_across_all_fields"] == 1
+    assert result["fields"]["AGE"]["patients_with_value"] == 2
+    assert "P1" not in str(result)

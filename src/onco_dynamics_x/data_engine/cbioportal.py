@@ -237,11 +237,25 @@ def summarize_survival_endpoint_pairs(patient_data):
         for value in statuses.values():
             status_counts_all[value] = status_counts_all.get(value, 0) + 1
         status_counts_complete = {}
+        status_counts_positive_time = {}
+        status_counts_nonpositive_time = {}
         for patient_id in complete_ids:
             value = statuses[patient_id]
             status_counts_complete[value] = (
                 status_counts_complete.get(value, 0) + 1
             )
+        for patient_id in complete_ids:
+            try:
+                observed_time = float(times[patient_id])
+            except (TypeError, ValueError):
+                continue
+            target = (
+                status_counts_positive_time
+                if observed_time > 0
+                else status_counts_nonpositive_time
+            )
+            status_value = statuses[patient_id]
+            target[status_value] = target.get(status_value, 0) + 1
         summaries.append(
             {
                 "endpoint": endpoint,
@@ -269,9 +283,40 @@ def summarize_survival_endpoint_pairs(patient_data):
                 "status_value_counts_complete_pairs": dict(
                     sorted(status_counts_complete.items())
                 ),
+                "status_value_counts_positive_time": dict(
+                    sorted(status_counts_positive_time.items())
+                ),
+                "status_value_counts_nonpositive_time": dict(
+                    sorted(status_counts_nonpositive_time.items())
+                ),
             }
         )
     return summaries
+
+
+def summarize_patient_covariate_coverage(patient_data, attribute_ids):
+    """Report aggregate patient-level complete-case coverage for candidate fields."""
+    values_by_attribute = {}
+    for attribute_id in attribute_ids:
+        values, ambiguous = _patient_attribute_values(patient_data, attribute_id)
+        values_by_attribute[attribute_id] = {
+            "patients_with_value": len(values),
+            "ambiguous_patient_count": ambiguous,
+            "patient_ids": set(values),
+        }
+    complete_ids = set.intersection(
+        *(item["patient_ids"] for item in values_by_attribute.values())
+    ) if values_by_attribute else set()
+    return {
+        "fields": {
+            attribute_id: {
+                "patients_with_value": item["patients_with_value"],
+                "ambiguous_patient_count": item["ambiguous_patient_count"],
+            }
+            for attribute_id, item in values_by_attribute.items()
+        },
+        "complete_case_patients_across_all_fields": len(complete_ids),
+    }
 
 
 def summarize_expression_survival_linkage(
@@ -433,6 +478,18 @@ def audit_cbioportal_study(
             "patient_level_treatment_field_candidates": patient_treatment_candidates,
             "survival_endpoint_pair_summary": summarize_survival_endpoint_pairs(
                 patient_clinical
+            ),
+            "candidate_patient_covariate_coverage": summarize_patient_covariate_coverage(
+                patient_clinical,
+                (
+                    "AGE",
+                    "AGE_AT_DIAGNOSIS",
+                    "AJCC_PATHOLOGIC_TUMOR_STAGE",
+                    "PATH_T_STAGE",
+                    "PATH_N_STAGE",
+                    "PATH_M_STAGE",
+                    "WINTER_HYPOXIA_SCORE",
+                ),
             ),
         },
         "audit_checks": {
