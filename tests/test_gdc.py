@@ -1,3 +1,4 @@
+import csv
 import hashlib
 from io import BytesIO
 from unittest.mock import patch
@@ -10,7 +11,6 @@ from onco_dynamics_x.data_engine.gdc import (
     write_sample_manifest,
 )
 from onco_dynamics_x.data_engine.manifest import audit_manifest
-
 
 SAMPLE_FILE_ID = "11111111-2222-3333-4444-555555555555"
 
@@ -162,7 +162,6 @@ def test_gdc_manifest_export_passes_sample_audit_and_preserves_specimen_type(tmp
     assert audit.passed
     assert audit.unique_patients == 1
     assert audit.unique_samples == 1
-    import csv
     with path.open(newline="", encoding="utf-8") as handle:
         row = next(csv.DictReader(handle))
     assert row["sample_type"] == "Primary Tumor"
