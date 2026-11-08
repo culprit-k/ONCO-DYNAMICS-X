@@ -1,0 +1,47 @@
+{
+  "analysis": "paired_primary_tumour_vs_solid_tissue_normal_expression_baseline",
+  "cohort": "TCGA-BRCA",
+  "source": {
+    "repository_run_id": 42452095954,
+    "source_commit": "0286ee3ba7f0ebad04cbb031a79d7e80470d0a6a",
+    "gdc_project": "TCGA-BRCA",
+    "workflow": "STAR - Counts",
+    "access": "open",
+    "expression_measure": "tpm_unstranded"
+  },
+  "subset": {
+    "patients": 20,
+    "samples": 40,
+    "primary_tumour_samples": 20,
+    "solid_tissue_normal_samples": 20,
+    "paired_by_patient": true
+  },
+  "model": {
+    "algorithm": "variance filter + ANOVA top-100 + standardization + balanced logistic regression",
+    "transform": "log1p(TPM)",
+    "preprocessing_fit_within_training_folds": true,
+    "patient_grouping_used_for_holdout_and_cross_validation": true
+  },
+  "patient_grouped_holdout": {
+    "train_patients": 15,
+    "test_patients": 5,
+    "train_samples": 30,
+    "test_samples": 10,
+    "balanced_accuracy": 1.0,
+    "roc_auc": 1.0,
+    "confusion_matrix": {
+      "true_normal_predicted_normal": 5,
+      "true_normal_predicted_tumour": 0,
+      "true_tumour_predicted_normal": 0,
+      "true_tumour_predicted_tumour": 5
+    }
+  },
+  "stratified_group_cross_validation": {
+    "folds": 5,
+    "balanced_accuracy_mean": 1.0,
+    "balanced_accuracy_std": 0.0,
+    "roc_auc_mean": 1.0,
+    "roc_auc_std": 0.0
+  },
+  "interpretation": "Preliminary technical baseline only. It distinguishes known specimen labels in a small paired subset. It is not a screening or diagnostic model, does not predict patient outcomes, and does not establish treatment response or biological causality."
+}
