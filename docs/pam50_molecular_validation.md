@@ -33,12 +33,14 @@ The panel is fixed before analysis. Historical symbols are resolved through the 
 
 - Development: TCGA-BRCA PanCancer Atlas RNA-seq mRNA profile `brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna`.
 - External evaluation: METABRIC mRNA profile `brca_metabric_mrna`.
-- Samples are restricted to primary tumour where sample-type metadata support that filtering. If sample-type metadata are unavailable from the public API, that limitation is explicitly reported and the profile sample list is retained.
+- The successful external run requests the cBioPortal DETAILED sample projection and reads Sample.id, Sample.type and the nested patient identifier. All 1,082 TCGA and 1,980 METABRIC expression-profile samples were verified as Primary Solid Tumor; no sample-type fallback was used.
 - One expression specimen per patient is included in the survival analysis. Repeated specimens are counted and excluded from the primary patient-level analysis.
 - Overall survival uses `OS_MONTHS` and `OS_STATUS`; 1:DECEASED is an event and 0:LIVING is censored under the cBioPortal convention. Non-positive follow-up is excluded; no artificial time is substituted.
 - Stage is not included because the TCGA patient-level AJCC pathologic stage and METABRIC sample-level generic tumour-stage field have not been established as semantically equivalent.
 
 The exact time origin and endpoint adjudication remain study-specific and must be checked against the original cohort publications/data guides before any clinical interpretation.
+
+The verified sample-metadata rerun is [GitHub Actions run 42985971698](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42985971698). It confirmed zero missing patient links and zero duplicate primary specimens in the two selected expression sample lists.
 
 ## Outcome-blind expression processing
 
