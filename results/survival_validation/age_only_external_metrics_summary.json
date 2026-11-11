@@ -1,0 +1,140 @@
+{
+  "analysis": "frozen_age_only_cox_external_survival_validation",
+  "status": "completed",
+  "workflow_run_id": 42980553346,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42980553346",
+  "evaluated_commit": "f115d52f9d25e188101a5b071cebe67c84938e07",
+  "report_artifact_id": 13838020211,
+  "report_artifact_name": "age-only-survival-validation-metrics",
+  "development_cohort": {
+    "study": "TCGA-BRCA PanCancer Atlas",
+    "patients": 1069,
+    "events": 151,
+    "censored": 918,
+    "expression_sample_list_members": 1082,
+    "nonpositive_overall_survival_times_excluded": 13
+  },
+  "external_cohort": {
+    "study": "METABRIC",
+    "patients": 1979,
+    "events": 1143,
+    "censored": 836,
+    "expression_sample_list_members": 1980,
+    "nonpositive_overall_survival_times_excluded": 1,
+    "stage_missing_or_unrecognized": 525,
+    "stage_not_used_as_a_predictor": true
+  },
+  "model": {
+    "family": "Cox proportional hazards",
+    "predictor": "age at diagnosis",
+    "age_standardization_mean_years_tcga": 58.26566884939196,
+    "age_standardization_sd_years_tcga": 13.158690002739169,
+    "penalizer": 0.1,
+    "age_hazard_ratio_per_tcga_sd": 1.277183284868521,
+    "age_hazard_ratio_95ci": [
+      1.1291368753440822,
+      1.4446407506180066
+    ],
+    "age_p_value": 0.00009938546156976133,
+    "proportional_hazards_rank_test_p_value": 0.28431461003680697,
+    "expression_used": false,
+    "stage_used": false
+  },
+  "external_performance": {
+    "harrell_c_index": 0.588195288641148,
+    "harrell_c_index_bootstrap_95ci": [
+      0.5682810601159914,
+      0.6064900519438781
+    ],
+    "harrell_c_index_bootstrap_replicates": 250,
+    "integrated_brier_score_sparse_grid": 0.07935307474077215,
+    "horizons": [
+      {
+        "months": 12,
+        "cases": 30,
+        "controls": 1934,
+        "censored_before_horizon": 15,
+        "time_dependent_auc_ipcw": 0.5783120086764344,
+        "time_dependent_auc_ipcw_95ci": [
+          0.46022681022691275,
+          0.6844242189426383
+        ],
+        "brier_score_ipcw": 0.015045488431620445,
+        "brier_score_ipcw_95ci": [
+          0.00932495296219717,
+          0.020356788307617283
+        ],
+        "mean_predicted_survival": 0.9783192894619066,
+        "ipcw_observed_survival": 0.9847401447076338,
+        "observed_minus_predicted_survival": 0.0064208552457272194,
+        "calibration_gap_95ci": [
+          0.0008649259064632598,
+          0.012371275961524413
+        ]
+      },
+      {
+        "months": 36,
+        "cases": 223,
+        "controls": 1717,
+        "censored_before_horizon": 39,
+        "time_dependent_auc_ipcw": 0.515060792384049,
+        "time_dependent_auc_ipcw_95ci": [
+          0.4739784449697586,
+          0.5613144607837619
+        ],
+        "brier_score_ipcw": 0.1014378324341451,
+        "brier_score_ipcw_95ci": [
+          0.09036978849048725,
+          0.111920519604091
+        ],
+        "mean_predicted_survival": 0.8916106645100171,
+        "ipcw_observed_survival": 0.8857868977292619,
+        "observed_minus_predicted_survival": -0.005823766780755246,
+        "calibration_gap_95ci": [
+          -0.019195439329061644,
+          0.009006291375076247
+        ]
+      },
+      {
+        "months": 60,
+        "cases": 427,
+        "controls": 1489,
+        "censored_before_horizon": 63,
+        "time_dependent_auc_ipcw": 0.5394728163121834,
+        "time_dependent_auc_ipcw_95ci": [
+          0.5037363184484115,
+          0.5718628686304834
+        ],
+        "brier_score_ipcw": 0.1713214761881399,
+        "brier_score_ipcw_95ci": [
+          0.1614355750605986,
+          0.18184156324286352
+        ],
+        "mean_predicted_survival": 0.801889765422699,
+        "ipcw_observed_survival": 0.7800795696024637,
+        "observed_minus_predicted_survival": -0.021810195820235245,
+        "calibration_gap_95ci": [
+          -0.03976634891669852,
+          -0.005193224901842933
+        ]
+      }
+    ],
+    "bootstrap_replicates": 250,
+    "bootstrap_seed": 42
+  },
+  "limitations": [
+    "Exploratory clinical-only external evaluation; not clinical validation or clinical utility.",
+    "External time-dependent AUCs show weak discrimination; one-year and three-year intervals include 0.5.",
+    "Five-year calibration indicates overprediction of survival on average.",
+    "Marginal IPCW censoring correction assumes independent censoring within METABRIC.",
+    "Integrated Brier score is a sparse-grid trapezoidal approximation, not a dense-grid estimate.",
+    "No molecular expression features or stage predictor were used.",
+    "The result does not validate the spatial PDE, agent-based, PINN, FNO, GNN, immune-evasion, hypoxia or drug-transport components."
+  ],
+  "data_governance": {
+    "patient_level_records_committed": false,
+    "patient_or_sample_identifiers_committed": false,
+    "raw_expression_committed": false,
+    "aggregate_metrics_only": true
+  }
+}
