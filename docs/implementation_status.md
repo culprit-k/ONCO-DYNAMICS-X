@@ -39,7 +39,7 @@ This status separates executable code from model components that still require t
 - METABRIC time-dependent IPCW AUC at 12/36/60 months: 0.578 / 0.515 / 0.539; IPCW Brier scores: 0.0150 / 0.1014 / 0.1713; sparse-grid IBS 0.07935. Results and limitations are recorded in docs/age_only_external_results.md.
 
 ### Statistical and model components
-- CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets; held-out errors and baselines are recorded in docs/synthetic_ai_benchmarks.md. These are software benchmarks, not biological training.
+- CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets. Latest boundary-aware PINN: held-out relative L2 0.02774, PDE residual RMS 0.02297 and Neumann boundary residual RMS 0.01188; FNO relative L2 0.01666; GNN relative L2 0.06995. These are software benchmarks, not biological training.
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
 - Optional PyTorch PINN, Fourier neural operator, spatial GNN and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy linear backdoor wrapper and CasADi mean-field control demonstration.
