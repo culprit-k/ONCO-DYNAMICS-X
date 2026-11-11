@@ -96,5 +96,28 @@
     "The FNO was evaluated on the same fixed 16x16 periodic task family, not cross-resolution or out-of-distribution conditions.",
     "The GNN predicts a synthetic geometric label statistic, not biological immune recruitment, cell interaction or patient outcome.",
     "No model is trained or validated on registered breast-tissue spatial data."
-  ]
+  ],
+  "latest_rerun": {
+    "workflow_run_id": 42982733597,
+    "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982733597",
+    "evaluated_commit": "93f4941faf14d7fba32ca3e92519edf3c3a338f6",
+    "artifact_id": 13838257067,
+    "test_suite": "passed",
+    "ruff_lint": "passed",
+    "training": "passed",
+    "metrics": {
+      "pinn": {
+        "relative_l2_test_error": 0.09091082960367203,
+        "held_out_pde_residual_rms": 0.05325149744749069
+      },
+      "fno": {
+        "relative_l2_test_error": 0.013628171756863594
+      },
+      "gnn": {
+        "relative_l2_test_error": 0.06994560360908508,
+        "test_mse": 0.0006871297955513,
+        "constant_mean_baseline_mse": 0.04053523764014244
+      }
+    }
+  }
 }
