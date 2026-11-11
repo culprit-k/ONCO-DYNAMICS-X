@@ -12,13 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from onco_dynamics_x.cellular_simulation.agent_based import (
-    CANCER,
-    FIBROBLAST,
-    IMMUNE,
-    initialize_agents,
-)
-from onco_dynamics_x.cellular_simulation.coupling import simulate_coupled
+from onco_dynamics_x.cellular_simulation import agent_based, coupling
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import diffusion_timestep_limit
 from onco_dynamics_x.state import initial_state
@@ -30,9 +24,9 @@ AGENTS_PER_UNIT = (1.0, 2.0, 4.0, 8.0)
 
 def _population_counts(population) -> dict[str, int]:
     return {
-        "cancer": population.count(CANCER),
-        "immune": population.count(IMMUNE),
-        "fibroblast": population.count(FIBROBLAST),
+        "cancer": population.count(agent_based.CANCER),
+        "immune": population.count(agent_based.IMMUNE),
+        "fibroblast": population.count(agent_based.FIBROBLAST),
         "total": len(population.x),
     }
 
@@ -83,7 +77,7 @@ def run_coupling_sensitivity_sweep(
 
         for coupling_strength in COUPLING_STRENGTHS:
             for agents_per_unit in AGENTS_PER_UNIT:
-                population = initialize_agents(
+                population = agent_based.initialize_agents(
                     cancer_count=40,
                     immune_count=25,
                     fibroblast_count=15,
@@ -91,7 +85,7 @@ def run_coupling_sensitivity_sweep(
                     spatial_dimensions=dimensions,
                 )
                 initial_counts = _population_counts(population)
-                times, states, populations = simulate_coupled(
+                times, states, populations = coupling.simulate_coupled(
                     state,
                     population,
                     parameters,
