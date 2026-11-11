@@ -27,9 +27,16 @@ All 50 genes in the fixed research panel had finite values in both expression pr
 
 Historical panel identifiers were resolved against current cBioPortal gene records: CDCA1 to NUF2, KNTC2 to NDC80, and ORC6L to ORC6.
 
-### Important sample-selection limitation
+### Sample selection verified
 
-The public cBioPortal sample records returned `UNKNOWN` sample type for all profile-list entries in both cohorts. The workflow therefore retained all samples in the selected mRNA sample lists and could not independently restrict the expression data to primary-tumour specimens. The 1,082 and 1,980 counts above are profile sample-list counts, **not verified primary-tumour-only counts**. This matters for interpretation and must be resolved before stronger biological claims.
+The final successful run used the cBioPortal DETAILED sample projection and parsed the official Sample fields (sample ID, sample type and nested patient ID). Every sample in both selected expression profiles was returned as `Primary Solid Tumor`:
+
+- TCGA-BRCA: 1,082 / 1,082 primary solid tumour samples.
+- METABRIC: 1,980 / 1,980 primary solid tumour samples.
+- Samples without patient linkage: zero in both cohorts.
+- Duplicate primary samples excluded: zero in both cohorts.
+
+The external model results below were reproduced on this verified primary-solid-tumour sample set. See [successful corrected workflow run 42985971698](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42985971698) and the [aggregate JSON report](../results/molecular_validation/pam50_tcga_metabric_summary.json).
 
 Subtype annotations were available in the two cohorts (TCGA `SUBTYPE`, METABRIC `CLAUDIN_SUBTYPE`). They were audited only as aggregate counts; no subtype labels were used for expression transformation, PCA, model fitting, tuning, or evaluation.
 
