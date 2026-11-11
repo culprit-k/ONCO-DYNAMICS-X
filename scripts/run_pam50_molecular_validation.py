@@ -20,6 +20,7 @@ import pandas as pd
 
 from onco_dynamics_x.data_engine import molecular_model
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
+from onco_dynamics_x.data_engine.cohort_metadata import parse_cbioportal_sample_metadata
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
 from onco_dynamics_x.data_engine.survival_metrics import evaluate_ipcw_survival
 
@@ -84,33 +85,6 @@ def _resolve_entrez_ids(
 def _is_primary_tumour(sample_type: Any) -> bool:
     token = " ".join(str(sample_type or "").lower().replace("_", " ").split())
     return "primary" in token and "tumor" in token
-
-
-def _parse_sample_metadata(samples: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
-    """Normalise cBioPortal Sample objects (id/type + nested patient) for linkage."""
-    metadata: dict[str, dict[str, str]] = {}
-    for sample in samples:
-        sample_id = str(sample.get("sampleId") or sample.get("id") or "").strip()
-        patient_object = sample.get("patient")
-        patient = patient_object if isinstance(patient_object, dict) else {}
-        patient_id = str(
-            sample.get("patientId")
-            or patient.get("patientId")
-            or patient.get("id")
-            or ""
-        ).strip()
-        sample_type = str(
-            sample.get("type")
-            or sample.get("sampleType")
-            or sample.get("sample_type")
-            or ""
-        ).strip()
-        if sample_id:
-            metadata[sample_id] = {
-                "patientId": patient_id,
-                "type": sample_type,
-            }
-    return metadata
 
 
 def _fetch_expression_records(
@@ -274,7 +248,7 @@ def _load_cohort(
     if not isinstance(sample_ids, list) or not sample_ids:
         raise RuntimeError(f"Empty or invalid expression sample list for {cohort['label']}.")
 
-    sample_metadata = _parse_sample_metadata(samples)
+    sample_metadata = parse_cbioportal_sample_metadata(samples)
     sample_type_counts = Counter(
         sample_metadata.get(sample_id, {}).get("type") or "UNKNOWN"
         for sample_id in sample_ids
