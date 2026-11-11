@@ -301,6 +301,7 @@ def _load_cohort(
     )
 
     selected_sample_ids: list[str] = []
+    selected_patient_ids: list[str] = []
     selected_patient_rows: list[dict[str, Any]] = []
     selected_sample_ids_seen: set[str] = set()
     patients_seen: set[str] = set()
@@ -322,6 +323,7 @@ def _load_cohort(
         patients_seen.add(patient_id)
         selected_sample_ids_seen.add(sample_id)
         selected_sample_ids.append(sample_id)
+        selected_patient_ids.append(str(patient_id))
         selected_patient_rows.append(survival_by_patient[patient_id])
 
     row_index = {sample_id: index for index, sample_id in enumerate(primary_ids)}
@@ -331,6 +333,9 @@ def _load_cohort(
     )
     if selected_values.ndim != 2 or selected_values.shape[1] != len(molecular_model.PAM50_GENES):
         raise RuntimeError("Selected patient expression matrix has an invalid shape.")
+
+    subtype_audit = _audit_subtype_annotations(client, cohort["study_id"])
+    patient_subtype_labels = subtype_audit.pop("patient_subtype_labels", {})
 
     return {
         "label": cohort["label"],
@@ -354,7 +359,9 @@ def _load_cohort(
         "samples_without_patient_link": int(samples_without_patient),
         "survival_assembly_qc": survival_qc,
         "expression_fetch_qc": expression_qc,
-        "subtype_annotation_audit": _audit_subtype_annotations(client, cohort["study_id"]),
+        "subtype_annotation_audit": subtype_audit,
+        "patient_subtype_labels": patient_subtype_labels,
+        "patient_ids": selected_patient_ids,
         "patient_rows": selected_patient_rows,
         "sample_ids": selected_sample_ids,
         "expression_values": selected_values,
