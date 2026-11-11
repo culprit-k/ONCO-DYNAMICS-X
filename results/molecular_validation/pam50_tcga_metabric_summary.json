@@ -1,0 +1,391 @@
+{
+  "analysis": "PAM50_panel_rank_normalised_TCGA_to_METABRIC_survival_validation",
+  "status": "completed_exploratory_external_evaluation",
+  "date": "2026-11-11",
+  "workflow": {
+    "run_id": 42984188725,
+    "url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984188725",
+    "evaluated_commit": "9d14003f04602fe40e10a2c1070c2b7dffaa7824",
+    "artifact_id": 13838418730,
+    "checks": {
+      "full_test_suite": "passed",
+      "ruff": "passed",
+      "cohort_retrieval": "passed",
+      "model_evaluation": "passed",
+      "aggregate_artifact": "published"
+    }
+  },
+  "data_governance": {
+    "patient_ids_written": false,
+    "sample_ids_written": false,
+    "row_level_clinical_records_written": false,
+    "raw_expression_values_written": false,
+    "aggregate_metrics_only": true
+  },
+  "panel": {
+    "name": "Published PAM50 50-gene intrinsic-subtype research panel",
+    "genes": [
+      "ACTR3B",
+      "ANLN",
+      "BAG1",
+      "BCL2",
+      "BIRC5",
+      "BLVRA",
+      "CCNB1",
+      "CCNE1",
+      "CDC20",
+      "CDC6",
+      "CDCA1",
+      "CDH3",
+      "CENPF",
+      "CEP55",
+      "CXXC5",
+      "EGFR",
+      "ERBB2",
+      "ESR1",
+      "EXO1",
+      "FGFR4",
+      "FOXA1",
+      "FOXC1",
+      "GPR160",
+      "GRB7",
+      "KIF2C",
+      "KNTC2",
+      "KRT14",
+      "KRT17",
+      "KRT5",
+      "MAPT",
+      "MDM2",
+      "MELK",
+      "MIA",
+      "MKI67",
+      "MLPH",
+      "MMP11",
+      "MYBL2",
+      "MYC",
+      "NAT1",
+      "ORC6L",
+      "PGR",
+      "PHGDH",
+      "PTTG1",
+      "RRM2",
+      "SFRP1",
+      "SLC39A6",
+      "TMEM45B",
+      "TYMS",
+      "UBE2C",
+      "UBE2T"
+    ],
+    "common_genes_used": 50,
+    "missing_gene_values": 0,
+    "duplicate_gene_sample_records": 0,
+    "resolved_historical_symbols": {
+      "CDCA1": "NUF2",
+      "KNTC2": "NDC80",
+      "ORC6L": "ORC6"
+    },
+    "note": "Gene inventory only. No published PAM50 centroids, Prosigna algorithm, clinical cut-points or Risk-of-Recurrence score were implemented."
+  },
+  "cohorts": [
+    {
+      "label": "TCGA-BRCA PanCancer Atlas",
+      "study_id": "brca_tcga_pan_can_atlas_2018",
+      "profile_id": "brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna",
+      "profile_description": "mRNA Expression, RSEM (Batch normalized from Illumina HiSeq_RNASeqV2)",
+      "expression_samples_in_profile_list": 1082,
+      "samples_in_expression_fetch": 1082,
+      "finite_expression_measurements": 54100,
+      "expected_expression_measurements": 54100,
+      "missing_or_nonfinite_measurements": 0,
+      "duplicate_sample_gene_records": 0,
+      "patients_in_survival_analysis": 1069,
+      "death_events": 151,
+      "censored": 918,
+      "sample_type_metadata": "unavailable in retrieved sample projection",
+      "sample_type_filter": "full profile sample list retained; primary-tumour-only filtering not verified",
+      "subtype_annotation": {
+        "attribute": "SUBTYPE",
+        "level": "PATIENT",
+        "records_with_value": 981,
+        "value_counts": {
+          "BRCA_Basal": 171,
+          "BRCA_Her2": 78,
+          "BRCA_LumA": 499,
+          "BRCA_LumB": 197,
+          "BRCA_Normal": 36
+        }
+      }
+    },
+    {
+      "label": "METABRIC",
+      "study_id": "brca_metabric",
+      "profile_id": "brca_metabric_mrna",
+      "profile_description": "Expression log2 intensity levels (Illumina HT-12 v3 microarray)",
+      "expression_samples_in_profile_list": 1980,
+      "samples_in_expression_fetch": 1980,
+      "finite_expression_measurements": 99000,
+      "expected_expression_measurements": 99000,
+      "missing_or_nonfinite_measurements": 0,
+      "duplicate_sample_gene_records": 0,
+      "patients_in_survival_analysis": 1979,
+      "death_events": 1143,
+      "censored": 836,
+      "sample_type_metadata": "unavailable in retrieved sample projection",
+      "sample_type_filter": "full profile sample list retained; primary-tumour-only filtering not verified",
+      "subtype_annotation": {
+        "attribute": "CLAUDIN_SUBTYPE",
+        "display_name": "PAM50 + Claudin-low subtype",
+        "level": "PATIENT",
+        "records_with_value": 1980,
+        "value_counts": {
+          "Basal": 209,
+          "Her2": 224,
+          "LumA": 700,
+          "LumB": 475,
+          "Normal": 148,
+          "claudin-low": 218,
+          "NC": 6
+        }
+      }
+    }
+  ],
+  "expression_processing": {
+    "method": "Per-gene cohort-wise mid-rank inverse-normal transformation; ties use average ranks; missing values would be set to zero but no missing values were observed.",
+    "external_expression_distribution_used": true,
+    "external_clinical_outcomes_used_for_feature_construction_or_tuning": false,
+    "external_subtype_labels_used_for_feature_construction_or_tuning": false,
+    "transductive": true,
+    "individual_sample_deployment_supported": false,
+    "pca": {
+      "fitted_on": "TCGA-BRCA only",
+      "components": 5,
+      "total_explained_variance_ratio": 0.681929350630701,
+      "score_standardisation": "zero mean and unit standard deviation using frozen TCGA training statistics",
+      "pc1_variance_ratio": 0.3929524866209566,
+      "pc1_top_positive_genes": [
+        "KIF2C",
+        "CDC20",
+        "CEP55",
+        "KNTC2",
+        "MELK",
+        "UBE2C"
+      ],
+      "pc1_top_negative_genes": [
+        "MLPH",
+        "NAT1",
+        "PGR",
+        "ESR1",
+        "FOXA1",
+        "MAPT"
+      ],
+      "interpretation": "PC1 contrasts a cell-cycle/proliferation-associated expression pattern with a luminal/ER-associated pattern. PCA sign and loading structure are statistical descriptions, not causal biological mechanisms."
+    },
+    "limitations": [
+      "Cohort-wise rank normalisation uses the full unlabeled expression distribution of each cohort.",
+      "The TCGA and METABRIC assays differ: batch-normalised RSEM RNA-seq versus Illumina HT-12 v3 log2 intensities.",
+      "Gene-level cBioPortal matrices were used; METABRIC raw probe annotation and duplicate-probe resolution were not independently rederived.",
+      "Sample-type metadata were unavailable in the sample projection; primary-tumour-only filtering was not verified.",
+      "Rank normalisation cannot guarantee removal of platform, batch, probe or sample-composition effects."
+    ]
+  },
+  "model": {
+    "primary": "Penalised Cox model: age at diagnosis plus five TCGA-fitted PAM50-panel principal components",
+    "comparator": "Age-only penalised Cox fitted on the same TCGA patients",
+    "cox_l2_penalizer": 0.5,
+    "components": 5,
+    "bootstrap_replicates": 250,
+    "seed": 42,
+    "external_outcomes_used_for_model_fitting_or_tuning": false,
+    "stage_used": false,
+    "official_pam50_centroids_used": false
+  },
+  "external_performance": {
+    "harrell_c_index": {
+      "age_only": 0.588195288641148,
+      "age_only_bootstrap_95ci": [
+        0.5682810601159914,
+        0.6064900519438781
+      ],
+      "age_plus_pam50_pc": 0.5992468941797373,
+      "age_plus_pam50_pc_bootstrap_95ci": [
+        0.5798002819403251,
+        0.6201182847110196
+      ],
+      "delta": 0.011051605538589304,
+      "paired_bootstrap_delta_95ci": [
+        -0.0019455327555738448,
+        0.024084792511310408
+      ],
+      "interpretation": "Modest apparent discrimination gain; paired bootstrap interval includes zero, so improvement is not conclusive."
+    },
+    "time_dependent_metrics": {
+      "12_months": {
+        "cases": 30,
+        "controls": 1934,
+        "age_only": {
+          "ipcw_auc": 0.5783120086764344,
+          "auc_95ci": [
+            0.46022681022691275,
+            0.6844242189426383
+          ],
+          "ipcw_brier": 0.01504823954080672,
+          "brier_95ci": [
+            0.0093075893931565,
+            0.02037414399540376
+          ],
+          "observed_survival": 0.9847401447076338,
+          "predicted_survival": 0.979033545026402
+        },
+        "age_plus_pc": {
+          "ipcw_auc": 0.6233486588517132,
+          "auc_95ci": [
+            0.49954863613164807,
+            0.7335004051817191
+          ],
+          "ipcw_brier": 0.01502725967288535,
+          "brier_95ci": [
+            0.009806058813807568,
+            0.020843532220153768
+          ],
+          "observed_survival": 0.9847401447076338,
+          "predicted_survival": 0.9790009722718729
+        }
+      },
+      "36_months": {
+        "cases": 223,
+        "controls": 1717,
+        "age_only": {
+          "ipcw_auc": 0.515060792384049,
+          "auc_95ci": [
+            0.4739784449697586,
+            0.5613144607837619
+          ],
+          "ipcw_brier": 0.10128390325746986,
+          "brier_95ci": [
+            0.08983707343907553,
+            0.11193926388493528
+          ],
+          "observed_survival": 0.8857868977292619,
+          "predicted_survival": 0.8963170837488738
+        },
+        "age_plus_pc": {
+          "ipcw_auc": 0.5440077484202017,
+          "auc_95ci": [
+            0.4966867603178146,
+            0.5864698778475826
+          ],
+          "ipcw_brier": 0.10099287447561313,
+          "brier_95ci": [
+            0.09052387953676104,
+            0.11449838532865801
+          ],
+          "observed_survival": 0.8857868977292619,
+          "predicted_survival": 0.8958351874105553
+        }
+      },
+      "60_months": {
+        "cases": 427,
+        "controls": 1489,
+        "age_only": {
+          "ipcw_auc": 0.5394728163121834,
+          "auc_95ci": [
+            0.5037363184484115,
+            0.5718628686304834
+          ],
+          "ipcw_brier": 0.1720325829944412,
+          "brier_95ci": [
+            0.16154858348968335,
+            0.18304533207250392
+          ],
+          "observed_survival": 0.7800795696024637,
+          "predicted_survival": 0.8113030205508445
+        },
+        "age_plus_pc": {
+          "ipcw_auc": 0.5797679535182027,
+          "auc_95ci": [
+            0.5468903888257511,
+            0.610046967813476
+          ],
+          "ipcw_brier": 0.17084604048639532,
+          "brier_95ci": [
+            0.1594852979331162,
+            0.18258201439766972
+          ],
+          "observed_survival": 0.7800795696024637,
+          "predicted_survival": 0.8103652206194644
+        }
+      }
+    },
+    "proportional_hazards_test_p_values": {
+      "age_z": 0.4531415305945744,
+      "PC1": 0.14398333045605483,
+      "PC2": 0.8591711861463968,
+      "PC3": 0.2665458979752411,
+      "PC4": 0.5989795224031909,
+      "PC5": 0.5753331151254033
+    },
+    "age_plus_pc_coefficients": [
+      {
+        "feature": "age_z",
+        "hazard_ratio": 1.0936474161791296,
+        "hr_95ci": [
+          1.0141296733317247,
+          1.179400132318237
+        ],
+        "p_value": 0.02011156500766192
+      },
+      {
+        "feature": "PC1",
+        "hazard_ratio": 1.0158954726745584,
+        "hr_95ci": [
+          0.9430563082976787,
+          1.0943605406379366
+        ],
+        "p_value": 0.6778109059092026
+      },
+      {
+        "feature": "PC2",
+        "hazard_ratio": 0.9673075968532588,
+        "hr_95ci": [
+          0.8973885121608262,
+          1.0426743536943532
+        ],
+        "p_value": 0.3852284580079504
+      },
+      {
+        "feature": "PC3",
+        "hazard_ratio": 1.031842155310042,
+        "hr_95ci": [
+          0.9575482316354758,
+          1.111900370445452
+        ],
+        "p_value": 0.4109809976879508
+      },
+      {
+        "feature": "PC4",
+        "hazard_ratio": 0.941723295122078,
+        "hr_95ci": [
+          0.8734026439593902,
+          1.0153882298263561
+        ],
+        "p_value": 0.118156942534441
+      },
+      {
+        "feature": "PC5",
+        "hazard_ratio": 1.0015544943357375,
+        "hr_95ci": [
+          0.9279552753298482,
+          1.0809911121713833
+        ],
+        "p_value": 0.9681831021712187
+      }
+    ],
+    "limitations": [
+      "Marginal IPCW censoring correction assumes independent censoring within METABRIC.",
+      "The 12- and 36-month AUC intervals for the molecular model include or touch 0.5; five-year discrimination is modest.",
+      "Brier-score differences between age-only and molecular models are small.",
+      "At 60 months, the molecular model overestimates average survival by about 3.0 percentage points.",
+      "No clinical utility, prospective generalizability, treatment response or causal effect is established."
+    ]
+  }
+}
