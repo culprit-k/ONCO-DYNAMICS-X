@@ -23,7 +23,6 @@ from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
 from onco_dynamics_x.data_engine.survival_metrics import evaluate_ipcw_survival
 
-
 COHORTS = (
     {
         "label": "TCGA-BRCA PanCancer Atlas",
@@ -85,6 +84,33 @@ def _resolve_entrez_ids(
 def _is_primary_tumour(sample_type: Any) -> bool:
     token = " ".join(str(sample_type or "").lower().replace("_", " ").split())
     return "primary" in token and "tumor" in token
+
+
+def _parse_sample_metadata(samples: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    """Normalise cBioPortal Sample objects (id/type + nested patient) for linkage."""
+    metadata: dict[str, dict[str, str]] = {}
+    for sample in samples:
+        sample_id = str(sample.get("sampleId") or sample.get("id") or "").strip()
+        patient_object = sample.get("patient")
+        patient = patient_object if isinstance(patient_object, dict) else {}
+        patient_id = str(
+            sample.get("patientId")
+            or patient.get("patientId")
+            or patient.get("id")
+            or ""
+        ).strip()
+        sample_type = str(
+            sample.get("type")
+            or sample.get("sampleType")
+            or sample.get("sample_type")
+            or ""
+        ).strip()
+        if sample_id:
+            metadata[sample_id] = {
+                "patientId": patient_id,
+                "type": sample_type,
+            }
+    return metadata
 
 
 def _fetch_expression_records(
@@ -228,7 +254,7 @@ def _load_cohort(
     survival_by_patient = {row["patient_id"]: row for row in survival_rows}
     samples = client.get_all(
         f"studies/{cohort['study_id']}/samples",
-        {"projection": "SUMMARY"},
+        {"projection": "ALL"},
     )
     sample_list = client.get_json(f"sample-lists/{cohort['sample_list_id']}")
     profile = client.get_json(f"molecular-profiles/{cohort['profile_id']}")
@@ -248,13 +274,9 @@ def _load_cohort(
     if not isinstance(sample_ids, list) or not sample_ids:
         raise RuntimeError(f"Empty or invalid expression sample list for {cohort['label']}.")
 
-    sample_metadata = {
-        item.get("sampleId"): item
-        for item in samples
-        if item.get("sampleId") and item.get("patientId")
-    }
+    sample_metadata = _parse_sample_metadata(samples)
     sample_type_counts = Counter(
-        str(sample_metadata.get(sample_id, {}).get("type") or "UNKNOWN")
+        sample_metadata.get(sample_id, {}).get("type") or "UNKNOWN"
         for sample_id in sample_ids
     )
     primary_ids = [
@@ -325,7 +347,12 @@ def _load_cohort(
         "profile_name": profile.get("name"),
         "profile_description": profile.get("description"),
         "n_expression_samples_in_list": int(len(sample_ids)),
-        "n_primary_tumour_samples": int(len(primary_ids)),
+        "n_primary_tumour_samples": (
+            int(len(primary_ids))
+            if sample_type_filter == "Primary Solid Tumor only"
+            else None
+        ),
+        "n_expression_samples_used": int(len(primary_ids)),
         "n_unique_primary_tumour_patients_with_os": int(len(selected_patient_rows)),
         "n_os_events": int(sum(int(row["event"]) for row in selected_patient_rows)),
         "n_censored": int(sum(1 - int(row["event"]) for row in selected_patient_rows)),
@@ -592,6 +619,7 @@ def run_pam50_molecular_validation(
                 "profile_description": cohort["profile_description"],
                 "expression_samples_in_profile_list": cohort["n_expression_samples_in_list"],
                 "primary_tumour_samples": cohort["n_primary_tumour_samples"],
+                "expression_samples_used": cohort["n_expression_samples_used"],
                 "patients_in_survival_expression_analysis": cohort[
                     "n_unique_primary_tumour_patients_with_os"
                 ],
