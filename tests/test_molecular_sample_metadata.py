@@ -1,5 +1,5 @@
-from scripts.run_pam50_molecular_validation import (
-    _parse_sample_metadata,
+from onco_dynamics_x.data_engine.cohort_metadata import (
+    parse_cbioportal_sample_metadata,
 )
 
 
@@ -22,7 +22,7 @@ def test_parse_cBioPortal_sample_objects_with_nested_patient_and_tissue_type():
         },
     ]
 
-    result = _parse_sample_metadata(samples)
+    result = parse_cbioportal_sample_metadata(samples)
 
     assert result["TCGA-AA-0001-01"] == {
         "patientId": "TCGA-AA-0001",
