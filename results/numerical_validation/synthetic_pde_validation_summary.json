@@ -1,0 +1,90 @@
+{
+  "analysis": "synthetic_pde_numerical_validation",
+  "workflow_run_id": 42980986063,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42980986063",
+  "source_commit": "4b381346e54c876bbac2d7836dd8f5d12f53386a",
+  "artifact_id": 13837472207,
+  "dataset": "synthetic deterministic initial conditions; no patient data",
+  "parameters": "default dimensionless ModelParameters; not clinically calibrated",
+  "solver_comparison": {
+    "method_of_lines_reference": "SciPy DOP853 adaptive integration, rtol=1e-8, atol=1e-10",
+    "shared_spatial_operator": "same finite-difference Laplacian and reaction terms",
+    "post_integration_clipping_in_reference": false
+  },
+  "results": {
+    "2d": {
+      "grid_shape": [
+        9,
+        9
+      ],
+      "coarse_dx": 0.25,
+      "coarse_dt": 0.001,
+      "steps": 8,
+      "final_time": 0.008,
+      "diffusion_timestep_limit": 0.390625,
+      "explicit_vs_adaptive_max_relative_l2_error": 0.000002097375031940602,
+      "explicit_vs_adaptive_mean_relative_l2_error": 5.684360770653389e-7,
+      "timestep_refinement_relative_l2_error": {
+        "cancer": 3.6351810382861307e-7,
+        "immune": 0.0000010492481770549117,
+        "fibroblast": 2.0673193138497853e-7,
+        "oxygen": 3.448164767079325e-7,
+        "nutrient": 1.1433599676256272e-7,
+        "drug": 0,
+        "evasion": 1.9552210550527742e-7,
+        "vasculature": 7.697080108187297e-10
+      },
+      "grid_refinement_relative_l2_error": {
+        "cancer": 0.0011235729820511624,
+        "immune": 0.0016852827177127685,
+        "fibroblast": 0.0006973067853800455,
+        "oxygen": 0.00023648487907176985,
+        "nutrient": 0.00010704291947995062,
+        "drug": 0,
+        "evasion": 0.0005882744185038199,
+        "vasculature": 0.000010092967986933967
+      }
+    },
+    "3d": {
+      "grid_shape": [
+        5,
+        5,
+        5
+      ],
+      "coarse_dx": 0.5,
+      "coarse_dt": 0.001,
+      "steps": 4,
+      "final_time": 0.004,
+      "diffusion_timestep_limit": 1.0416666666666667,
+      "explicit_vs_adaptive_max_relative_l2_error": 2.352556083924564e-7,
+      "explicit_vs_adaptive_mean_relative_l2_error": 9.537568490644147e-8,
+      "timestep_refinement_relative_l2_error": {
+        "cancer": 7.146239952337687e-8,
+        "immune": 1.1766020587165066e-7,
+        "fibroblast": 6.858478926852014e-8,
+        "oxygen": 4.5020395229233915e-8,
+        "nutrient": 1.3898250792929548e-8,
+        "drug": 0,
+        "evasion": 6.48891557925962e-8,
+        "vasculature": 4.392900764641326e-11
+      },
+      "grid_refinement_relative_l2_error": {
+        "cancer": 0.0011564321455627999,
+        "immune": 0.0008822255596662486,
+        "fibroblast": 0.00039979511436554074,
+        "oxygen": 0.00018033315916836588,
+        "nutrient": 0.00008128577160883944,
+        "drug": 0,
+        "evasion": 0.0005220875657497177,
+        "vasculature": 0.000004072815726619468
+      }
+    }
+  },
+  "limitations": [
+    "Only one coarse/fine pair was assessed per spatial dimension; no three-level observed convergence order is estimated.",
+    "Spatial comparison uses the same finite-difference stencil and nested-node sampling, not an independent spatial discretization.",
+    "Only small grids and short final times were used.",
+    "The adaptive solver checks time integration consistency, not biological truth.",
+    "All model parameters and initial conditions are synthetic and dimensionless."
+  ]
+}
