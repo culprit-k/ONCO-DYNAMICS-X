@@ -603,6 +603,17 @@ def run_pam50_molecular_validation(
         n_bootstrap=n_bootstrap,
         seed=seed,
     )
+    subtype_transfer = molecular_model.evaluate_intrinsic_subtype_transfer(
+        tcga_rank.values,
+        tcga["patient_ids"],
+        tcga["patient_subtype_labels"],
+        metabric_rank.values,
+        metabric["patient_ids"],
+        metabric["patient_subtype_labels"],
+        c_value=0.1,
+        n_bootstrap=n_bootstrap,
+        seed=seed,
+    )
 
     cohort_metadata = []
     for cohort, rank_report in (
@@ -700,7 +711,14 @@ def run_pam50_molecular_validation(
             "nonpositive_followup": "excluded; never replaced with arbitrary positive time",
         },
         "model_results": results,
+        "subtype_transfer_results": subtype_transfer,
         "prespecification": {
+            "secondary_subtype_task": (
+                "TCGA-trained, METABRIC-tested five-class logistic classifier "
+                "on rank-normalised fixed 50-gene features"
+            ),
+            "subtype_classifier_C": 0.1,
+            "subtype_shared_classes": list(molecular_model.INTRINSIC_SUBTYPE_CLASSES),
             "primary_model": "age + first five TCGA-fitted PAM50-panel principal components",
             "age_only_comparator": "age only, fitted on the same complete-case TCGA patients",
             "pca_components": int(n_components),
@@ -758,6 +776,14 @@ def main() -> None:
     print("METABRIC age-only C-index:", result["age_only_reference"]["harrell_c_index"])
     print("METABRIC molecular C-index:", result["molecular_model"]["harrell_c_index"])
     print("Delta C-index:", result["molecular_model"]["delta_c_index_vs_age_only"])
+    print(
+        "Subtype transfer balanced accuracy:",
+        report["subtype_transfer_results"]["external_evaluation"]["balanced_accuracy"],
+    )
+    print(
+        "Subtype transfer macro-F1:",
+        report["subtype_transfer_results"]["external_evaluation"]["macro_f1"],
+    )
     print("Aggregate molecular report:", output)
 
 
