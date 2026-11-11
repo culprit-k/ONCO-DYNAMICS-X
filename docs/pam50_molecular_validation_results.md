@@ -108,7 +108,7 @@ This result should be treated as an exploratory baseline for further assay-level
 
 ## Limitations and next acceptance gates
 
-1. **Sample selection:** primary-tumour selection is now verified for these cohorts: all 1,082 TCGA and 1,980 METABRIC expression samples were `Primary Solid Tumor`, with zero missing patient links or duplicate primary specimens. Preserve this same explicit tissue-type audit for any future cohort.
+1. **Sample selection:** primary-tumour selection is verified for these two cohorts: all 1,082 TCGA and 1,980 METABRIC expression samples were `Primary Solid Tumor`, with zero missing patient links or duplicate primary specimens. Preserve this explicit tissue-type audit for every future cohort.
 2. **Platform mapping:** inspect the original METABRIC Illumina HT-12 v3 probe annotation, multiple-probe mapping, duplicate summarisation, and annotation version. The present analysis uses cBioPortal's gene-level profile rather than rebuilding probe-level expression.
 3. **Harmonisation:** compare a predeclared, reproducible assay-aware transformation with the current cohort-wise rank transform. Retain the current transductive limitation until a prospective transform exists.
 4. **External validation:** repeat on a further independent cohort with a compatible, documented assay and endpoint.
