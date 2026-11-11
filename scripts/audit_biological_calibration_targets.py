@@ -10,7 +10,10 @@ from onco_dynamics_x.data_engine.biological_calibration_audit import run_audit
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="results/biological_calibration/target_availability.json")
+    parser.add_argument(
+        "--output",
+        default="results/biological_calibration/target_availability.json",
+    )
     parser.add_argument("--timeout", type=float, default=60.0)
     parser.add_argument("--retries", type=int, default=3)
     args = parser.parse_args()
