@@ -13,8 +13,8 @@ ONCO-DYNAMICS-X is a research and university-project prototype that combines dim
 | 2D/3D mathematical core | Eight-field reaction–diffusion solver, finite-difference Laplacian, no-flux boundaries, explicit stability guard | Biological parameter calibration, identifiability and clinical validity |
 | Cell-agent model | Stochastic cancer, immune and fibroblast agents in 2D/3D | Validation against registered tissue imaging |
 | PDE–agent coupling | Operator-split two-way field/agent exchange with explicit occupancy and coupling controls | Mass/number consistency, deposition-kernel convergence and biological calibration |
-| AI architectures | Optional PINN, FNO, spatial GNN and expression transformer modules | Training and independent biological evaluation of these models |
-| Cohort pipeline | Public GDC and cBioPortal metadata/data workflows; aggregate-only audits | Molecular cross-platform validation and harmonized feature space |
+| AI architectures | PINN, FNO and spatial GNN trained and tested on synthetic ground-truth tasks; expression transformer module | Training/evaluation on biological data and independent validation |
+| Cohort pipeline | Public GDC/cBioPortal workflows; 16-gene expression availability confirmed across TCGA and METABRIC | Probe-level mapping, harmonized feature space and external molecular validation |
 | Survival baseline | TCGA-trained / METABRIC-tested age-only Cox baseline with censoring-aware evaluation | Clinical utility, prospective validation, molecular predictor and covariate-dependent censoring analysis |
 | Dashboard | Streamlit 2D/3D PDE console and optional coupled agent mode | Full experiment-management layer and validated patient-data ingestion |
 | Hardware concept | ESP32 firmware, serial protocol, OpenSCAD phantom and build guide | Physical fabrication, wiring verification and bench testing |
@@ -57,6 +57,10 @@ The optional PINN, FNO and spatial GNN implementations have now completed CPU tr
 - Spatial GNN relative L2 error 0.0699 on a synthetic neighbourhood-fraction task; test MSE 0.000687 compared with 0.040535 for the constant-mean baseline.
 
 The full workflow passed tests and lint. These scores are not breast-cancer accuracy and do not validate the biological model. See [synthetic AI benchmark methodology and results](docs/synthetic_ai_benchmarks.md) and [aggregate metrics](results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json).
+
+### Molecular marker availability audit
+
+A fixed 16-marker panel was queried in the public TCGA-BRCA PanCancer Atlas RSEM profile and METABRIC Illumina HT-12 v3 profile. All **16/16 markers** returned finite expression values for all **1,082 TCGA samples** and all **1,980 METABRIC samples**; no missing, non-finite or duplicate sample records were observed in this run. This is data-availability evidence only. TCGA and METABRIC values are on different assay scales and have not been harmonized or compared directly. See [audit methodology/results](docs/molecular_marker_audit.md) and [aggregate marker report](results/molecular_audit/marker_panel_overlap_summary.json).
 
 ## Architecture
 
@@ -128,6 +132,8 @@ python scripts/run_survival_validation_metrics.py
 - [Synthetic PDE numerical validation results](docs/synthetic_pde_validation_results.md)
 - [Age-only external survival results](docs/age_only_external_results.md)
 - [Censoring-aware survival metric methodology](docs/survival_validation_metrics.md)
+- [Synthetic AI benchmark results](docs/synthetic_ai_benchmarks.md)
+- [Molecular marker audit](docs/molecular_marker_audit.md)
 - [Data sources and governance](docs/data_sources.md)
 - [Safety and limitations](docs/safety_and_limitations.md)
 - [Hardware build guide](docs/hardware_build_guide.md)
@@ -139,7 +145,9 @@ The repository includes GitHub Actions for:
 - GDC paired TCGA-BRCA open-data audit and technical specimen-label baseline;
 - TCGA/METABRIC cohort and clinical endpoint audits;
 - age-only TCGA-to-METABRIC survival evaluation;
-- synthetic 2D/3D PDE numerical validation.
+- synthetic 2D/3D PDE numerical validation;
+- synthetic PINN/FNO/GNN training benchmarks;
+- aggregate-only TCGA/METABRIC molecular marker availability audit.
 
 The workflows publish aggregate reports only. Do not commit controlled-access or identifiable participant-level data, patient/sample identifiers, raw expression files or row-level clinical records to this public repository.
 
