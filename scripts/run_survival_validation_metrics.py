@@ -1,13 +1,13 @@
 """Run an age-only TCGA-to-METABRIC survival validation.
 
 The model is fitted in TCGA and frozen before external evaluation. METABRIC
-outcomes are used only to calculate evaluation metrics and the censoring
-weights required by IPCW estimators. Patient-level data remain in memory and
-are never written to the report.
+outcomes are used only for evaluation and censoring-weight estimation.
+Patient-level records remain in memory and are never written to the report.
 """
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -97,11 +97,19 @@ def run_validation(
         raise ValueError("TCGA development cohort is too small for the prespecified model.")
     if len(metabric) < 100 or int(metabric["event"].sum()) < 30:
         raise ValueError("METABRIC external cohort is too small for evaluation.")
+    if not horizons_months or any(value <= 0 for value in horizons_months):
+        raise ValueError("Evaluation horizons must be positive.")
+    if any(
+        right <= left
+        for left, right in zip(horizons_months, horizons_months[1:])
+    ):
+        raise ValueError("Evaluation horizons must be sorted and unique.")
 
     age_mean = float(tcga["age_years"].mean())
     age_sd = float(tcga["age_years"].std(ddof=0))
     if not np.isfinite(age_sd) or age_sd <= 0:
         raise ValueError("TCGA age standard deviation is invalid.")
+
     train_covariates = pd.DataFrame(
         {"age_z": (tcga["age_years"] - age_mean) / age_sd}
     )
@@ -117,9 +125,7 @@ def run_validation(
 
     test_durations = metabric["duration_months"].to_numpy(dtype=float)
     test_events = metabric["event"].to_numpy(dtype=int)
-    test_risk = (
-        model.predict_partial_hazard(test_covariates).to_numpy().reshape(-1)
-    )
+    test_risk = model.predict_partial_hazard(test_covariates).to_numpy().reshape(-1)
     c_index = float(concordance_index(test_durations, -test_risk, test_events))
     c_index_bootstrap = _bootstrap_c_index(
         test_durations,
@@ -133,18 +139,7 @@ def run_validation(
         test_covariates, times=list(horizons_months)
     )
     predicted_survival = predicted_survival_frame.to_numpy(dtype=float).T
-    survival_metrics = evaluate_ipcw_survival(
-        test_durations,
-        test_events,
-        predicted_survival.reshape(-1) if False else predicted_survival[:, 0],
-        horizons_months=horizons_months,
-        n_bins=10,
-        n_bootstrap=n_bootstrap,
-        seed=seed,
-    ) if len(horizons_months) == 1 else None
 
-    # Evaluate each horizon against its corresponding frozen survival column.
-    # A shared metric report is then assembled without re-fitting the Cox model.
     per_horizon_reports = []
     for horizon_index, horizon in enumerate(horizons_months):
         one = evaluate_ipcw_survival(
@@ -189,11 +184,11 @@ def run_validation(
             "event_mapping": "1:DECEASED=1; 0:LIVING=0",
             "time_unit": "months",
             "time_origin": (
-                "cBioPortal's generic format documents months since initial diagnosis; "
-                "study-specific definitions still require review of the original guides."
+                "cBioPortal's generic format documents months since initial diagnosis. "
+                "Study-specific definitions must be checked against the cohort guides."
             ),
             "nonpositive_times": (
-                "Excluded by the existing cohort assembler and counted in aggregate QC; "
+                "Excluded by the cohort assembler and counted in aggregate QC; "
                 "no artificial positive time was substituted."
             ),
         },
@@ -247,7 +242,7 @@ def run_validation(
                 "horizons": per_horizon_reports,
                 "integrated_brier_score_sparse_grid": ibs,
                 "integrated_brier_score_note": (
-                    "Trapezoidal approximation using time zero and the three prespecified "
+                    "Trapezoidal approximation using time zero and the prespecified "
                     "horizons; not a dense-grid integrated Brier score."
                 ),
             },
@@ -292,10 +287,6 @@ def main() -> None:
     args = parser.parse_args()
     if args.bootstrap < 0:
         parser.error("--bootstrap must be non-negative")
-    if any(right <= left for left, right in zip(
-        args.horizons_months, args.horizons_months[1:]
-    )):
-        parser.error("--horizons-months must be sorted and unique")
 
     report = run_validation(
         horizons_months=tuple(args.horizons_months),
@@ -306,16 +297,20 @@ def main() -> None:
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        __import__("json").dumps(report, indent=2, sort_keys=True) + "\n",
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    print("TCGA patients/events:", report["cohorts"]["development"]["patients"],
-          report["cohorts"]["development"]["events"])
-    print("METABRIC patients/events:",
-          report["cohorts"]["external_evaluation"]["patients"],
-          report["cohorts"]["external_evaluation"]["events"])
-    print("METABRIC Harrell C-index:",
-          report["external_performance"]["harrell_c_index"])
+    print(
+        "TCGA patients/events:",
+        report["cohorts"]["development"]["patients"],
+        report["cohorts"]["development"]["events"],
+    )
+    print(
+        "METABRIC patients/events:",
+        report["cohorts"]["external_evaluation"]["patients"],
+        report["cohorts"]["external_evaluation"]["events"],
+    )
+    print("METABRIC Harrell C-index:", report["external_performance"]["harrell_c_index"])
     for row in report["external_performance"]["time_dependent_metrics"]["horizons"]:
         print(
             f"{row['time_months']:.0f} months: AUC={row['time_dependent_auc_ipcw']}; "
