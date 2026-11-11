@@ -30,14 +30,16 @@ This status separates executable code from model components that still require t
 - METABRIC audit: 2,509 patients/samples, 1,980 mRNA samples, 1,980 expression-linked patients with complete OS fields, 1,979 with positive OS follow-up.
 - TCGA PanCancer Atlas audit: 1,084 patients/samples, 1,082 RNA-seq samples, 1,082 with complete OS fields, 1,069 with positive OS follow-up.
 - Patient-level endpoint pair completeness, non-positive time diagnostics, sample-to-patient linkage, clinical-attribute coverage and candidate baseline covariate overlap.
-- Endpoint-aware survival data assembler with explicit OS event/censor parsing and broad stage harmonization.
+- Endpoint-aware survival data assembler with explicit OS event/censor parsing and provisional broad-stage mapping; cross-cohort stage semantics remain unresolved and stage is excluded from the primary age-only model.
 - Exploratory Cox proportional-hazards clinical baseline trained on TCGA (1,050 patients; 143 deaths) and evaluated once on METABRIC (1,454 patients; 821 deaths).
 - External METABRIC Harrell C-index 0.616 (patient bootstrap 95% interval 0.592–0.641) for age + broad stage; age-only comparator C-index 0.591 (95% interval 0.570–0.617).
 - Survival workflow uploads aggregate metrics only; no row-level clinical data, patient/sample identifiers or expression matrices are uploaded.
+- Fixed 16-gene expression availability audit across TCGA-BRCA RSEM (1,082 samples) and METABRIC Illumina HT-12 v3 (1,980 samples): all marker-sample values finite and complete in the queried profiles; no missing/non-finite or duplicate records. No harmonization or model fitting performed.
 - Censoring-aware age-only Cox evaluation trained in TCGA (1,069 patients; 151 deaths) and evaluated in METABRIC (1,979 patients; 1,143 deaths), with Harrell C-index 0.588 (bootstrap 95% interval 0.568–0.606).
 - METABRIC time-dependent IPCW AUC at 12/36/60 months: 0.578 / 0.515 / 0.539; IPCW Brier scores: 0.0150 / 0.1014 / 0.1713; sparse-grid IBS 0.07935. Results and limitations are recorded in docs/age_only_external_results.md.
 
 ### Statistical and model components
+- CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets; held-out errors and baselines are recorded in docs/synthetic_ai_benchmarks.md. These are software benchmarks, not biological training.
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
 - Optional PyTorch PINN, Fourier neural operator, spatial GNN and expression-transformer architectures.
 - Optional PyMC posterior builder, DoWhy linear backdoor wrapper and CasADi mean-field control demonstration.
@@ -55,7 +57,7 @@ The survival Cox model is a clinical-only exploratory baseline. It does not use 
 ## Still outstanding
 - Review source-level endpoint definitions and raw TCGA/METABRIC stage-value distributions; aggregate category counts are now recorded, but TCGA patient-level AJCC pathologic stage and METABRIC sample-level generic tumour stage are not yet established as equivalent.
 - Extend calibration and time-dependent survival evaluation to future molecular models and alternative endpoints; review marginal independent-censoring assumptions. Keep the age-only model as the primary clinical reference until stage-field semantics are verified.
-- Build a fixed molecular feature/signature pipeline and solve cross-platform harmonization between TCGA RNA-seq RSEM and METABRIC Illumina HT-12 v3 microarray.
+- Build a fixed molecular feature/signature pipeline and solve cross-platform harmonization between TCGA RNA-seq RSEM and METABRIC Illumina HT-12 v3 microarray; marker presence is established, but assay/probe mapping and normalization remain outstanding.
 - Perform independent molecular evaluation without using METABRIC outcomes for feature selection or tuning.
 - Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
 - Expand the adaptive DOP853 comparison to a multi-resolution convergence ladder and report the resulting error trends; numerical consistency does not establish biological validity.
