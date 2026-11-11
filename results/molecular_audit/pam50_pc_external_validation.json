@@ -1,0 +1,203 @@
+{
+  "analysis": "PAM50_panel_rank_normalised_TCGA_to_METABRIC_survival_validation",
+  "status": "completed",
+  "date": "2026-11-11",
+  "workflow_run_id": 42984188725,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984188725",
+  "evaluated_commit": "9d14003f04602fe40e10a2c1070c2b7dffaa7824",
+  "artifact_id": 13838418730,
+  "cohorts": {
+    "development": {
+      "study": "TCGA-BRCA PanCancer Atlas",
+      "expression_samples": 1082,
+      "survival_analysis_patients": 1069,
+      "deaths": 151,
+      "censored": 918,
+      "finite_gene_values": 54100,
+      "expected_gene_values": 54100,
+      "common_panel_genes": 50,
+      "sample_type_metadata": "UNKNOWN for all profile-list records; no sample-type exclusion was possible"
+    },
+    "external": {
+      "study": "METABRIC",
+      "expression_samples": 1980,
+      "survival_analysis_patients": 1979,
+      "deaths": 1143,
+      "censored": 836,
+      "finite_gene_values": 99000,
+      "expected_gene_values": 99000,
+      "common_panel_genes": 50,
+      "sample_type_metadata": "UNKNOWN for all profile-list records; no sample-type exclusion was possible"
+    }
+  },
+  "panel": {
+    "name": "PAM50 50-gene intrinsic-subtype research panel",
+    "genes_in_common": 50,
+    "genes_imputed": 0,
+    "missing_nonfinite_or_duplicate_measurements": 0,
+    "validated_hugo_symbol_aliases": {
+      "CDCA1": "NUF2",
+      "KNTC2": "NDC80",
+      "ORC6L": "ORC6"
+    }
+  },
+  "harmonisation": {
+    "method": "Per-gene within-cohort mid-rank inverse-normal transformation, applied independently within TCGA and METABRIC",
+    "external_unlabelled_expression_distribution_used": true,
+    "external_outcomes_or_subtype_labels_used_for_feature_construction": false,
+    "pca_fit_only_on_tcga": true,
+    "pca_components": 5,
+    "tcga_explained_variance_ratio_total": 0.681929350630701,
+    "transductive": true,
+    "individual_sample_deployment_supported": false,
+    "underlying_metabric_probe_annotation_rederived": false
+  },
+  "model": {
+    "family": "Ridge-penalised Cox proportional hazards",
+    "predictors": [
+      "age at diagnosis",
+      "TCGA-fitted PAM50-panel PC1-PC5"
+    ],
+    "penalizer": 0.5,
+    "bootstrap_replicates": 250,
+    "seed": 42,
+    "external_outcomes_used_for_fitting_or_tuning": false
+  },
+  "external_discrimination": {
+    "age_only_harrell_c_index": 0.588195288641148,
+    "age_only_bootstrap_95ci": [
+      0.5682810601159914,
+      0.6064900519438781
+    ],
+    "age_plus_pam50_pc_harrell_c_index": 0.5992468941797373,
+    "age_plus_pam50_pc_bootstrap_95ci": [
+      0.5798002819403251,
+      0.6201182847110196
+    ],
+    "delta_c_index_vs_age_only": 0.011051605538589304,
+    "paired_bootstrap_delta_c_index_95ci": [
+      -0.0019455327555738448,
+      0.024084792511310408
+    ],
+    "valid_paired_bootstrap_replicates": 250
+  },
+  "time_dependent_metrics": {
+    "12_months": {
+      "evaluable_cases": 30,
+      "evaluable_controls": 1934,
+      "censored_before_horizon": 15,
+      "age_only": {
+        "ipcw_auc": 0.5783120086764344,
+        "ipcw_auc_95ci": [
+          0.46022681022691275,
+          0.6844242189426383
+        ],
+        "ipcw_brier": 0.01504823954080672,
+        "ipcw_brier_95ci": [
+          0.0093075893931565,
+          0.02037414399540376
+        ],
+        "calibration_gap_observed_minus_predicted": 0.005706599681231772
+      },
+      "age_plus_pam50_pc": {
+        "ipcw_auc": 0.6233486588517132,
+        "ipcw_auc_95ci": [
+          0.49954863613164807,
+          0.7335004051817191
+        ],
+        "ipcw_brier": 0.01502725967288535,
+        "ipcw_brier_95ci": [
+          0.009806058813807568,
+          0.020843532220153768
+        ],
+        "calibration_gap_observed_minus_predicted": 0.005739172435760942
+      }
+    },
+    "36_months": {
+      "evaluable_cases": 223,
+      "evaluable_controls": 1717,
+      "censored_before_horizon": 39,
+      "age_only": {
+        "ipcw_auc": 0.515060792384049,
+        "ipcw_auc_95ci": [
+          0.4739784449697586,
+          0.5613144607837619
+        ],
+        "ipcw_brier": 0.10128390325746986,
+        "ipcw_brier_95ci": [
+          0.08983707343907553,
+          0.11193926388493528
+        ],
+        "calibration_gap_observed_minus_predicted": -0.010530186019611865
+      },
+      "age_plus_pam50_pc": {
+        "ipcw_auc": 0.5440077484202017,
+        "ipcw_auc_95ci": [
+          0.4966867603178146,
+          0.5864698778475826
+        ],
+        "ipcw_brier": 0.10099287447561313,
+        "ipcw_brier_95ci": [
+          0.09052387953676104,
+          0.11449838532865801
+        ],
+        "calibration_gap_observed_minus_predicted": -0.010048289681293454
+      }
+    },
+    "60_months": {
+      "evaluable_cases": 427,
+      "evaluable_controls": 1489,
+      "censored_before_horizon": 63,
+      "age_only": {
+        "ipcw_auc": 0.5394728163121834,
+        "ipcw_auc_95ci": [
+          0.5037363184484115,
+          0.5718628686304834
+        ],
+        "ipcw_brier": 0.1720325829944412,
+        "ipcw_brier_95ci": [
+          0.16154858348968335,
+          0.18304533207250392
+        ],
+        "calibration_gap_observed_minus_predicted": -0.03122345094838075
+      },
+      "age_plus_pam50_pc": {
+        "ipcw_auc": 0.5797679535182027,
+        "ipcw_auc_95ci": [
+          0.5468903888257511,
+          0.6100469678139233
+        ],
+        "ipcw_brier": 0.17084604048639532,
+        "ipcw_brier_95ci": [
+          0.1594852979331162,
+          0.18258201439766972
+        ],
+        "calibration_gap_observed_minus_predicted": -0.030285651017000648
+      }
+    }
+  },
+  "interpretation": {
+    "predictive_signature_validated": false,
+    "clinical_utility_established": false,
+    "treatment_response_model": false,
+    "pro_signa_classifier": false,
+    "intrinsic_subtype_classifier": false,
+    "spatial_digital_twin_validated": false,
+    "conclusion": "The age-plus-PAM50-PC model had a slightly higher external Harrell C-index than age only, but the paired bootstrap confidence interval for the delta included zero. Time-dependent AUC intervals also include 0.5 at 12 and 36 months. This is an exploratory, transductive molecular association analysis, not evidence of a reliable clinical improvement."
+  },
+  "limitations": [
+    "Within-cohort rank normalisation uses the complete unlabelled external expression distribution; the model is transductive and is not ready for single-sample deployment.",
+    "The underlying METABRIC probe annotation and duplicate-probe summarisation were not rederived in this analysis.",
+    "Sample-type metadata were unavailable (UNKNOWN) for all expression-list entries in both cohorts, so the workflow could not verify or restrict primary-tumour specimens.",
+    "The Cox PCs are unsupervised components of the PAM50 gene-expression matrix; they are not intrinsic-subtype calls and not the commercial Prosigna assay.",
+    "TCGA and METABRIC overall-survival time origins and event definitions still require source-level confirmation.",
+    "IPCW metrics use a marginal censoring Kaplan-Meier model and assume independent censoring within the evaluation cohort.",
+    "This retrospective external analysis does not establish clinical utility, prospective validity, treatment benefit or biological causality."
+  ],
+  "data_governance": {
+    "patient_level_rows_written": false,
+    "patient_or_sample_identifiers_written": false,
+    "raw_expression_values_written": false,
+    "aggregate_metrics_only": true
+  }
+}
