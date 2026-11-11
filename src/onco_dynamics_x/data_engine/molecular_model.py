@@ -169,3 +169,241 @@ def fit_tcga_pca_projection(
         "components": loadings,
     }
     return train_scores, external_scores, metadata
+
+
+INTRINSIC_SUBTYPE_CLASSES: tuple[str, ...] = (
+    "Basal",
+    "Her2",
+    "LumA",
+    "LumB",
+    "Normal",
+)
+
+
+def canonical_intrinsic_subtype(value: str | None) -> str | None:
+    """Map study-specific subtype strings to five shared intrinsic classes.
+
+    Extra METABRIC labels such as claudin-low and NC deliberately return None.
+    """
+    token = str(value or "").strip().upper().replace(" ", "").replace("-", "_")
+    if token.startswith("BRCA_"):
+        token = token[5:]
+    aliases = {
+        "BASAL": "Basal",
+        "HER2": "Her2",
+        "HER": "Her2",
+        "LUMA": "LumA",
+        "LUMB": "LumB",
+        "NORMAL": "Normal",
+    }
+    return aliases.get(token)
+
+
+def evaluate_intrinsic_subtype_transfer(
+    training_features: NDArray[np.float64],
+    training_patient_ids: list[str] | tuple[str, ...],
+    training_labels_by_patient: dict[str, str],
+    external_features: NDArray[np.float64],
+    external_patient_ids: list[str] | tuple[str, ...],
+    external_labels_by_patient: dict[str, str],
+    *,
+    c_value: float = 0.1,
+    n_bootstrap: int = 250,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Train a fixed logistic classifier in TCGA and test shared labels in METABRIC.
+
+    Features must be generated without subtype labels or clinical outcomes.
+    Only five shared classes are used. This benchmarks transfer of existing
+    study annotations; it is not an official PAM50/Prosigna classifier.
+    """
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import (
+        accuracy_score,
+        balanced_accuracy_score,
+        confusion_matrix,
+        f1_score,
+        precision_recall_fscore_support,
+    )
+
+    train_x = np.asarray(training_features, dtype=float)
+    test_x = np.asarray(external_features, dtype=float)
+    train_ids = tuple(str(value) for value in training_patient_ids)
+    test_ids = tuple(str(value) for value in external_patient_ids)
+    if train_x.ndim != 2 or test_x.ndim != 2:
+        raise ValueError("Subtype feature matrices must be two-dimensional.")
+    if train_x.shape[0] != len(train_ids) or test_x.shape[0] != len(test_ids):
+        raise ValueError("Patient IDs must align one-to-one with feature rows.")
+    if train_x.shape[1] != test_x.shape[1] or train_x.shape[1] < 1:
+        raise ValueError("Training and external feature dimensions must match.")
+    if not np.isfinite(train_x).all() or not np.isfinite(test_x).all():
+        raise ValueError("Subtype features must be finite.")
+    if len(set(train_ids)) != len(train_ids) or len(set(test_ids)) != len(test_ids):
+        raise ValueError("Patient IDs must be unique within each cohort.")
+    if not np.isfinite(c_value) or c_value <= 0:
+        raise ValueError("c_value must be finite and positive.")
+    if n_bootstrap < 0:
+        raise ValueError("n_bootstrap cannot be negative.")
+
+    classes = list(INTRINSIC_SUBTYPE_CLASSES)
+
+    def select_labels(
+        patient_ids: tuple[str, ...],
+        label_map: dict[str, str],
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, int], dict[str, int]]:
+        indices: list[int] = []
+        labels: list[str] = []
+        raw_counts: dict[str, int] = {}
+        excluded_counts: dict[str, int] = {}
+        for index, patient_id in enumerate(patient_ids):
+            raw = str(label_map.get(patient_id, "")).strip()
+            if not raw:
+                continue
+            raw_counts[raw] = raw_counts.get(raw, 0) + 1
+            canonical = canonical_intrinsic_subtype(raw)
+            if canonical is None:
+                excluded_counts[raw] = excluded_counts.get(raw, 0) + 1
+                continue
+            indices.append(index)
+            labels.append(canonical)
+        return (
+            np.asarray(indices, dtype=int),
+            np.asarray(labels, dtype=str),
+            dict(sorted(raw_counts.items())),
+            dict(sorted(excluded_counts.items())),
+        )
+
+    train_indices, y_train, train_raw, train_excluded = select_labels(
+        train_ids, training_labels_by_patient
+    )
+    test_indices, y_test, test_raw, test_excluded = select_labels(
+        test_ids, external_labels_by_patient
+    )
+    if len(train_indices) < 100 or len(test_indices) < 100:
+        raise ValueError("Insufficient labelled patients for five-class subtype transfer.")
+    train_counts = {
+        label: int(np.count_nonzero(y_train == label)) for label in classes
+    }
+    test_counts = {
+        label: int(np.count_nonzero(y_test == label)) for label in classes
+    }
+    if any(train_counts[label] < 10 for label in classes):
+        raise ValueError("At least ten TCGA training patients per shared subtype are required.")
+    if any(test_counts[label] < 10 for label in classes):
+        raise ValueError("At least ten METABRIC test patients per shared subtype are required.")
+
+    classifier = LogisticRegression(
+        C=float(c_value),
+        penalty="l2",
+        solver="lbfgs",
+        class_weight="balanced",
+        max_iter=3000,
+        random_state=seed,
+    )
+    classifier.fit(train_x[train_indices], y_train)
+    predictions = classifier.predict(test_x[test_indices])
+    accuracy = float(accuracy_score(y_test, predictions))
+    balanced_accuracy = float(balanced_accuracy_score(y_test, predictions))
+    macro_f1 = float(
+        f1_score(y_test, predictions, labels=classes, average="macro", zero_division=0)
+    )
+    precision, recall, class_f1, support = precision_recall_fscore_support(
+        y_test, predictions, labels=classes, zero_division=0
+    )
+    matrix = confusion_matrix(y_test, predictions, labels=classes)
+
+    majority_class = max(train_counts, key=train_counts.get)
+    majority_prediction = np.full(len(y_test), majority_class, dtype=str)
+    majority_accuracy = float(accuracy_score(y_test, majority_prediction))
+    majority_macro_f1 = float(
+        f1_score(
+            y_test, majority_prediction, labels=classes,
+            average="macro", zero_division=0,
+        )
+    )
+
+    rng = np.random.default_rng(seed)
+    accuracy_boot: list[float] = []
+    balanced_boot: list[float] = []
+    macro_f1_boot: list[float] = []
+    n_test = len(y_test)
+    for _ in range(n_bootstrap):
+        sample = rng.integers(0, n_test, size=n_test)
+        accuracy_boot.append(float(accuracy_score(y_test[sample], predictions[sample])))
+        balanced_boot.append(
+            float(balanced_accuracy_score(y_test[sample], predictions[sample]))
+        )
+        macro_f1_boot.append(
+            float(
+                f1_score(
+                    y_test[sample], predictions[sample], labels=classes,
+                    average="macro", zero_division=0,
+                )
+            )
+        )
+
+    def interval(values: list[float]) -> list[float] | None:
+        if len(values) < max(30, int(0.5 * n_bootstrap)):
+            return None
+        return [
+            float(np.quantile(values, 0.025)),
+            float(np.quantile(values, 0.975)),
+        ]
+
+    per_class = {}
+    for index, label in enumerate(classes):
+        per_class[label] = {
+            "precision": float(precision[index]),
+            "recall": float(recall[index]),
+            "f1": float(class_f1[index]),
+            "support": int(support[index]),
+        }
+
+    return {
+        "task": "five-class intrinsic-subtype label transfer",
+        "training_cohort": "TCGA-BRCA",
+        "external_evaluation_cohort": "METABRIC",
+        "class_order": classes,
+        "features": "50-gene panel, cohort-wise outcome-blind rank-normalised values",
+        "classifier": {
+            "family": "L2 logistic regression",
+            "C": float(c_value),
+            "class_weight": "balanced",
+            "solver": "lbfgs",
+            "max_iter": 3000,
+            "hyperparameter_tuning": False,
+        },
+        "training": {
+            "patients_with_shared_subtype_labels": int(len(train_indices)),
+            "shared_class_counts": train_counts,
+            "raw_annotation_value_counts": train_raw,
+            "extra_or_nonshared_labels_excluded": train_excluded,
+        },
+        "external_evaluation": {
+            "patients_with_shared_subtype_labels": int(len(test_indices)),
+            "shared_class_counts": test_counts,
+            "raw_annotation_value_counts": test_raw,
+            "extra_or_nonshared_labels_excluded": test_excluded,
+            "accuracy": accuracy,
+            "accuracy_bootstrap_95ci": interval(accuracy_boot),
+            "balanced_accuracy": balanced_accuracy,
+            "balanced_accuracy_bootstrap_95ci": interval(balanced_boot),
+            "macro_f1": macro_f1,
+            "macro_f1_bootstrap_95ci": interval(macro_f1_boot),
+            "majority_class_baseline": majority_class,
+            "majority_class_baseline_accuracy": majority_accuracy,
+            "majority_class_baseline_macro_f1": majority_macro_f1,
+            "per_class_metrics": per_class,
+            "confusion_matrix": {
+                "class_order": classes,
+                "counts": matrix.astype(int).tolist(),
+            },
+        },
+        "limitations": [
+            "Labels are existing study-provided annotations, not independent biological ground truth.",
+            "Features overlap the historical subtype panel, so this measures annotation transfer rather than independent subtype discovery.",
+            "Cohort-wise rank normalisation is transductive and not suitable for single-sample deployment.",
+            "METABRIC claudin-low and NC labels are excluded from this five-class comparison and counted separately.",
+            "This is not an official PAM50/Prosigna classifier and does not establish clinical utility or treatment response.",
+        ],
+    }
