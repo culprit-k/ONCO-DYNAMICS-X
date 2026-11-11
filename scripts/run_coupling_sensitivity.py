@@ -163,7 +163,8 @@ def run_coupling_sensitivity_sweep(
             "calibration, patient simulation, or clinical result."
         ),
         "limitations": [
-            "The agent-to-grid occupancy scale and coupling strength are not calibrated from tissue observations.",
+            "The agent-to-grid occupancy scale and coupling strength are not "
+            "calibrated from tissue observations.",
             "Nearest-grid deposition is used; no alternate deposition kernel is compared.",
             "The PDE-agent blend is not derived from a mass-conserving multiscale limit.",
             "The sweep does not estimate biological parameter uncertainty.",
