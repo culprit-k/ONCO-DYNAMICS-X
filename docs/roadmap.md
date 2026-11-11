@@ -16,9 +16,11 @@ All originally requested workstreams remain in scope. Phases describe implementa
 
 ## Immediate next tasks
 
-0. Review the completed aggregate cBioPortal target audit; verify assay definitions and exact specimen/timepoint overlap before pairing METABRIC ER/PR/HER2/grade/size fields with expression. No Ki-67 field was found by the current audit.
+The low-dimensional PDE fitter and synthetic parameter-recovery tests are now implemented. The next blocker is not an optimizer: it is obtaining matched, correctly scaled biological observations and defining a defensible image-to-model observation operator.
+
+0. Verify METABRIC ER/PR/HER2/grade/size/cellularity field definitions and exact specimen/timepoint overlap before pairing annotations with expression. No Ki-67 field was found by the aggregate audit.
 1. Audit TCIA I-SPY 2 DCE/FTV and companion ACRIN 6698 DWI/ADC/SEG manifests locally; confirm matched subjects, visit dates, masks, treatment regimen and later holdout. Apply the treatment-exposed net-volume fitter first; it estimates net volume change, not intrinsic proliferation or a drug parameter.
-2. Define and validate physical units, density scaling and an observation operator before fitting spatial PDE coefficients. Validate ADC as a cellularity proxy against pathology before use. Begin with a small identifiable parameter subset; do not jointly fit growth, oxygen, immune and drug terms from one output.
+2. Feed registered field snapshots and their justified noise scales to the new PDE estimator. First validate its observation operator and physical-to-model scaling; test one coefficient at a time, then only add parameters if independent fields identify them. Validate ADC as a cellularity proxy against pathology before use.
 
 1. Verify the broad-stage mapping against both cohort data dictionaries and perform sensitivity analyses for missing/unrecognized stage.
 2. Extend survival calibration/time-dependent metrics to molecular models and additional endpoints; assess censoring assumptions and horizon stability.
