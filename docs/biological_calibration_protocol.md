@@ -1,0 +1,143 @@
+# Biological calibration and parameter-estimation protocol
+
+**Status (11 November 2026): calibration software and data-feasibility workflow started; no patient- or animal-derived ONCO-DYNAMICS-X PDE coefficient has yet been estimated.**
+
+## 1. What the available cohorts can and cannot identify
+
+The TCGA-BRCA PanCancer Atlas and METABRIC work in this repository is predominantly cross-sectional. The expression cohorts contain 1,082 TCGA RNA-seq samples and 1,980 METABRIC microarray samples, with primary-tumour sample type and patient linkage audited. These data support molecular association and cohort-level phenotype analyses. They do not provide registered serial tumour-cellularity maps, oxygen maps, or repeated tumour-volume observations in the current pipeline.
+
+Consequently, the present molecular and survival results cannot identify:
+- a spatial cancer-cell diffusion coefficient;
+- oxygen-consumption or oxygen-supply kinetics;
+- an immune-cell killing rate;
+- an immune-evasion production/decay rate;
+- a drug-effect parameter or pharmacodynamic EC50;
+- patient-specific tumour growth kinetics.
+
+A survival endpoint is not a repeated tumour-growth measurement. Bulk RNA abundance is not a spatial cell-density or oxygen measurement.
+
+The new workflow `scripts/audit_biological_calibration_targets.py` audits public cBioPortal clinical-attribute metadata for candidate Ki-67, ER, PR, HER2, grade, tumour-size, cellularity and hypoxia fields. It outputs aggregate attribute names and coverage only. A name match is not proof of measurement validity: assay method, unit, specimen identity and temporal ordering must be verified before any fitted model uses that field.
+
+## 2. First estimable quantity: whole-tumour untreated growth kinetics
+
+The first estimator is deliberately narrower than the full PDE. For one tumour with repeated untreated volume measurements, it compares three positive-growth laws:
+
+**Exponential**
+`V(t)=V_0 e^{r t}`
+
+**Logistic**
+`V(t)=K/[1+(K/V_0-1)e^{-r t}]`
+
+**Gompertz**
+`V(t)=K\exp[\log(V_0/K)e^{-a t}]`
+
+Here, time is measured in days, volume in mm³, (V_0) is the observed first volume, (r) or (a) is an effective rate per day, and (K) is a fitted carrying-capacity-like scale. The fit minimizes residuals on log volume, corresponding to a multiplicative measurement-error assumption. AICc compares the candidate curves; the selected model receives a parametric residual bootstrap interval and a local Jacobian/SVD identifiability diagnostic.
+
+**Input requirements:** one subject per series; at least five unique, finite time points; strictly positive volumes; documented untreated interval; time in days; volume in mm³. The current CLI defaults to these CSV columns:
+
+```csv
+subject_id,time_days,volume_mm3,treatment_status
+subject_A,0,120,untreated
+subject_A,3,148,untreated
+subject_A,6,181,untreated
+subject_A,9,221,untreated
+subject_A,12,270,untreated
+```
+
+The example rows above are schema examples only, not observed research data. The CLI can filter to a user-specified untreated label. If no treatment column is supplied, the analyst must independently verify that every included observation belongs to an untreated interval.
+
+Run locally with:
+
+```bash
+pip install -e ".[science]"
+python scripts/fit_longitudinal_growth.py \
+  --input /path/to/local_longitudinal_volumes.csv \
+  --id-column subject_id \
+  --time-column time_days \
+  --volume-column volume_mm3 \
+  --treatment-column treatment_status \
+  --untreated-value untreated \
+  --bootstrap 500 \
+  --output /path/to/local_growth_calibration.json
+```
+
+The output contains pseudonymous series keys, fitted parameter summaries, model-selection statistics, uncertainty intervals and identifiability warnings. Raw observations and source identifiers are not exported. Keep the input and outputs in approved local/institutional storage; do not commit patient-level files to this public repository.
+
+The estimator rejects shrinking series. Those belong in a treatment-response model with a time-aligned exposure function; treating treatment-driven shrinkage as untreated proliferation would bias the growth estimate.
+
+## 3. Why a fitted growth rate is not yet `cancer_growth`
+
+The current ONCO-DYNAMICS-X PDE uses dimensionless fields and dimensionless time. Its cancer reaction is:
+
+```
+dC/dt = rC*C*(1-C/KC)*gO*gN
+        - [kI/(1+rhoE*E)]*I*C
+        - etaD*gD*C - deltaC*C
+```
+
+The fitted (r) from a whole-tumour volume curve is a **net, whole-tumour effective rate**. It mixes intrinsic proliferation, oxygen/nutrient limitation, cell death, immune effects, treatment and measurement/segmentation effects. The unit conversion (r^*=r_{day}\,T_0) only converts a physical rate to a chosen model-time unit; it does not separate those mechanisms. The function `physical_rate_to_dimensionless_rate` is therefore a unit converter, not a parameter assignment.
+
+A future PDE calibration must specify physical length, time and density scales, define a measurement operator from the simulated fields to observed MRI/volume data, and estimate a small identifiable parameter subset. The other parameters should be fixed from validated external measurements or held under justified priors, with sensitivity to those assumptions reported.
+
+## 4. Evidence needed for each mechanism
+
+| Model parameter family | Required matched observations | Why current cross-sectional bulk expression is insufficient |
+|---|---|---|
+| Cancer proliferation / net growth | Serial untreated volume or cellularity; Ki-67 or other independent proliferation measure | One expression snapshot does not supply a time derivative or a physical growth unit |
+| Cancer diffusion / invasion | Registered serial cellularity maps or spatial tumour-boundary changes with physical voxel spacing | Whole-tumour volume discards spatial gradients |
+| Oxygen supply/consumption | Quantitative oxygen-sensitive imaging or validated hypoxia measurements, plus vascular information | Bulk HIF1A/CA9 expression does not measure oxygen concentration or consumption rate |
+| Immune killing / evasion | Spatially resolved immune-cell density/state, tumour-cell density and longitudinal outcome under documented treatment/exposure | Bulk CD8A/CD274/CXCL9 expression cannot resolve contact, cell state or killing rate |
+| Fibroblast activation/suppression | Matched CAF/fibroblast density and stromal/ECM measurements | A bulk stromal marker score does not estimate a transition rate |
+| Drug killing / EC50 / field decay | Time-aligned drug exposure or pharmacokinetics and serial response measurements | Treatment-history flags without timing, regimen and concentration do not identify pharmacodynamics |
+
+## 5. Data pathway selected for spatial calibration
+
+A relevant public research pathway is the MRI-informed breast-cancer modelling literature:
+
+- Jarrett et al., *Nature Protocols* (2021), describes acquisition, registration and processing of serial diffusion/perfusion MRI, followed by calibration of a spatial model. Its data-availability statement provides one fully preprocessed example patient dataset specifically so researchers can verify the calibration/prediction software pipeline. That single demo patient is a pipeline test, not a cohort for validating ONCO-DYNAMICS-X.
+- The associated openly available example code is MIT-licensed, but that does not make every downstream clinical dataset unrestricted. Check each data collection's own access, terms and publication conditions. Do not copy the external model's calibrated coefficients into this different PDE.
+- The 2025 I-SPY 2 analysis reports three quantitative MRI visits (baseline V1, early-treatment V2 and post-course V3) for 91 patients across 10 sites. Its design calibrates to V1/V2 and evaluates the held-out V3 state. The reported MRI data were obtained through TCIA collections, with figure-generating data described as available on reasonable request. This is a strong design reference, but images still require registration, segmentation, quantitative-map construction, patient/timepoint verification and access checks before use.
+
+External references:
+- Jarrett et al. 2021 protocol: https://www.nature.com/articles/s41596-021-00617-y
+- Example MRI processing/calibration repository: https://github.com/ChengyueWu/Quantitative-MRI-of-breast-cancer-patients-to-forecast-response-to-therapy
+- I-SPY 2 model generalizability analysis (2025): https://aacrjournals.org/clincancerres/article/doi/10.1158/1078-0432.CCR-25-0668/765893/p/MRI-Based-Mathematical-Modeling-to-Predict-the
+- Tumour-growth ABM calibration using in-vivo volume data and approximate Bayesian computation: https://pmc.ncbi.nlm.nih.gov/articles/PMC10869399/
+
+The cited MRI models and their calibrated parameters are not identical to ONCO-DYNAMICS-X. Their value here is the observation design and calibration/held-out-prediction strategy, not plug-in parameter values or assumed equivalence of governing equations.
+
+## 6. Calibration sequence and acceptance gates
+
+1. **Measurement audit:** source/version, access, patient/specimen/timepoint linkage, assay units, treatment timing, inclusion/exclusion and missingness.
+2. **Observation operator:** define exactly how model state maps to observed volume, cellularity, oxygenation or cell counts.
+3. **Low-dimensional fitting:** fit one or two parameters at a time; keep physically informed nuisance parameters fixed initially.
+4. **Identifiability:** inspect Jacobian singular values/condition number, profile likelihood or posterior correlations; demonstrate recovery on synthetic data with known parameters.
+5. **Uncertainty:** use bootstrap or Bayesian posterior intervals; do not report point estimates alone.
+6. **Temporal holdout:** calibrate on earlier visits only, predict a later visit without refitting, and report error against measurement repeatability.
+7. **Patient-level validation:** report performance across subjects, not just a representative example; stratify failure modes and quantify uncertainty.
+8. **PDE integration:** only after unit conversion and the observation operator are validated; preserve an uncalibrated baseline for comparison.
+
+### Parameters that must not be fitted simultaneously at the start
+
+The current reaction model contains many confounded terms. For example, observed cancer-field change alone cannot reliably separate `cancer_growth`, `baseline_cancer_loss`, `immune_killing`, oxygen/nutrient limitation and drug killing. Oxygen dynamics cannot separate consumption from supply using a single oxygen snapshot. Drug killing and EC50 cannot be identified without varying/observed exposure. Start with a low-dimensional subset and add parameters only when independent measurements make them identifiable.
+
+## 7. Current implementation and honest status
+
+Implemented:
+- exponential/logistic/Gompertz comparison for untreated longitudinal volume data;
+- log-scale nonlinear least-squares estimation with positive-rate/capacity parameterization;
+- AICc/BIC and Jacobian/SVD local identifiability diagnostics;
+- parametric residual bootstrap confidence intervals;
+- explicit conversion of physical rates to a model-time unit without silently assigning them to PDE coefficients;
+- local CSV CLI with pseudonymous subject keys;
+- aggregate-only TCGA/METABRIC calibration-target metadata audit;
+- synthetic parameter-recovery unit tests and dedicated CI workflows.
+
+Not yet established:
+- no genuine patient or animal volume series has been fitted by this new ONCO-DYNAMICS-X code;
+- no new biological parameter estimate is claimed;
+- no spatial PDE coefficient is calibrated;
+- no therapy-response parameter is calibrated;
+- no MRI maps or Ki-67/IHC measurements have been joined to molecular features.
+
+The next data-dependent gate is to run the aggregate clinical-attribute audit, review its matched measurement candidates, then obtain an approved longitudinal MRI/cellularity dataset with at least two calibration timepoints and a later holdout. Until then, the new estimator is validated only for mathematical recovery on synthetic data.
