@@ -1,10 +1,7 @@
 """Aggregate-only audit for biological calibration endpoint availability."""
 from __future__ import annotations
 
-import argparse
-import json
 import re
-from pathlib import Path
 from typing import Any
 
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient, audit_cbioportal_study
