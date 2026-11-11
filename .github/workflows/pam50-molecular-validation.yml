@@ -1,0 +1,52 @@
+name: PAM50-panel molecular external validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/onco_dynamics_x/data_engine/molecular_model.py"
+      - "scripts/run_pam50_molecular_validation.py"
+      - "tests/test_molecular_model.py"
+      - ".github/workflows/pam50-molecular-validation.yml"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  molecular-external-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install scientific and survival dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,science,survival]"
+
+      - name: Run full test suite
+        run: pytest
+
+      - name: Lint source, tests and molecular runner
+        run: ruff check src tests scripts/run_pam50_molecular_validation.py
+
+      - name: Run fixed-panel TCGA-to-METABRIC molecular evaluation
+        run: |
+          python scripts/run_pam50_molecular_validation.py             --output results/molecular_validation/pam50_tcga_metabric_survival.json             --components 5             --bootstrap 250             --seed 42             --cox-penalizer 0.5
+
+      - name: Publish aggregate-only molecular report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pam50-panel-tcga-metabric-molecular-validation
+          path: results/molecular_validation/pam50_tcga_metabric_survival.json
+          if-no-files-found: error
+          retention-days: 30
