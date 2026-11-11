@@ -66,6 +66,8 @@ dt <= dx^2 / (2 * d * max_j(D_j))
 
 This restriction controls the diffusion operator only. Reaction stiffness may impose a stricter limit. Every substantive experiment must include timestep refinement, grid refinement, and comparison with an independent numerical method. The current timestep-refinement utility compares dt and dt/2 on the same grid.
 
+An independent adaptive method-of-lines reference is now implemented using SciPy DOP853. It integrates the same semi-discrete spatial operator and reaction equations with adaptive time stepping, without applying the explicit solver's post-step clipping. This isolates time-integration error on small grids; it does not independently validate the spatial discretization or the biological equations. The synthetic validation workflow records per-field relative L2 errors for 2D and 3D cases.
+
 ## Inputs and interventions
 
 `qD(t)` is an abstract dimensionless input to the simulated drug field. It is not a pharmacological dose, exposure recommendation, or treatment schedule. The optimal-control module is a separate toy mean-field simulation. It must not be used to guide patient care.
