@@ -1,0 +1,44 @@
+name: METABRIC pathology module calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/run_metabric_pathology_calibration.py"
+      - "src/onco_dynamics_x/calibration/pathology.py"
+      - "src/onco_dynamics_x/data_engine/molecular_mechanistic_bridge.py"
+      - "src/onco_dynamics_x/data_engine/molecular_model.py"
+      - ".github/workflows/metabric-pathology-calibration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pathology-calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install science dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[science]"
+      - name: Run aggregate-only METABRIC pathology calibration
+        run: |
+          python scripts/run_metabric_pathology_calibration.py \
+            --folds 5 \
+            --bootstrap 500 \
+            --seed 42 \
+            --output results/biological_calibration/metabric_pathology_module_association.json
+      - name: Upload aggregate-only calibration metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: metabric-pathology-module-calibration
+          path: results/biological_calibration/metabric_pathology_module_association.json
+          if-no-files-found: error
+          retention-days: 30
