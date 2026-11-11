@@ -19,12 +19,7 @@ import numpy as np
 import pandas as pd
 
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
-from onco_dynamics_x.data_engine.molecular_model import (
-    PAM50_GENES,
-    PAM50_SYMBOL_ALIASES,
-    fit_tcga_pca_projection,
-    rank_normalise_expression,
-)
+from onco_dynamics_x.data_engine import molecular_model
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
 from onco_dynamics_x.data_engine.survival_metrics import evaluate_ipcw_survival
 
@@ -62,8 +57,8 @@ def _resolve_entrez_ids(
     """Resolve panel symbols through cBioPortal, allowing historical aliases."""
     resolved_ids: dict[str, int] = {}
     resolved_symbols: dict[str, str] = {}
-    for panel_symbol in PAM50_GENES:
-        candidates = PAM50_SYMBOL_ALIASES.get(panel_symbol, (panel_symbol,))
+    for panel_symbol in molecular_model.PAM50_GENES:
+        candidates = molecular_model.PAM50_SYMBOL_ALIASES.get(panel_symbol, (panel_symbol,))
         last_error: Exception | None = None
         for candidate in candidates:
             try:
@@ -288,7 +283,7 @@ def _load_cohort(
         client,
         cohort["profile_id"],
         primary_ids,
-        [gene_ids[gene] for gene in PAM50_GENES],
+        [gene_ids[gene] for gene in molecular_model.PAM50_GENES],
     )
 
     selected_sample_ids: list[str] = []
@@ -320,7 +315,7 @@ def _load_cohort(
         [expression_matrix[row_index[sample_id]] for sample_id in selected_sample_ids],
         dtype=float,
     )
-    if selected_values.ndim != 2 or selected_values.shape[1] != len(PAM50_GENES):
+    if selected_values.ndim != 2 or selected_values.shape[1] != len(molecular_model.PAM50_GENES):
         raise RuntimeError("Selected patient expression matrix has an invalid shape.")
 
     return {
@@ -346,7 +341,7 @@ def _load_cohort(
         "expression_values": selected_values,
         "raw_expression_missing_fraction_by_gene": {
             gene: float(1.0 - np.isfinite(selected_values[:, index]).mean())
-            for index, gene in enumerate(PAM50_GENES)
+            for index, gene in enumerate(molecular_model.PAM50_GENES)
         },
     }
 
@@ -543,7 +538,7 @@ def run_pam50_molecular_validation(
 
     tcga, metabric = cohorts
     common_genes = [
-        gene for gene in PAM50_GENES
+        gene for gene in molecular_model.PAM50_GENES
         if tcga["raw_expression_missing_fraction_by_gene"][gene] <= 0.05
         and metabric["raw_expression_missing_fraction_by_gene"][gene] <= 0.05
     ]
@@ -552,21 +547,21 @@ def run_pam50_molecular_validation(
             f"Only {len(common_genes)} PAM50 genes passed the cross-cohort "
             "95% coverage rule; at least 45 are required."
         )
-    gene_indices = [PAM50_GENES.index(gene) for gene in common_genes]
+    gene_indices = [molecular_model.PAM50_GENES.index(gene) for gene in common_genes]
     tcga_raw = tcga["expression_values"][:, gene_indices]
     metabric_raw = metabric["expression_values"][:, gene_indices]
 
-    tcga_rank = rank_normalise_expression(
+    tcga_rank = molecular_model.rank_normalise_expression(
         tcga_raw,
         common_genes,
         minimum_observed_fraction=0.95,
     )
-    metabric_rank = rank_normalise_expression(
+    metabric_rank = molecular_model.rank_normalise_expression(
         metabric_raw,
         common_genes,
         minimum_observed_fraction=0.95,
     )
-    tcga_scores, metabric_scores, pca_metadata = fit_tcga_pca_projection(
+    tcga_scores, metabric_scores, pca_metadata = molecular_model.fit_tcga_pca_projection(
         tcga_rank.values,
         metabric_rank.values,
         common_genes,
@@ -625,7 +620,7 @@ def run_pam50_molecular_validation(
         "date": "2026-11-11",
         "panel": {
             "name": "PAM50 50-gene intrinsic-subtype research panel",
-            "panel_size": len(PAM50_GENES),
+            "panel_size": len(molecular_model.PAM50_GENES),
             "common_genes_used": common_genes,
             "common_gene_count": len(common_genes),
             "resolved_hugo_symbols": resolved_symbols,
