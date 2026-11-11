@@ -45,7 +45,7 @@ jobs:
 
       - name: Train synthetic PINN and FNO benchmarks
         run: |
-          python scripts/train_synthetic_ai_benchmarks.py             --output results/ai_benchmarks/synthetic_pinn_fno_training.json             --pinn-epochs 500             --fno-epochs 120             --seed 42
+          python scripts/train_synthetic_ai_benchmarks.py             --output results/ai_benchmarks/synthetic_pinn_fno_training.json             --pinn-epochs 1000             --fno-epochs 120             --seed 42
 
       - name: Publish aggregate synthetic AI metrics
         uses: actions/upload-artifact@v4
