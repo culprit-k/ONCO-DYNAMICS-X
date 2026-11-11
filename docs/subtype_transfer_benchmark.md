@@ -78,10 +78,10 @@ This benchmark uses existing cohort subtype labels as its target. Because the pa
 
 It does not reproduce official PAM50 centroids, commercial Prosigna, Risk-of-Recurrence scores or clinical thresholds. It does not predict treatment response, survival, recurrence or drug benefit. It does not establish that the PDE/agent-based digital twin correctly represents tumour biology.
 
-## Acceptance gates after the external run
+## Next validation gates
 
-1. Check class support and annotation coverage in each cohort.
-2. Compare accuracy, balanced accuracy and macro-F1 with the training-majority baseline.
-3. Inspect per-class errors, especially confusion between LumA and LumB and between HER2-enriched and Basal.
-4. Repeat with an assay-aware frozen transformation and probe-level METABRIC mapping before claiming prospective cross-platform performance.
-5. Confirm on another independent cohort with compatible subtype annotation.
+1. Verify the original TCGA and METABRIC subtype annotation definitions and versions, including how Normal-like, claudin-low and NC were assigned.
+2. Rebuild the METABRIC probe-to-gene mapping and duplicate-probe summarisation from the original Illumina HT-12 v3 annotation rather than relying only on the cBioPortal gene-level profile.
+3. Replace the cohort-wise transductive rank transformation with a frozen reference transform learned in training data and usable on one new sample at a time.
+4. Confirm transfer on another independent cohort with a compatible assay and comparable subtype annotations.
+5. If the goal becomes clinical use, define an intended use and conduct a separate prospective clinical-validation and utility study.
