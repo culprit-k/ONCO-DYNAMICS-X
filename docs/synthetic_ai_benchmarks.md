@@ -121,3 +121,51 @@ The rerun reproduced the same qualitative results:
 - Spatial GNN held-out relative L2 0.06995; test MSE 0.000687 versus constant-mean baseline 0.04054.
 
 The aggregate output is also recorded in `results/ai_benchmarks/synthetic_pinn_fno_gnn_summary.json`. The earlier completed run and this rerun are independent executions with the same fixed seed and configuration; small floating-point differences are expected across runner/library execution details. Neither run uses patient or cohort data.
+
+
+## Boundary-aware PINN retraining — current locked result
+
+**This section supersedes the earlier 500-epoch PINN summary above.** The older values are retained as historical baseline results only.
+
+**Workflow:** [run 42983388997](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42983388997)  
+**Evaluated commit:** `d2886bae8b3487bc68d728da7099fae32a3a6dbf`  
+**Artifact:** `synthetic-pinn-fno-training` (aggregate-only)  
+**Current committed summary:** `results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json`
+
+### Revised PINN method
+
+The PINN was increased to 1,000 epochs with a 64-unit, four-hidden-layer network. The loss now includes analytic observations, the PDE residual, the initial condition at t=0, and the Neumann normal derivative at each edge:
+
+```
+loss = data_MSE
+     + 0.1 * PDE_residual_MSE
+     + 0.5 * initial_condition_MSE
+     + 0.2 * Neumann_boundary_derivative_MSE
+```
+
+The best checkpoint was selected by a validation objective combining field and initial-condition errors. Boundary and PDE residuals were assessed on separate held-out coordinates.
+
+| PINN metric | Boundary-aware result |
+|---|---:|
+| Training epochs | 1,000 |
+| Best epoch | 980 |
+| Held-out relative L2 field error | **0.02774** |
+| Untrained initialisation relative L2 error | 1.4540 |
+| Held-out PDE residual RMS | 0.02297 |
+| Held-out Neumann boundary residual RMS | 0.01188 |
+| Held-out initial-condition relative L2 error | 0.03550 |
+| Best validation field MSE | 0.00009926 |
+| Best validation initial-condition MSE | 0.00015141 |
+
+The additional constraints improved field error compared with the earlier 500-epoch baseline (0.09091), but the held-out residuals remain nonzero. This is a better synthetic approximation, not a proof of a generally accurate PINN or a cancer model.
+
+### Updated FNO and GNN values from the same run
+
+| Model | Held-out metric | Result | Comparator |
+|---|---|---:|---:|
+| FNO | Relative L2 operator error | 0.01666 | Persistence/no-diffusion baseline: 8.1083 |
+| GNN | Relative L2 node-target error | 0.06995 | Test MSE 0.000687 vs constant-mean MSE 0.04054 |
+
+The FNO training stream was explicitly seeded independently from PINN training so results do not depend on random-number consumption by a preceding model. Its task remains a fixed 16×16 periodic heat operator. The GNN task remains an engineered geometric neighbour-fraction prediction.
+
+The workflow passed full unit tests, Ruff lint, all three training runs and aggregate artifact publication. These three networks have only been trained on analytic/synthetic tasks. The numbers are not breast-cancer accuracy, spatial immune infiltration, clinical prognosis, treatment response or biological validation.
