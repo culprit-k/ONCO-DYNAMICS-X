@@ -98,4 +98,7 @@ def test_tcga_fitted_pca_transforms_external_data_with_frozen_components():
     assert metadata["fit_cohort"] == "TCGA-BRCA"
     assert metadata["external_transform"] == "frozen TCGA PCA components"
     assert metadata["total_explained_variance_ratio"] > 0.95
+    assert metadata["score_standardisation"].startswith("zero mean")
+    assert np.allclose(train_scores.mean(axis=0), 0.0, atol=1e-10)
+    assert np.allclose(train_scores.std(axis=0), 1.0, atol=1e-10)
     assert len(metadata["components"]) == 4
