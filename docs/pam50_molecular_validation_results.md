@@ -3,7 +3,7 @@
 **Analysis:** fixed PAM50 50-gene panel, TCGA-BRCA development / METABRIC external evaluation  
 **Status:** completed exploratory external evaluation  
 **Date:** 11 November 2026  
-**Successful GitHub Actions run:** [42984188725](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984188725)  
+**Successful verified-sample GitHub Actions run:** [42985971698](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42985971698)  
 **Evaluated commit:** `9d14003f04602fe40e10a2c1070c2b7dffaa7824)  
 **Aggregate result:** `results/molecular_validation/pam50_tcga_metabric_summary.json`
 
