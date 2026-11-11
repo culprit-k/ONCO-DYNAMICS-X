@@ -400,10 +400,25 @@ def evaluate_intrinsic_subtype_transfer(
             },
         },
         "limitations": [
-            "Labels are existing study-provided annotations, not independent biological ground truth.",
-            "Features overlap the historical subtype panel, so this measures annotation transfer rather than independent subtype discovery.",
-            "Cohort-wise rank normalisation is transductive and not suitable for single-sample deployment.",
-            "METABRIC claudin-low and NC labels are excluded from this five-class comparison and counted separately.",
-            "This is not an official PAM50/Prosigna classifier and does not establish clinical utility or treatment response.",
+            (
+                "Labels are existing study-provided annotations, not independent "
+                "biological ground truth."
+            ),
+            (
+                "Features overlap the historical subtype panel, so this measures "
+                "annotation transfer rather than independent subtype discovery."
+            ),
+            (
+                "Cohort-wise rank normalisation is transductive and not suitable "
+                "for single-sample deployment."
+            ),
+            (
+                "METABRIC claudin-low and NC labels are excluded from this five-class "
+                "comparison and counted separately."
+            ),
+            (
+                "This is not an official PAM50/Prosigna classifier and does not "
+                "establish clinical utility or treatment response."
+            ),
         ],
     }
