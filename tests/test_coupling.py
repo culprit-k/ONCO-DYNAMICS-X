@@ -163,3 +163,86 @@ def test_simulate_coupled_returns_reproducible_snapshots_and_time_grid():
         left.validate()
         assert np.array_equal(left.cell_type, right.cell_type)
         assert np.array_equal(left.x, right.x)
+
+
+def test_cloud_in_cell_deposition_preserves_agent_counts_and_spreads_mass_in_2d():
+    population = AgentPopulation(
+        x=np.array([0.25, 0.25, 0.25]),
+        y=np.array([0.25, 0.25, 0.25]),
+        cell_type=np.array([CANCER, IMMUNE, FIBROBLAST], dtype=np.int64),
+        age=np.zeros(3, dtype=float),
+    )
+    fields = agent_density_fields(
+        population,
+        (5, 5),
+        agents_per_unit=1.0,
+        deposition_method="cloud_in_cell",
+    )
+
+    for name in ("cancer", "immune", "fibroblast"):
+        assert np.sum(fields[name]) == pytest.approx(1.0)
+        assert np.count_nonzero(fields[name]) == 4
+        assert np.allclose(fields[name][2:4, 2:4], 0.25)
+
+
+def test_cloud_in_cell_deposition_preserves_agent_counts_in_3d():
+    population = AgentPopulation(
+        x=np.array([0.25, -0.25, 0.25]),
+        y=np.array([0.25, 0.25, -0.25]),
+        z=np.array([0.25, 0.25, 0.25]),
+        cell_type=np.array([CANCER, IMMUNE, FIBROBLAST], dtype=np.int64),
+        age=np.zeros(3, dtype=float),
+    )
+    fields = agent_density_fields(
+        population,
+        (5, 5, 5),
+        agents_per_unit=2.0,
+        deposition_method="cloud_in_cell",
+    )
+
+    for name in ("cancer", "immune", "fibroblast"):
+        assert np.sum(fields[name]) == pytest.approx(0.5)
+        assert np.count_nonzero(fields[name]) == 8
+
+
+def test_deposition_methods_are_validated_and_nearest_grid_remains_default():
+    population = _three_cell_population_2d()
+    nearest = agent_density_fields(
+        population, (5, 5), agents_per_unit=1.0
+    )
+    explicit_nearest = agent_density_fields(
+        population,
+        (5, 5),
+        agents_per_unit=1.0,
+        deposition_method="nearest_grid",
+    )
+    assert np.array_equal(nearest["cancer"], explicit_nearest["cancer"])
+    with pytest.raises(ValueError, match="deposition_method"):
+        agent_density_fields(
+            population,
+            (5, 5),
+            agents_per_unit=1.0,
+            deposition_method="kernel",
+        )
+
+
+def test_coupled_step_accepts_cloud_in_cell_deposition():
+    state = initial_state(7)
+    population = initialize_agents(6, 4, 3, seed=18)
+    parameters = ModelParameters()
+    dx = 2.0 / 6
+    dt = min(1e-5, diffusion_timestep_limit(parameters, dx) * 0.1)
+    result_state, result_population = coupled_step(
+        state,
+        population,
+        parameters,
+        dx,
+        dt,
+        coupling_strength=0.2,
+        agents_per_unit=2.0,
+        deposition_method="cloud_in_cell",
+        seed=91,
+    )
+
+    result_state.validate()
+    result_population.validate()
