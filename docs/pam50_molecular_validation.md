@@ -133,3 +133,64 @@ Any molecular association must be interpreted alongside the external cohort's ca
 - cBioPortal API and clients: https://github.com/cBioPortal/cbioportal/blob/master/docs/web-API-and-Clients.md
 - cBioPortal OpenAPI specification: https://www.cbioportal.org/api/v3/api-docs
 - cBioPortal clinical and molecular data conventions: https://docs.cbioportal.org/file-formats/
+
+
+## Completed TCGA-to-METABRIC external evaluation — 11 November 2026
+
+**Workflow:** [GitHub Actions run 42984188725](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984188725)  
+**Evaluated commit:** `9d14003f04602fe40e10a2c1070c2b7dffaa7824`  
+**Workflow result:** tests, Ruff lint, molecular evaluation and aggregate-artifact publication all passed.  
+**Committed aggregate report:** `results/molecular_audit/pam50_pc_external_validation.json`
+
+### Cohort and panel quality
+
+| Cohort | Expression samples | Patients in survival analysis | Deaths | Censored |
+|---|---:|---:|---:|---:|
+| TCGA-BRCA PanCancer Atlas | 1,082 | 1,069 | 151 | 918 |
+| METABRIC | 1,980 | 1,979 | 1,143 | 836 |
+
+All 50 panel genes were available in both profiles. The workflow returned 54,100/54,100 finite TCGA gene-sample measurements and 99,000/99,000 finite METABRIC measurements. No duplicate sample-gene pairs or non-finite values were recorded. No gene imputation was needed.
+
+**Sample-type limitation:** the public cBioPortal sample records returned `UNKNOWN` sample type for all expression-list entries in both cohorts. Consequently, the runner could not independently restrict to primary-tumour samples; all profile-list entries were retained. This must be treated as a cohort-definition limitation, not as verified primary-tumour filtering.
+
+The cohort audit found subtype annotations (for example, TCGA `SUBTYPE` and METABRIC `CLAUDIN_SUBTYPE`), but no subtype labels were used in feature processing, PCA, model fitting or model tuning.
+
+### Model comparison
+
+| External METABRIC model | Harrell C-index | Patient-bootstrap 95% CI |
+|---|---:|---:|
+| Age only | 0.5882 | 0.5683–0.6065 |
+| Age + five TCGA-fitted PAM50-panel PCs | **0.5992** | 0.5798–0.6201 |
+
+The difference was **+0.0111** in favour of the age-plus-PC model. However, the paired bootstrap 95% confidence interval for that difference was **−0.0019 to +0.0241**, which includes zero. The analysis therefore does not establish a statistically stable improvement over the age-only reference.
+
+The five PCs explained 68.19% of variance in the TCGA rank-normalised panel matrix. None of the five PC Cox coefficients had a nominal p-value below 0.05 in the TCGA fitted model; these statistical components should not be given a biological subtype interpretation.
+
+### Time-dependent external performance
+
+The cumulative/dynamic IPCW AUC and IPCW Brier scores were calculated in METABRIC. Censoring weights used a marginal Kaplan–Meier censoring estimator, which assumes independent censoring in the evaluation cohort.
+
+| Horizon | Model | IPCW AUC (95% CI) | IPCW Brier (95% CI) |
+|---|---|---:|---:|
+| 12 months | Age only | 0.5783 (0.4602–0.6844) | 0.01505 (0.00931–0.02037) |
+| 12 months | Age + PAM50 PCs | 0.6233 (0.4995–0.7335) | 0.01503 (0.00981–0.02084) |
+| 36 months | Age only | 0.5151 (0.4740–0.5613) | 0.10128 (0.08984–0.11194) |
+| 36 months | Age + PAM50 PCs | 0.5440 (0.4967–0.5865) | 0.10099 (0.09052–0.11450) |
+| 60 months | Age only | 0.5395 (0.5037–0.5719) | 0.17203 (0.16155–0.18305) |
+| 60 months | Age + PAM50 PCs | 0.5798 (0.5469–0.6100) | 0.17085 (0.15949–0.18258) |
+
+At 12 and 36 months, the molecular model's AUC confidence intervals include 0.5. At 60 months, the AUC interval is above 0.5, but this is a single retrospective horizon and does not establish clinical utility or generalisability. The model's mean predicted survival at 60 months was 0.8104 compared with an IPCW observed estimate of 0.7801; the observed-minus-predicted gap was −0.0303, indicating average overprediction of survival by about three percentage points at that horizon.
+
+### Interpretation
+
+The panel is available in both public profiles and the fixed feature pipeline executed successfully. The age-plus-PC model had modestly higher discrimination than age alone in this one external cohort, but the paired confidence interval for the difference includes zero. Its performance is not strong enough to support a clinical prognostic claim.
+
+This run is a **transductive molecular association experiment**, not a deployable classifier:
+- The per-gene rank transform uses the full unlabelled expression distribution of each cohort, including METABRIC. It is outcome-blind, but not a one-patient-at-a-time transformation.
+- The underlying METABRIC probe annotation and duplicate-probe handling were not reconstructed from the original array data; the cBioPortal gene-level profile was used.
+- Sample-type metadata were unavailable, so primary-tumour status could not be independently confirmed for each expression sample.
+- The model uses unsupervised PCA components from the fixed PAM50 gene inventory. It does not reproduce PAM50 centroids or Prosigna and does not assign intrinsic subtype.
+- The time origin and endpoint semantics should be verified against the original cohort documentation before any clinical interpretation.
+- This analysis does not validate treatment response, tumour immune escape, spatial PDEs, agent-based kinetics, hypoxia fields, drug transport or the integrated digital twin.
+
+**Decision:** retain the age-only model as the clinical reference. Retain the PAM50-PC result as exploratory evidence that warrants an assay-level harmonisation and sample-definition audit, not as a confirmed molecular improvement. A follow-on molecular model must use a predeclared, sample-level applicable transformation, verify array probe mapping and sample type, and be tested on another independent cohort before any stronger claim.
