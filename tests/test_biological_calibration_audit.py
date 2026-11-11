@@ -45,3 +45,37 @@ def test_calibration_target_audit_matches_names_and_never_emits_values():
         "ki67_or_proliferation_index"
     ][0]
     assert "value" not in ki67_field
+
+def test_calibration_target_audit_does_not_misclassify_cancer_status_as_er():
+    rows = [
+        {
+            "attribute_id": "PERSON_NEOPLASM_CANCER_STATUS",
+            "display_name": "Person Neoplasm Cancer Status",
+            "level": "PATIENT",
+            "data_type": "STRING",
+            "unique_entities_with_value": 961,
+            "records_with_value": 961,
+        },
+        {
+            "attribute_id": "ER_IHC",
+            "display_name": "ER status measured by IHC",
+            "level": "PATIENT",
+            "data_type": "STRING",
+            "unique_entities_with_value": 2426,
+            "records_with_value": 2426,
+        },
+        {
+            "attribute_id": "HER2_STATUS",
+            "display_name": "HER2 Status",
+            "level": "SAMPLE",
+            "data_type": "STRING",
+            "unique_entities_with_value": 1980,
+            "records_with_value": 1980,
+        },
+    ]
+    result = summarise_calibration_targets("study", "Study", rows)
+    er_matches = result["target_attribute_matches"]["er_status"]
+    her2_matches = result["target_attribute_matches"]["her2_status"]
+
+    assert [item["attribute_id"] for item in er_matches] == ["ER_IHC"]
+    assert [item["attribute_id"] for item in her2_matches] == ["HER2_STATUS"]
