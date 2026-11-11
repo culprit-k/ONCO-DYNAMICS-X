@@ -16,6 +16,7 @@ import numpy as np
 from onco_dynamics_x.calibration.pathology import (
     evaluate_module_pathology_association,
 )
+from onco_dynamics_x.data_engine import molecular_model
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine.cohort_metadata import (
     parse_cbioportal_sample_metadata,
@@ -23,7 +24,6 @@ from onco_dynamics_x.data_engine.cohort_metadata import (
 from onco_dynamics_x.data_engine.molecular_mechanistic_bridge import (
     score_molecular_modules,
 )
-from onco_dynamics_x.data_engine import molecular_model
 from onco_dynamics_x.data_engine.molecular_model import (
     PAM50_GENES,
     rank_normalise_expression,
@@ -252,7 +252,10 @@ def run_metabric_pathology_calibration(
             "Cross-sectional association with existing METABRIC clinical annotations only.",
             "No Ki-67 field was identified in the aggregate target audit.",
             "Field definitions and assay provenance require source-publication review.",
-            "Cohort-wise rank normalisation is transductive, not prospective single-sample processing.",
+            (
+                "Cohort-wise rank normalisation is transductive, not prospective "
+                "single-sample processing."
+            ),
             "This analysis does not estimate PDE parameters or establish causal mechanisms.",
             "No patient identifiers, row-level annotations, or expression values are exported.",
         ],
