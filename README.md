@@ -52,11 +52,11 @@ See [numerical validation results](docs/synthetic_pde_validation_results.md) and
 
 The optional PINN, FNO and spatial GNN implementations have now completed CPU training on separate analytic/synthetic tasks, with held-out evaluation:
 
-- PINN relative L2 error 0.0909; held-out PDE residual RMS 0.0533. It learned substantially from initialization but still needs improvement.
-- FNO relative L2 error 0.0136, compared with 8.1083 for the no-diffusion persistence baseline on the fixed periodic heat task.
-- Spatial GNN relative L2 error 0.0699 on a synthetic neighbourhood-fraction task; test MSE 0.000687 compared with 0.040535 for the constant-mean baseline.
+- Boundary-aware PINN (1,000 epochs): held-out relative L2 error 0.02774; PDE residual RMS 0.02297; Neumann boundary residual RMS 0.01188; initial-condition relative error 0.03550.
+- FNO: held-out relative L2 error 0.01666, compared with 8.1083 for the no-diffusion persistence baseline on the fixed periodic heat task.
+- Spatial GNN: relative L2 error 0.06995 on a synthetic neighbourhood-fraction task; test MSE 0.000687 compared with 0.040535 for the constant-mean baseline.
 
-The full workflow passed tests and lint. These scores are not breast-cancer accuracy and do not validate the biological model. See [synthetic AI benchmark methodology and results](docs/synthetic_ai_benchmarks.md) and [aggregate metrics](results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json).
+The 11 November workflow passed tests, Ruff lint and all three training runs. These scores are not breast-cancer accuracy and do not validate the biological model. See [synthetic AI benchmark methodology and results](docs/synthetic_ai_benchmarks.md) and [aggregate metrics](results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json).
 
 ### Molecular marker availability audit
 
