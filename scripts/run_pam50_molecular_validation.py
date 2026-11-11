@@ -20,9 +20,9 @@ import pandas as pd
 
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine.molecular_model import (
-    fit_tcga_pca_projection,
     PAM50_GENES,
     PAM50_SYMBOL_ALIASES,
+    fit_tcga_pca_projection,
     rank_normalise_expression,
 )
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
@@ -275,7 +275,6 @@ def _load_cohort(
         primary_ids,
         [gene_ids[gene] for gene in PAM50_GENES],
     )
-    panel_entrez = [gene_ids[gene] for gene in PAM50_GENES]
 
     selected_sample_ids: list[str] = []
     selected_patient_rows: list[dict[str, Any]] = []
