@@ -14,8 +14,8 @@ ONCO-DYNAMICS-X is a research and university-project prototype that combines dim
 | Cell-agent model | Stochastic cancer, immune and fibroblast agents in 2D/3D | Validation against registered tissue imaging |
 | PDE–agent coupling | Operator-split two-way field/agent exchange with explicit occupancy and coupling controls | Mass/number consistency, deposition-kernel convergence and biological calibration |
 | AI architectures | PINN, FNO and spatial GNN trained and tested on synthetic ground-truth tasks; expression transformer module | Training/evaluation on biological data and independent validation |
-| Cohort pipeline | Public GDC/cBioPortal workflows; 16-gene expression availability confirmed across TCGA and METABRIC | Probe-level mapping, harmonized feature space and external molecular validation |
-| Survival baseline | TCGA-trained / METABRIC-tested age-only Cox baseline with censoring-aware evaluation | Clinical utility, prospective validation, molecular predictor and covariate-dependent censoring analysis |
+| Cohort pipeline | Public GDC/cBioPortal workflows; 16-marker availability audit and exploratory 50-gene PAM50-panel PC model externally evaluated | Probe-level rederivation, deployable single-sample normalization and independent-cohort molecular validation |
+| Survival baseline | Age-only and age + PAM50-panel-PC Cox models evaluated in METABRIC with IPCW time-dependent metrics | Clinical utility, prospective validation, stable molecular improvement and covariate-dependent censoring analysis |
 | Dashboard | Streamlit 2D/3D PDE console and optional coupled agent mode | Full experiment-management layer and validated patient-data ingestion |
 | Hardware concept | ESP32 firmware, serial protocol, OpenSCAD phantom and build guide | Physical fabrication, wiring verification and bench testing |
 
@@ -35,6 +35,22 @@ A separate age-only Cox model was fitted in the TCGA-BRCA PanCancer Atlas cohort
 This is weak discrimination and should be treated as a reference comparator, not a useful standalone prognostic model. At five years, the average survival prediction overestimated the IPCW observed survival by about 2.2 percentage points. The IPCW analysis uses a marginal censoring model and assumes independent censoring within METABRIC.
 
 See [full survival results](docs/age_only_external_results.md), [metric methodology](docs/survival_validation_metrics.md), and [aggregate metrics JSON](results/survival_validation/age_only_external_metrics_summary.json).
+
+### PAM50-panel molecular external evaluation
+
+A fixed 50-gene panel was evaluated in TCGA-BRCA (1,069 survival-analysis patients) and METABRIC (1,979 patients). All 50 genes had finite values in both gene-level expression profiles, and the workflow completed an outcome-blind feature pipeline: within-cohort per-gene rank normalisation, TCGA-fitted PCA, and an age + five-PC Cox model evaluated in METABRIC.
+
+- Age-only METABRIC Harrell C-index: **0.5882**.
+- Age + PAM50-panel-PC Harrell C-index: **0.5992**.
+- Paired difference: **+0.0111**, with 95% bootstrap interval **−0.0019 to +0.0241** (includes zero).
+- Age + PC time-dependent AUC at 12 / 36 / 60 months: **0.623 / 0.544 / 0.580**.
+- At 60 months, average predicted survival exceeded the IPCW observed estimate by about **3.0 percentage points**.
+
+This is an exploratory, transductive analysis, not a deployable PAM50/Prosigna test. METABRIC's full unlabelled expression distribution is used for rank normalisation; sample-type metadata are unknown for the profile-list entries; probe-level array mapping was not rederived; and the paired C-index difference does not establish stable improvement. See [PAM50 external-validation protocol and results](docs/pam50_molecular_validation.md) and [aggregate report](results/molecular_audit/pam50_pc_external_validation.json).
+
+### PDE–agent coupling sensitivity
+
+The bidirectional coupling prototype completed a 40-scenario synthetic 2D/3D sweep (five coupling strengths × four occupancy scales × two grid dimensions). At full coupling, 80–96% of nodes in the three cell-density fields were at the lower bound across the tested occupancy settings, while upper-cap occupancy remained much smaller. This reveals sparse-grid behaviour and strong dependence on arbitrary bridge parameters; it does not identify a biologically optimal setting. See [sweep results](docs/pde_abm_coupling.md#completed-synthetic-coupling-parameter-sweep--11-november-2026) and [aggregate summary](results/coupling_sensitivity/synthetic_coupling_sweep_summary.json).
 
 ### Synthetic PDE numerical validation
 
@@ -134,6 +150,7 @@ python scripts/run_survival_validation_metrics.py
 - [Censoring-aware survival metric methodology](docs/survival_validation_metrics.md)
 - [Synthetic AI benchmark results](docs/synthetic_ai_benchmarks.md)
 - [Molecular marker audit](docs/molecular_marker_audit.md)
+- [PAM50-panel molecular external validation](docs/pam50_molecular_validation.md)
 - [Data sources and governance](docs/data_sources.md)
 - [Safety and limitations](docs/safety_and_limitations.md)
 - [Hardware build guide](docs/hardware_build_guide.md)
@@ -147,7 +164,9 @@ The repository includes GitHub Actions for:
 - age-only TCGA-to-METABRIC survival evaluation;
 - synthetic 2D/3D PDE numerical validation;
 - synthetic PINN/FNO/GNN training benchmarks;
-- aggregate-only TCGA/METABRIC molecular marker availability audit.
+- aggregate-only TCGA/METABRIC molecular marker availability audit;
+- exploratory 50-gene PAM50-panel external survival evaluation;
+- 2D/3D PDE-agent coupling sensitivity sweep.
 
 The workflows publish aggregate reports only. Do not commit controlled-access or identifiable participant-level data, patient/sample identifiers, raw expression files or row-level clinical records to this public repository.
 
