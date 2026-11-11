@@ -1,0 +1,401 @@
+{
+  "analysis": "public_breast_cancer_expression_marker_availability_audit",
+  "status": "completed",
+  "date": "2026-11-11",
+  "workflow_run_id": 42982626324,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982626324",
+  "evaluated_commit": "1f251ed54031130909ae9dd62808b0306055c2f0",
+  "artifact_id": 13837978446,
+  "panel_size": 16,
+  "cohorts": [
+    {
+      "cohort_label": "TCGA-BRCA PanCancer Atlas",
+      "study_id": "brca_tcga_pan_can_atlas_2018",
+      "profile_id": "brca_tcga_pan_can_atlas_2018_rna_seq_v2_mrna",
+      "profile": "mRNA Expression, RSEM (Batch normalized from Illumina HiSeq_RNASeqV2)",
+      "sample_count": 1082,
+      "markers_with_finite_values": 16,
+      "markers_without_finite_values": 0,
+      "total_expected_marker_sample_values": 17312,
+      "observed_finite_values": 17312,
+      "missing_values": 0,
+      "nonnumeric_or_nonfinite_values": 0,
+      "duplicate_sample_records": 0,
+      "markers": [
+        {
+          "gene": "ESR1",
+          "n": 1082,
+          "coverage": 1,
+          "median": 7065.11,
+          "p25": 1251.3225,
+          "p75": 15618.05,
+          "mean": 10555.5031,
+          "sd": 11278.9377
+        },
+        {
+          "gene": "PGR",
+          "n": 1082,
+          "coverage": 1,
+          "median": 726.782,
+          "p25": 58.525575,
+          "p75": 3870.1375,
+          "mean": 3052.4414,
+          "sd": 5655.9057
+        },
+        {
+          "gene": "ERBB2",
+          "n": 1082,
+          "coverage": 1,
+          "median": 7025.295,
+          "p25": 4476.1225,
+          "p75": 10792.15,
+          "mean": 18181.4899,
+          "sd": 39606.1397
+        },
+        {
+          "gene": "MKI67",
+          "n": 1082,
+          "coverage": 1,
+          "median": 1699.535,
+          "p25": 952.00175,
+          "p75": 2981.4125,
+          "mean": 2288.1435,
+          "sd": 1954.1456
+        },
+        {
+          "gene": "TP53",
+          "n": 1082,
+          "coverage": 1,
+          "median": 1593.675,
+          "p25": 1122.415,
+          "p75": 2116.9275,
+          "mean": 1705.9522,
+          "sd": 911.0517
+        },
+        {
+          "gene": "BRCA1",
+          "n": 1082,
+          "coverage": 1,
+          "median": 341.7395,
+          "p25": 217.6725,
+          "p75": 549.269,
+          "mean": 429.2033,
+          "sd": 304.8616
+        },
+        {
+          "gene": "BRCA2",
+          "n": 1082,
+          "coverage": 1,
+          "median": 149.2265,
+          "p25": 83.6445,
+          "p75": 249.6835,
+          "mean": 195.2097,
+          "sd": 165.9953
+        },
+        {
+          "gene": "EGFR",
+          "n": 1082,
+          "coverage": 1,
+          "median": 166.301,
+          "p25": 67.20155,
+          "p75": 412.84525,
+          "mean": 611.3114,
+          "sd": 4186.9328
+        },
+        {
+          "gene": "HIF1A",
+          "n": 1082,
+          "coverage": 1,
+          "median": 2159.915,
+          "p25": 1296.9025,
+          "p75": 3446.4375,
+          "mean": 2658.0258,
+          "sd": 2073.5511
+        },
+        {
+          "gene": "VEGFA",
+          "n": 1082,
+          "coverage": 1,
+          "median": 1753.415,
+          "p25": 1212.7425,
+          "p75": 2704.33,
+          "mean": 2359.8578,
+          "sd": 2130.2037
+        },
+        {
+          "gene": "CA9",
+          "n": 1082,
+          "coverage": 1,
+          "median": 3.9656,
+          "p25": 0.5407,
+          "p75": 47.446125,
+          "mean": 163.05597,
+          "sd": 527.81293
+        },
+        {
+          "gene": "SLC2A1",
+          "n": 1082,
+          "coverage": 1,
+          "median": 1776.62,
+          "p25": 1207.085,
+          "p75": 2839.1225,
+          "mean": 2581.0689,
+          "sd": 2754.6139
+        },
+        {
+          "gene": "STAT1",
+          "n": 1082,
+          "coverage": 1,
+          "median": 5590.47,
+          "p25": 3472.12,
+          "p75": 10754.5,
+          "mean": 8119.26,
+          "sd": 6866.74
+        },
+        {
+          "gene": "CD274",
+          "n": 1082,
+          "coverage": 1,
+          "median": 19.7097,
+          "p25": 10.8313,
+          "p75": 37.486,
+          "mean": 33.2419,
+          "sd": 48.1447
+        },
+        {
+          "gene": "CXCL9",
+          "n": 1082,
+          "coverage": 1,
+          "median": 690.9985,
+          "p25": 234.095,
+          "p75": 2464.82,
+          "mean": 2370.95,
+          "sd": 4205.35
+        },
+        {
+          "gene": "CD8A",
+          "n": 1082,
+          "coverage": 1,
+          "median": 153.8,
+          "p25": 73.7001,
+          "p75": 325.567,
+          "mean": 283.923,
+          "sd": 390.443
+        }
+      ]
+    },
+    {
+      "cohort_label": "METABRIC",
+      "study_id": "brca_metabric",
+      "profile_id": "brca_metabric_mrna",
+      "profile": "mRNA expression (Illumina HT-12 v3 microarray; log2 intensity)",
+      "sample_count": 1980,
+      "markers_with_finite_values": 16,
+      "markers_without_finite_values": 0,
+      "total_expected_marker_sample_values": 31680,
+      "observed_finite_values": 31680,
+      "missing_values": 0,
+      "nonnumeric_or_nonfinite_values": 0,
+      "duplicate_sample_records": 0,
+      "markers": [
+        {
+          "gene": "ESR1",
+          "n": 1980,
+          "coverage": 1,
+          "median": 10.2235,
+          "p25": 7.92248,
+          "p75": 11.2588,
+          "mean": 9.57672,
+          "sd": 2.14481
+        },
+        {
+          "gene": "PGR",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.86645,
+          "p25": 5.4083,
+          "p75": 6.89675,
+          "mean": 6.23339,
+          "sd": 1.02045
+        },
+        {
+          "gene": "ERBB2",
+          "n": 1980,
+          "coverage": 1,
+          "median": 10.52595,
+          "p25": 9.9584,
+          "p75": 11.1618,
+          "mean": 10.757,
+          "sd": 1.37107
+        },
+        {
+          "gene": "MKI67",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.81245,
+          "p25": 5.6159,
+          "p75": 6.05505,
+          "mean": 5.86911,
+          "sd": 0.341601
+        },
+        {
+          "gene": "TP53",
+          "n": 1980,
+          "coverage": 1,
+          "median": 6.19055,
+          "p25": 5.93613,
+          "p75": 6.45697,
+          "mean": 6.19954,
+          "sd": 0.399874
+        },
+        {
+          "gene": "BRCA1",
+          "n": 1980,
+          "coverage": 1,
+          "median": 6.0324,
+          "p25": 5.8164,
+          "p75": 6.28742,
+          "mean": 6.08194,
+          "sd": 0.369226
+        },
+        {
+          "gene": "BRCA2",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.5243,
+          "p25": 5.41675,
+          "p75": 5.64342,
+          "mean": 5.53544,
+          "sd": 0.170536
+        },
+        {
+          "gene": "EGFR",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.9539,
+          "p25": 5.69343,
+          "p75": 6.45985,
+          "mean": 6.21381,
+          "sd": 0.858549
+        },
+        {
+          "gene": "HIF1A",
+          "n": 1980,
+          "coverage": 1,
+          "median": 6.6309,
+          "p25": 6.20688,
+          "p75": 7.09392,
+          "mean": 6.67123,
+          "sd": 0.619493
+        },
+        {
+          "gene": "VEGFA",
+          "n": 1980,
+          "coverage": 1,
+          "median": 7.0711,
+          "p25": 6.69747,
+          "p75": 7.55425,
+          "mean": 7.18787,
+          "sd": 0.707878
+        },
+        {
+          "gene": "CA9",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.58275,
+          "p25": 5.441675,
+          "p75": 5.9143,
+          "mean": 5.874218,
+          "sd": 0.808609
+        },
+        {
+          "gene": "SLC2A1",
+          "n": 1980,
+          "coverage": 1,
+          "median": 8.4808,
+          "p25": 8.02875,
+          "p75": 9.057,
+          "mean": 8.578468,
+          "sd": 0.828245
+        },
+        {
+          "gene": "STAT1",
+          "n": 1980,
+          "coverage": 1,
+          "median": 10.19075,
+          "p25": 9.42965,
+          "p75": 11.1186,
+          "mean": 10.276126,
+          "sd": 1.099505
+        },
+        {
+          "gene": "CD274",
+          "n": 1980,
+          "coverage": 1,
+          "median": 5.47505,
+          "p25": 5.379975,
+          "p75": 5.57815,
+          "mean": 5.492239,
+          "sd": 0.174214
+        },
+        {
+          "gene": "CXCL9",
+          "n": 1980,
+          "coverage": 1,
+          "median": 8.2036,
+          "p25": 6.9615,
+          "p75": 9.6484,
+          "mean": 8.377649,
+          "sd": 1.737585
+        },
+        {
+          "gene": "CD8A",
+          "n": 1980,
+          "coverage": 1,
+          "median": 7.17075,
+          "p25": 6.44825,
+          "p75": 7.96405,
+          "mean": 7.272428,
+          "sd": 1.06781
+        }
+      ]
+    }
+  ],
+  "cross_cohort_overlap": {
+    "marker_count_present_in_all_profiles": 16,
+    "markers": [
+      "ESR1",
+      "PGR",
+      "ERBB2",
+      "MKI67",
+      "TP53",
+      "BRCA1",
+      "BRCA2",
+      "EGFR",
+      "HIF1A",
+      "VEGFA",
+      "CA9",
+      "SLC2A1",
+      "STAT1",
+      "CD274",
+      "CXCL9",
+      "CD8A"
+    ]
+  },
+  "interpretation": {
+    "panel_is_predictive_signature": false,
+    "cross_platform_harmonization_performed": false,
+    "outcomes_used": false,
+    "model_fitted": false,
+    "biological_validation_performed": false,
+    "patient_or_sample_level_rows_exported": false,
+    "raw_expression_values_exported": false,
+    "note": "All panel markers had finite values in every queried sample in both profiles in this run. This establishes availability only. TCGA RSEM and METABRIC Illumina HT-12 v3 log2 intensities are different assay scales; their medians/distributions must not be directly compared or pooled."
+  },
+  "data_governance": {
+    "patient_level_records_written": false,
+    "patient_or_sample_identifiers_written": false,
+    "raw_expression_values_written": false,
+    "aggregate_metrics_only": true
+  }
+}
