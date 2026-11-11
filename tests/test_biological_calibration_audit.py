@@ -41,4 +41,4 @@ def test_calibration_target_audit_matches_names_and_never_emits_values():
     ] == 27
     assert "patient_id" not in str(result).lower()
     assert "sample_id" not in str(result).lower()
-    assert "value" not in result["target_attribute_matches"]["ki67_or_proliferation_index"][0]
+    assert "value" not in result["target_attribute_matches"]["ki67_or_proliferation_index"][0].keys()
