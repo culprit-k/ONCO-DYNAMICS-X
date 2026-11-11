@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +63,8 @@ def train_pinn(
 
     model = FieldPINN(output_fields=1, hidden_width=48, hidden_layers=3).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    zero_reaction = lambda prediction: torch.zeros_like(prediction)
+    def zero_reaction(prediction: Tensor) -> Tensor:
+        return torch.zeros_like(prediction)
     best_validation = float("inf")
     best_state = None
     history = []
