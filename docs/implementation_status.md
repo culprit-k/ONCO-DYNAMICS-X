@@ -49,6 +49,8 @@ This status separates executable code from model components that still require t
 
 - Added patient-level cross-validated METABRIC pathology association for the four descriptive molecular modules. All 1,980 primary tumour samples passed the fixed 50-gene expression QC (99,000/99,000 finite values); internal five-fold balanced accuracy was ER 0.944, PR 0.782, HER2 0.979, grade 0.577 and cellularity 0.458. This is cross-sectional marker concordance, not mechanistic or independent validation; see docs/biological_calibration_protocol.md.
 
+- Completed a cross-sectional METABRIC pathology-association analysis using four descriptive expression modules and five-fold patient-level out-of-fold predictions: 1,980 primary tumour samples, 99,000/99,000 finite measurements; ER accuracy 94.0%, HER2 97.0%, PR 78.4%, grade 56.9%, cellularity 44.0% (below 50.3% majority baseline). ER/HER2/PR results overlap input genes and are not independent validation; no PDE parameter is estimated. Aggregate-only results: results/biological_calibration/metabric_pathology_module_association_summary.json.
+
 ### Statistical and model components
 - CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets. Latest boundary-aware PINN: held-out relative L2 0.02774, PDE residual RMS 0.02297 and Neumann boundary residual RMS 0.01188; FNO relative L2 0.01666; GNN relative L2 0.06995. These are software benchmarks, not biological training.
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
