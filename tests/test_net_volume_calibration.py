@@ -24,6 +24,7 @@ def test_net_volume_rate_recovers_treatment_exposed_shrinkage_slope():
     assert fit.doubling_time_days is None
     assert fit.r_squared == pytest.approx(1.0)
     assert fit.n_observations == 4
+    assert fit.volume_unit == "cc"
 
 
 def test_net_volume_rate_recovers_growth_and_does_not_assume_shrinkage():
@@ -59,3 +60,15 @@ def test_group_bootstrap_uses_subject_level_rates():
     assert result["subject_series_count"] == 4
     assert result["median_net_log_rate_per_day"] == pytest.approx(-0.0125)
     assert len(result["median_rate_bootstrap_95ci_per_day"]) == 2
+
+def test_net_volume_rate_is_invariant_to_constant_volume_unit_conversion():
+    fit_rate, _ = _net_rate()
+    days = [0.0, 21.0, 70.0, 140.0]
+    volume_cc = 8.0 * np.exp(-0.008 * np.asarray(days))
+    fit_cc = fit_rate(days, volume_cc, volume_unit="cc")
+    fit_mm3 = fit_rate(days, volume_cc * 1000.0, volume_unit="mm^3")
+
+    assert fit_cc.net_log_rate_per_day == pytest.approx(
+        fit_mm3.net_log_rate_per_day, rel=1e-12
+    )
+    assert fit_mm3.volume_unit == "mm^3"
