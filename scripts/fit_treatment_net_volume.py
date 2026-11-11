@@ -25,7 +25,11 @@ def main() -> None:
     parser.add_argument("--id-column", default="subject_id")
     parser.add_argument("--time-column", default="time_days")
     parser.add_argument("--volume-column", default="ftv_cc")
-    parser.add_argument("--volume-unit", default="cc", help="Source volume unit; I-SPY2 FTV is reported in cc.")
+    parser.add_argument(
+        "--volume-unit",
+        default="cc",
+        help="Source volume unit; I-SPY2 FTV is reported in cc.",
+    )
     parser.add_argument("--group-column", help="Optional regimen/subtype column.")
     parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
