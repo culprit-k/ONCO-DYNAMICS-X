@@ -7,7 +7,7 @@ or biological equivalence of a proxy field.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -193,7 +193,7 @@ def fit_pde_parameter_subset(
             name: float(np.exp(value))
             for name, value in zip(names, log_parameters, strict=True)
         }
-        candidate = __import__("dataclasses").replace(parameters, **changes)
+        candidate = replace(parameters, **changes)
         predicted = _simulate_observation_fields(
             initial_state, candidate, times, dt, dx, fields
         )
