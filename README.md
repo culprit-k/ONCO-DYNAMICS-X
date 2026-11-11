@@ -87,7 +87,7 @@ A fixed 50-gene PAM50 research-panel feature inventory was evaluated using TCGA-
 - Paired C-index difference: **+0.0111** (95% CI −0.0019 to +0.0241); the interval includes zero, so the gain is not conclusive.
 - All 50 genes had finite values in both expression profiles: 54,100 TCGA and 99,000 METABRIC sample–gene measurements.
 
-**Critical limitation:** sample-type metadata were unavailable in the queried cBioPortal sample projection, so primary-tumour-only filtering could not be verified; all profile sample-list entries were retained. The expression transformation is transductive and uses each cohort's full unlabelled expression distribution. This is not a clinical PAM50/Prosigna assay, an intrinsic-subtype classifier, or an individual-patient deployment pipeline.
+**Sample selection verified:** the final cBioPortal DETAILED projection confirmed that all 1,082 TCGA and 1,980 METABRIC expression samples were `Primary Solid Tumor`, with zero missing patient links and zero duplicate primary specimens. The expression transformation remains transductive and uses each cohort's full unlabelled expression distribution. This is not a clinical PAM50/Prosigna assay, an intrinsic-subtype classifier, or an individual-patient deployment pipeline.
 
 See [methodology](docs/pam50_molecular_validation.md), [external results and limitations](docs/pam50_molecular_validation_results.md), and [aggregate metrics](results/molecular_validation/pam50_tcga_metabric_summary.json).
 
