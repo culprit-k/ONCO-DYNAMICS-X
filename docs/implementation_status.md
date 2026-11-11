@@ -45,6 +45,8 @@ This status separates executable code from model components that still require t
 
 - Added an exploratory molecular-to-mechanistic feature interface: four prespecified expression modules (proliferation-associated, estrogen/luminal-associated, HER2-associated, basal/epithelial-associated) are computed as means of rank-normalised panel values with coverage/input checks. A machine-readable hypothesis registry documents candidate ABM phenotype/proliferation targets and explicitly prohibits direct PDE/ABM parameter updates pending matched-data calibration; see docs/molecular_mechanistic_bridge.md.
 
+- Added an untreated longitudinal tumour-volume estimator comparing exponential, logistic and Gompertz curves using log-scale nonlinear least squares, AICc/BIC, residual bootstrap intervals and Jacobian/SVD diagnostics. Added a local CSV CLI and aggregate-only TCGA/METABRIC clinical-target metadata audit. These are calibration tools only: no real patient/animal series has yet been fitted and no biological PDE coefficient is claimed; see docs/biological_calibration_protocol.md.
+
 ### Statistical and model components
 - CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets. Latest boundary-aware PINN: held-out relative L2 0.02774, PDE residual RMS 0.02297 and Neumann boundary residual RMS 0.01188; FNO relative L2 0.01666; GNN relative L2 0.06995. These are software benchmarks, not biological training.
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
@@ -67,7 +69,9 @@ The age-only and age-plus-stage Cox models are clinical-only exploratory baselin
 - Complete array-level METABRIC probe annotation and duplicate-probe summarisation; the current cBioPortal gene-level PAM50 profile did not rederive the underlying probe mapping.
 - Replace transductive cohort-wise rank normalisation with a prespecified reference/frozen transform suitable for single-sample or prospective use; validate on a second independent cohort without using external outcomes for feature selection or tuning.
 - Verify overall-survival time-origin and event-definition provenance against the original cohort guides. Primary Solid Tumor sample types are now verified using cBioPortal's DETAILED Sample projection; retain the full aggregate sample-type audit in the molecular result artifact.
-- Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
+- Run the aggregate clinical-target audit and review candidate Ki-67/ER/PR/HER2/grade/size fields against source definitions, assay provenance and temporal ordering.
+- Obtain approved serial tumour-volume or registered MRI cellularity data; fit only untreated intervals for the first effective growth-rate estimates, and reserve a later timepoint for prediction.
+- Calibrate PDE diffusion, oxygen, immune, stromal and drug parameters only when corresponding matched spatial/physical observations and a validated observation operator are available. Assess parameter confounding, profile likelihood/posterior correlation and uncertainty; no patient/animal-derived PDE parameter has yet been estimated.
 - Expand the adaptive DOP853 comparison to a multi-resolution convergence ladder and report the resulting error trends; numerical consistency does not establish biological validity.
 - Refine and biologically calibrate PDE–agent coupling: mass/number accounting, deposition-kernel comparison (nearest-grid versus cloud-in-cell/kernel), multi-seed coupling sensitivity and operator-splitting convergence. A single-seed 40-scenario sweep showed high lower-bound occupancy at strong coupling.
 - Validate spatial graphs against registered histology/spatial assay ground truth.
