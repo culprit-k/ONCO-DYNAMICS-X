@@ -20,7 +20,7 @@ def main() -> None:
     report = run_audit(timeout=args.timeout, retries=args.retries)
     path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     for cohort in report["cohorts"]:
         print(f"{cohort['study_id']}: {cohort['matched_target_categories']}")
     print(f"Aggregate audit: {path}")
