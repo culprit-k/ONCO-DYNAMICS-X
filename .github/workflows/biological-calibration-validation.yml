@@ -21,9 +21,11 @@ on:
     paths:
       - "src/onco_dynamics_x/calibration/biological.py"
       - "src/onco_dynamics_x/calibration/net_volume.py"
+      - "src/onco_dynamics_x/calibration/pde_parameter_estimation.py"
       - "src/onco_dynamics_x/data_engine/biological_calibration_audit.py"
       - "tests/test_biological_calibration.py"
       - "tests/test_net_volume_calibration.py"
+      - "tests/test_pde_parameter_estimation.py"
       - "tests/test_biological_calibration_audit.py"
       - "scripts/fit_longitudinal_growth.py"
       - "scripts/fit_treatment_net_volume.py"
