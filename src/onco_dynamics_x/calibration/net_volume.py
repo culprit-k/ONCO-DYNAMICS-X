@@ -64,7 +64,7 @@ def fit_treatment_exposed_net_volume_rate(
     time = np.asarray(time_days, dtype=float)
     volume = np.asarray(volume_values, dtype=float)
     if time.ndim != 1 or volume.ndim != 1 or time.shape != volume.shape:
-        raise ValueError("time_days and volume_mm3 must be aligned one-dimensional arrays.")
+        raise ValueError("time_days and volume_values must be aligned one-dimensional arrays.")
     if len(time) < 3:
         raise ValueError("At least three longitudinal visits are required for uncertainty.")
     if not np.isfinite(time).all() or not np.isfinite(volume).all():
