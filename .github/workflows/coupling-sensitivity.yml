@@ -1,0 +1,53 @@
+name: PDE-agent coupling sensitivity sweep
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/onco_dynamics_x/cellular_simulation/coupling.py"
+      - "src/onco_dynamics_x/cellular_simulation/agent_based.py"
+      - "tests/test_coupling.py"
+      - "scripts/run_coupling_sensitivity.py"
+      - ".github/workflows/coupling-sensitivity.yml"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-coupling-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install project and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run full test suite
+        run: pytest
+
+      - name: Lint source, tests and sweep script
+        run: ruff check src tests scripts/run_coupling_sensitivity.py
+
+      - name: Run 2D and 3D synthetic coupling sensitivity sweep
+        run: |
+          python scripts/run_coupling_sensitivity.py             --output results/coupling_sensitivity/synthetic_coupling_sweep.json             --steps 20             --seed 42
+
+      - name: Publish aggregate synthetic coupling report
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-pde-agent-coupling-sensitivity
+          path: results/coupling_sensitivity/synthetic_coupling_sweep.json
+          if-no-files-found: error
+          retention-days: 30
