@@ -1,6 +1,6 @@
 {
   "analysis": "PAM50_panel_rank_normalised_TCGA_to_METABRIC_survival_validation",
-  "status": "completed_primary_tumour_verified_external_evaluation",
+  "status": "completed_primary_tumour_verified_survival_and_subtype_evaluation",
   "date": "2026-11-11",
   "workflow": {
     "run_id": 42984188725,
@@ -15,16 +15,16 @@
       "aggregate_artifact": "published"
     },
     "latest_verified_run": {
-      "run_id": 42985971698,
-      "url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42985971698",
-      "evaluated_commit": "a639a3f33835a242b9abc35b4267160098bf4a3c",
-      "artifact_id": 13839059064,
+      "run_id": 42987068037,
+      "url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42987068037",
+      "evaluated_commit": "05ce6675ff89b305acf27b75b2169713be9bc371",
+      "artifact_id": 13839528629,
       "checks": {
         "full_test_suite": "passed",
-        "ruff": "passed",
-        "cBioPortal_detailed_sample_fetch": "passed",
+        "strict_ruff": "passed",
         "primary_tumour_sample_filter": "passed",
-        "model_evaluation": "passed",
+        "survival_model_external_evaluation": "passed",
+        "five_class_subtype_transfer": "passed",
         "aggregate_artifact": "published"
       }
     }
@@ -237,7 +237,23 @@
     "seed": 42,
     "external_outcomes_used_for_model_fitting_or_tuning": false,
     "stage_used": false,
-    "official_pam50_centroids_used": false
+    "official_pam50_centroids_used": false,
+    "secondary_subtype_classifier": {
+      "family": "L2 logistic regression",
+      "features": "50-gene panel, cohort-wise rank-normalised expression",
+      "training_labels": "TCGA patient-level SUBTYPE",
+      "external_labels": "METABRIC patient-level CLAUDIN_SUBTYPE",
+      "shared_classes": [
+        "Basal",
+        "Her2",
+        "LumA",
+        "LumB",
+        "Normal"
+      ],
+      "c_value": 0.1,
+      "class_weight": "balanced",
+      "hyperparameter_tuning": false
+    }
   },
   "external_performance": {
     "harrell_c_index": {
@@ -427,5 +443,192 @@
       "At 60 months, the molecular model overestimates average survival by about 3.0 percentage points.",
       "No clinical utility, prospective generalizability, treatment response or causal effect is established."
     ]
+  },
+  "subtype_transfer_results": {
+    "task": "five-class intrinsic-subtype label transfer",
+    "training_cohort": "TCGA-BRCA",
+    "external_evaluation_cohort": "METABRIC",
+    "class_order": [
+      "Basal",
+      "Her2",
+      "LumA",
+      "LumB",
+      "Normal"
+    ],
+    "features": "50-gene panel, cohort-wise outcome-blind rank-normalised values",
+    "classifier": {
+      "family": "L2 logistic regression",
+      "C": 0.1,
+      "class_weight": "balanced",
+      "solver": "lbfgs",
+      "max_iter": 3000,
+      "hyperparameter_tuning": false
+    },
+    "training": {
+      "patients_with_shared_subtype_labels": 968,
+      "shared_class_counts": {
+        "Basal": 169,
+        "Her2": 75,
+        "LumA": 496,
+        "LumB": 193,
+        "Normal": 35
+      },
+      "raw_annotation_value_counts": {
+        "BRCA_Basal": 169,
+        "BRCA_Her2": 75,
+        "BRCA_LumA": 496,
+        "BRCA_LumB": 193,
+        "BRCA_Normal": 35
+      },
+      "extra_or_nonshared_labels_excluded": {}
+    },
+    "external_evaluation": {
+      "patients_with_shared_subtype_labels": 1756,
+      "shared_class_counts": {
+        "Basal": 209,
+        "Her2": 224,
+        "LumA": 700,
+        "LumB": 475,
+        "Normal": 148
+      },
+      "raw_annotation_value_counts": {
+        "Basal": 209,
+        "Her2": 224,
+        "LumA": 700,
+        "LumB": 475,
+        "Normal": 148,
+        "NC": 6,
+        "claudin-low": 217
+      },
+      "extra_or_nonshared_labels_excluded": {
+        "NC": 6,
+        "claudin-low": 217
+      },
+      "accuracy": 0.8103644646924829,
+      "accuracy_bootstrap_95ci": [
+        0.79125854214123,
+        0.8274487471526196
+      ],
+      "balanced_accuracy": 0.7470596931517984,
+      "balanced_accuracy_bootstrap_95ci": [
+        0.7236793448987019,
+        0.7683553267514097
+      ],
+      "macro_f1": 0.778386439109285,
+      "macro_f1_bootstrap_95ci": [
+        0.753190732541746,
+        0.7988226225933285
+      ],
+      "majority_class_baseline": "LumA",
+      "majority_class_baseline_accuracy": 0.39863325740318906,
+      "majority_class_baseline_macro_f1": 0.11400651465798047,
+      "per_class_metrics": {
+        "Basal": {
+          "precision": 0.9821428571428571,
+          "recall": 0.7894736842105263,
+          "f1": 0.8753315649867374,
+          "support": 209
+        },
+        "Her2": {
+          "precision": 0.8088235294117647,
+          "recall": 0.7366071428571429,
+          "f1": 0.7710280373831776,
+          "support": 224
+        },
+        "LumA": {
+          "precision": 0.7608695652173914,
+          "recall": 0.95,
+          "f1": 0.8449809402795425,
+          "support": 700
+        },
+        "LumB": {
+          "precision": 0.8753117206982544,
+          "recall": 0.7389473684210527,
+          "f1": 0.8013698630136986,
+          "support": 475
+        },
+        "Normal": {
+          "precision": 0.7064220183486238,
+          "recall": 0.5202702702702703,
+          "f1": 0.5992217898832685,
+          "support": 148
+        }
+      },
+      "confusion_matrix": {
+        "class_order": [
+          "Basal",
+          "Her2",
+          "LumA",
+          "LumB",
+          "Normal"
+        ],
+        "counts": [
+          [
+            165,
+            22,
+            4,
+            3,
+            15
+          ],
+          [
+            1,
+            165,
+            23,
+            32,
+            3
+          ],
+          [
+            0,
+            6,
+            665,
+            15,
+            14
+          ],
+          [
+            0,
+            9,
+            115,
+            351,
+            0
+          ],
+          [
+            2,
+            2,
+            67,
+            0,
+            77
+          ]
+        ]
+      }
+    },
+    "interpretation": {
+      "annotation_transfer_not_independent_subtype_discovery": true,
+      "panel_overlaps_historical_subtype_gene_inventory": true,
+      "claudin_low_and_nc_excluded": true,
+      "transductive_cohort_wise_rank_transform": true,
+      "weakest_class": "Normal",
+      "common_confusion": "LumB predicted as LumA"
+    },
+    "limitations": [
+      "Labels are existing study-provided annotations, not independent biological ground truth.",
+      "Features overlap the historical subtype panel, so this measures annotation transfer rather than independent subtype discovery.",
+      "Cohort-wise rank normalisation is transductive and not suitable for single-sample deployment.",
+      "METABRIC claudin-low and NC labels are excluded from this five-class comparison and counted separately.",
+      "This is not an official PAM50/Prosigna classifier and does not establish clinical utility or treatment response."
+    ]
+  },
+  "prespecification": {
+    "primary_survival_model": "age + five TCGA-fitted PAM50-panel PCs",
+    "survival_evaluation": "TCGA development, METABRIC external",
+    "secondary_subtype_task": "TCGA-trained, METABRIC-tested five-class label transfer",
+    "subtype_classifier_C": 0.1,
+    "subtype_shared_classes": [
+      "Basal",
+      "Her2",
+      "LumA",
+      "LumB",
+      "Normal"
+    ],
+    "subtype_classifier_hyperparameter_tuning": false
   }
 }
