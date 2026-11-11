@@ -16,7 +16,7 @@ ONCO-DYNAMICS-X is a research and university-project prototype that combines dim
 | AI architectures | PINN, FNO and spatial GNN trained and tested on synthetic ground-truth tasks; expression transformer module | Training/evaluation on biological data and independent validation |
 | Cohort pipeline | Public GDC/cBioPortal workflows; 16-marker availability audit and exploratory 50-gene PAM50-panel PC model externally evaluated | Probe-level rederivation, deployable single-sample normalization and independent-cohort molecular validation |
 | Survival baseline | Age-only and age + PAM50-panel-PC Cox models evaluated in METABRIC with IPCW time-dependent metrics | Clinical utility, prospective validation, stable molecular improvement and covariate-dependent censoring analysis |
-| Biological calibration | Scalar exponential/logistic/Gompertz untreated-volume estimator; local CSV runner; aggregate clinical-target audit | Real longitudinal series, spatial observation operator, biological PDE parameter estimates and external temporal validation |
+| Biological calibration | Untreated exponential/logistic/Gompertz volume fitter; treatment-exposed net-volume slope fitter; local CSV runners; aggregate clinical-target audit | Real series not yet fitted; spatial observation operator, biological PDE parameters and external temporal validation remain pending |
 | Dashboard | Streamlit 2D/3D PDE console and optional coupled agent mode | Full experiment-management layer and validated patient-data ingestion |
 | Hardware concept | ESP32 firmware, serial protocol, OpenSCAD phantom and build guide | Physical fabrication, wiring verification and bench testing |
 
