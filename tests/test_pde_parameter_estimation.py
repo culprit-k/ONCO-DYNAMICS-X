@@ -129,3 +129,34 @@ def test_pde_parameter_estimator_limits_each_stage_to_three_parameters():
             dx=0.5,
             dt=0.01,
         )
+
+def test_pde_parameter_estimator_withholds_covariance_for_unobservable_drug_decay():
+    from onco_dynamics_x.parameters import ModelParameters
+    from onco_dynamics_x.state import initial_state
+
+    fit_pde_parameter_subset = _estimator()
+    initial = initial_state(grid_size=5)
+    assert np.all(initial.drug == 0.0)
+    times = [0.0, 0.1, 0.2]
+    # A zero-drug experiment contains no information about drug-field decay.
+    observations = {
+        "cancer": np.stack([initial.cancer, initial.cancer, initial.cancer]),
+    }
+
+    result = fit_pde_parameter_subset(
+        times,
+        observations,
+        initial,
+        ModelParameters(),
+        parameter_names=("drug_decay",),
+        parameter_bounds={"drug_decay": (0.01, 1.0)},
+        observation_sd={"cancer": 0.05},
+        dx=0.5,
+        dt=0.01,
+    )
+
+    assert not result.locally_identifiable
+    assert result.jacobian_rank == 0
+    assert result.parameter_covariance is None
+    assert result.parameter_standard_errors is None
+    assert result.warnings
