@@ -65,6 +65,42 @@ The output contains pseudonymous series keys, fitted parameter summaries, model-
 
 The estimator rejects shrinking series. Those belong in a treatment-response model with a time-aligned exposure function; treating treatment-driven shrinkage as untreated proliferation would bias the growth estimate.
 
+### 2.1 Treatment-exposed net functional-volume kinetics
+
+The separate function **fit_treatment_exposed_net_volume_rate()** fits the model:
+
+    log(V(t)) = alpha + k_net * t + error(t)
+
+The slope k_net is the effective net log-volume change per day. It may be negative (net shrinkage) or positive (net growth). Its 95% interval is based on the log-linear regression standard error and Student-t reference distribution. The cohort summary uses a patient-series bootstrap of the median slope.
+
+Use actual acquisition days, not nominal T0/T1/T2/T3 labels. A regimen/subtype grouping can be supplied for descriptive cohort summaries, but this is not a causal treatment comparison. At least three positive-volume visits are required to estimate within-series uncertainty. Zero or below-detection FTV is censored and is excluded until a proper left-censored observation model is implemented; no arbitrary pseudocount is added.
+
+The expected local CSV schema is:
+
+```csv
+subject_id,time_days,ftv_mm3,regimen
+subject_A,0,12.4,standard
+subject_A,21,8.1,standard
+subject_A,70,3.9,standard
+subject_A,140,1.2,standard
+```
+
+The rows are schema examples only, not observed patient data. Run locally:
+
+```bash
+pip install -e ".[science]"
+python scripts/fit_treatment_net_volume.py \
+  --input /path/to/local_ispy2_ftv_long.csv \
+  --id-column subject_id \
+  --time-column time_days \
+  --volume-column ftv_mm3 \
+  --group-column regimen \
+  --bootstrap 2000 \
+  --output /path/to/local_net_volume_rates.json
+```
+
+This yields treatment-exposed net rates and group-level descriptive intervals. It does not separate proliferation from therapy-induced death or estimate drug EC50. That requires exact exposure histories and additional biological observations. Keep all source rows and output files in approved local/institutional storage.
+
 ## 3. Why a fitted growth rate is not yet `cancer_growth`
 
 The current ONCO-DYNAMICS-X PDE uses dimensionless fields and dimensionless time. Its cancer reaction is:
