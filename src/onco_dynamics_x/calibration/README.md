@@ -4,5 +4,14 @@ Implemented:
 - Local central finite-difference parameter sensitivity for the final mean cancer-field summary.
 - Monte Carlo propagation of user-specified parameter ranges through the deterministic PDE solver.
 - Optional PyMC Gaussian-likelihood posterior construction for analyst-supplied, PyTensor-compatible forward models.
+- Exponential/logistic/Gompertz fit comparison for untreated longitudinal tumour volumes, with AICc/BIC, log-scale residuals, bootstrap intervals and Jacobian/SVD diagnostics.
+- Local CSV runner with pseudonymous subject keys; raw patient series are not exported.
+- Aggregate-only cBioPortal clinical-target metadata audit for candidate Ki-67, ER, PR, HER2, grade, tumour-size, cellularity and hypoxia fields.
 
-These tools currently operate on the illustrative dimensionless model. Monte Carlo parameter-range uncertainty is not Bayesian posterior uncertainty. Neither can be interpreted biologically until parameter ranges/priors are justified and observations support identifiability.
+Important:
+- The growth-curve estimator is a scalar whole-tumour phenomenological calibration, not a fit of the spatial PDE.
+- No patient- or animal-derived volume series has yet been processed by this estimator. Synthetic parameter recovery is the only current estimator validation.
+- Physical rates in 1/day are not automatically the dimensionless `ModelParameters.cancer_growth` coefficient. Time and density scaling, an observation operator, matched data and identifiability are required before model integration.
+- Range-based Monte Carlo is not Bayesian posterior uncertainty. Priors and parameter bounds require external biological justification.
+
+See [the biological calibration protocol](../../../docs/biological_calibration_protocol.md) for data requirements, identifiability gates and the MRI-based validation pathway.
