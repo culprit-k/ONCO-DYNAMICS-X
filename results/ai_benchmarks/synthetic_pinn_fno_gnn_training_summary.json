@@ -2,85 +2,91 @@
   "analysis": "synthetic_ai_architecture_training_benchmark",
   "status": "completed",
   "date": "2026-11-11",
-  "workflow_run_id": 42981975418,
-  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42981975418",
-  "evaluated_commit": "743608b1906af75bcd8f6e2619c7ecc2d15720a8",
-  "artifact_id": 13838036453,
+  "workflow_run_id": 42983388997,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42983388997",
+  "evaluated_commit": "d2886bae8b3487bc68d728da7099fae32a3a6dbf",
+  "artifact_id": 13838352762,
   "device": "CPU",
   "seed": 42,
-  "data": "analytic synthetic heat-equation tasks and synthetic graphs only; no patient/cohort data",
+  "data": "analytic synthetic heat-equation and synthetic graph data only; no patient or cohort data",
   "results": {
     "pinn": {
       "architecture": "FieldPINN",
-      "task": "2D no-flux heat equation with exact nonnegative analytic solution",
-      "diffusion": 0.02,
+      "task": "2D no-flux heat equation with analytic non-negative solution",
+      "diffusion_coefficient": 0.02,
       "training_validation_test_samples": [
         1024,
         512,
         1024
       ],
-      "epochs": 500,
-      "hidden_width": 48,
-      "hidden_layers": 3,
-      "optimizer": "Adam",
-      "learning_rate": 0.001,
-      "loss": "data MSE + 0.1 * PDE residual MSE",
-      "relative_l2_test_error": 0.09091082960367203,
-      "untrained_initialization_relative_l2_error": 1.3800239562988281,
-      "held_out_pde_residual_rms": 0.05325149744749069,
-      "best_validation_mse": 0.0009141057380475104,
-      "interpretation": "Substantial learning from initialization, but held-out field error and residual remain non-negligible; further architecture, sampling, boundary-condition and loss-weight tuning required."
+      "training_epochs": 1000,
+      "best_epoch": 980,
+      "model": {
+        "hidden_width": 64,
+        "hidden_layers": 4,
+        "learning_rate": 0.001,
+        "optimizer": "Adam"
+      },
+      "objective": "data MSE + 0.1 PDE residual MSE + 0.5 initial-condition MSE + 0.2 Neumann-boundary derivative MSE",
+      "held_out_relative_l2_error": 0.0277414433658123,
+      "untrained_initialization_relative_l2_error": 1.4540002346038818,
+      "held_out_pde_residual_rms": 0.02297390252351761,
+      "held_out_neumann_boundary_residual_rms": 0.011883234605193138,
+      "held_out_initial_condition_relative_l2_error": 0.035498667508363724,
+      "best_validation_mse": 0.00009926035272656009,
+      "best_validation_initial_condition_mse": 0.00015141008771024644,
+      "best_validation_objective": 0.0001749653965816833,
+      "interpretation": "Boundary- and initial-condition-aware training reduces held-out field error and improves constraint diagnostics, but residuals are nonzero and require further numerical analysis. Synthetic PDE only."
     },
     "fno": {
       "architecture": "FourierNeuralOperator2D",
       "task": "2D periodic heat semigroup with exact Fourier solution",
-      "diffusion": 0.05,
+      "diffusion_coefficient": 0.05,
       "duration": 0.2,
       "grid_size": 16,
-      "training_validation_test_samples": [
+      "train_validation_test_samples": [
         128,
         32,
         64
       ],
-      "epochs": 120,
-      "width": 16,
-      "spectral_layers": 2,
-      "modes": [
-        6,
-        6
-      ],
-      "optimizer": "Adam",
-      "learning_rate": 0.001,
-      "relative_l2_test_error": 0.01362815871834755,
+      "training_epochs": 120,
+      "model": {
+        "width": 16,
+        "spectral_layers": 2,
+        "modes": [
+          6,
+          6
+        ],
+        "learning_rate": 0.001,
+        "optimizer": "Adam"
+      },
+      "held_out_relative_l2_error": 0.01666087843477726,
       "persistence_baseline_relative_l2_error": 8.10826301574707,
-      "best_validation_mse": 0.0000030048031476326287,
-      "interpretation": "Accurately approximated this fixed synthetic diffusion operator and strongly outperformed the no-diffusion persistence baseline; generalization to other grids, domains and coefficients remains untested."
+      "best_validation_mse": 0.000005129324563313276,
+      "interpretation": "Accurately approximates the specified fixed synthetic periodic diffusion operator versus a no-diffusion baseline; cross-resolution and out-of-distribution generalization remain untested."
     },
     "gnn": {
       "architecture": "SpatialCellGNN",
-      "task": "Predict synthetic local immune-label neighbour fraction on spatial graphs",
-      "graph_counts_train_validation_test": [
+      "task": "Predict synthetic local immune-label neighbour fraction",
+      "train_validation_test_graphs": [
         48,
         12,
         12
       ],
       "nodes_per_graph": 64,
-      "total_nodes_train_validation_test": [
-        3072,
-        768,
-        768
-      ],
       "radius": 0.4,
-      "epochs": 80,
-      "message_passing_layers": 2,
-      "hidden_features": 32,
-      "optimizer": "Adam",
-      "learning_rate": 0.002,
-      "relative_l2_test_error": 0.06994560360908508,
+      "training_epochs": 80,
+      "model": {
+        "hidden_features": 32,
+        "message_passing_layers": 2,
+        "learning_rate": 0.002,
+        "optimizer": "Adam"
+      },
+      "held_out_relative_l2_error": 0.06994560360908508,
       "test_mse": 0.0006871297955513,
-      "constant_mean_baseline_mse": 0.04053523764014244,
-      "best_validation_mse": 0.0007018371834419668,
-      "interpretation": "Learned the synthetic neighbour-fraction target and outperformed a constant-mean baseline; this is not a measured immune-infiltration model."
+      "constant_mean_baseline_test_mse": 0.04053523764014244,
+      "best_validation_mse": 0.0007018453907221556,
+      "interpretation": "Learns an engineered geometric neighbour statistic on disjoint synthetic graphs; not immune infiltration or a biological cell-interaction model."
     }
   },
   "governance": {
@@ -91,33 +97,10 @@
     "aggregate_metrics_only": true
   },
   "limitations": [
-    "These are synthetic software benchmarks, not breast-cancer model performance.",
-    "The PINN held-out PDE residual RMS of about 0.053 and relative L2 error of about 0.091 remain material.",
-    "The FNO was evaluated on the same fixed 16x16 periodic task family, not cross-resolution or out-of-distribution conditions.",
-    "The GNN predicts a synthetic geometric label statistic, not biological immune recruitment, cell interaction or patient outcome.",
-    "No model is trained or validated on registered breast-tissue spatial data."
-  ],
-  "latest_rerun": {
-    "workflow_run_id": 42982733597,
-    "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982733597",
-    "evaluated_commit": "93f4941faf14d7fba32ca3e92519edf3c3a338f6",
-    "artifact_id": 13838257067,
-    "test_suite": "passed",
-    "ruff_lint": "passed",
-    "training": "passed",
-    "metrics": {
-      "pinn": {
-        "relative_l2_test_error": 0.09091082960367203,
-        "held_out_pde_residual_rms": 0.05325149744749069
-      },
-      "fno": {
-        "relative_l2_test_error": 0.013628171756863594
-      },
-      "gnn": {
-        "relative_l2_test_error": 0.06994560360908508,
-        "test_mse": 0.0006871297955513,
-        "constant_mean_baseline_mse": 0.04053523764014244
-      }
-    }
-  }
+    "All training and evaluation tasks are analytic or synthetic; none use breast-cancer patient data.",
+    "PINN has measurable nonzero PDE and Neumann boundary residuals.",
+    "FNO was tested only on 16 by 16 periodic heat operators.",
+    "GNN target is a synthetic geometric statistic.",
+    "None of these benchmarks validates tumour dynamics, immune escape, treatment response or clinical outcomes."
+  ]
 }
