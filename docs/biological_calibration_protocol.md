@@ -242,3 +242,29 @@ pytest -q tests/test_pde_parameter_estimation.py
 The dedicated biological-calibration CI now includes this module and its synthetic recovery tests. No fitted result from synthetic data is written into `configs/pde.yaml` or used to overwrite the provisional baseline parameters.
 
 **Parameter-estimation strategy:** first fit one coefficient with all other parameters fixed; then test a two-parameter subset only if independent observed fields and the Jacobian support separation. Do not jointly fit growth, baseline loss, immune killing, oxygen limitation and drug effect from tumour volume alone. Diffusion parameters require spatially registered observations; oxygen supply/consumption require repeated oxygen-sensitive measurements; drug killing/EC50 require time-aligned exposure and response data.
+
+
+## 10. METABRIC molecular-module/pathology association pilot — 11 November 2026
+
+The aggregate-only run completed in [workflow 43003477612](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/43003477612); its JSON artifact is available from that workflow. The run retrieved all 1,980 METABRIC expression-list samples, verified all 1,980 as Primary Solid Tumor, found one primary sample per patient, and confirmed 99,000/99,000 finite panel measurements. All four expression modules had 100% predefined gene coverage.
+
+The four module means were evaluated against five existing pathology annotations using five-fold stratified patient-level out-of-fold predictions. The fixed classifier was StandardScaler plus class-balanced L2 logistic regression (C=1); no hyperparameter tuning was performed. Bootstrap intervals use 500 stratified patient resamples.
+
+| Target annotation | Patients | Accuracy | Balanced accuracy (95% bootstrap CI) | Macro-F1 |
+|---|---:|---:|---:|---:|
+| ER_STATUS | 1,980 | 0.940 | 0.944 (0.933–0.954) | 0.921 |
+| PR_STATUS | 1,980 | 0.784 | 0.782 (0.764–0.798) | 0.782 |
+| HER2_STATUS | 1,980 | 0.970 | 0.979 (0.972–0.986) | 0.937 |
+| GRADE | 1,892 | 0.569 | 0.577 (0.546–0.604) | 0.509 |
+| CELLULARITY | 1,917 | 0.440 | 0.458 (0.430–0.482) | 0.391 |
+
+**Interpretation and restrictions:**
+- The strong ER/HER2 association is expected in part because the molecular modules contain direct receptor-associated genes (ESR1/PGR and ERBB2/GRB7). This is cross-sectional marker concordance with cohort annotations, not independent mechanistic validation or evidence of causality.
+- PR association is moderate. Grade and especially cellularity are weakly recovered by these four bulk-expression modules. Do not map these scores to proliferation, stromal, oxygen or tumour-growth rates.
+- The study labels are existing cBioPortal annotations. Original assay definitions, scoring rules, specimen provenance and source data dictionary still require review.
+- This is internal cross-validation within one cohort, not independent external validation. The cohort-wise rank transform uses the full unlabeled METABRIC expression distribution and remains transductive.
+- The result does not establish that the expression modules measure functional receptor activity, cellularity, oxygen concentration, proliferation rate or any PDE coefficient.
+
+**Decision:** retain the four modules as exploratory phenotype descriptors. ER/HER2 scores may be considered receptor-associated expression summaries only; grade/cellularity scores are not sufficiently predictive to serve as model inputs. No PDE/ABM parameter was estimated or changed by this pilot.
+
+Next, review the METABRIC source dictionary and assay provenance, then seek an independent cohort with matching receptor/pathology assays. For actual mechanistic parameter estimation, continue with longitudinal I-SPY 2/ACRIN imaging: validate the observation operator and physical scale first, then estimate only identifiable low-dimensional PDE parameters against registered serial observations.
