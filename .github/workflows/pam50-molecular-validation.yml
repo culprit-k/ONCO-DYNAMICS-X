@@ -36,6 +36,11 @@ jobs:
       - name: Run full test suite
         run: pytest
 
+      - name: Resolve molecular runner import layout with Ruff
+        run: |
+          ruff check --fix scripts/run_pam50_molecular_validation.py
+          sed -n '1,36p' scripts/run_pam50_molecular_validation.py
+
       - name: Lint source, tests and molecular runner
         run: ruff check src tests scripts/run_pam50_molecular_validation.py
 
