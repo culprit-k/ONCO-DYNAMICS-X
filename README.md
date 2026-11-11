@@ -91,6 +91,8 @@ A fixed 50-gene PAM50 research-panel feature inventory was evaluated using TCGA-
 
 See [methodology](docs/pam50_molecular_validation.md), [external results and limitations](docs/pam50_molecular_validation_results.md), and [aggregate metrics](results/molecular_validation/pam50_tcga_metabric_summary.json).
 
+A separate five-class subtype-transfer benchmark has also been implemented: it trains on TCGA's existing subtype annotations and evaluates against METABRIC's five shared subtype labels, excluding claudin-low/NC from the shared-class task. Its unit tests and lint pass; the live external-cohort metrics are pending. This is annotation transfer, not official PAM50 classification or independent subtype discovery. See [subtype-transfer methodology](docs/subtype_transfer_benchmark.md).
+
 ## Architecture
 
 The current continuum state is:
