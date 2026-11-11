@@ -146,7 +146,9 @@ Additional method references:
 - Wang et al., *Journal of Mathematical Biology* (2024), applies sequential Monte Carlo approximate Bayesian computation to in-vivo tumour-volume time series, including mouse breast-cancer xenografts. This supports a likelihood-free uncertainty framework for stochastic models, but its Voronoi ABM and assumptions are not the ONCO-DYNAMICS-X PDE/ABM and its estimates must not be transferred.
 
 External references:
-- TCIA I-SPY 2 collection and current access details: https://www.cancerimagingarchive.net/collection/ispy2/
+- TCIA I-SPY 2 DCE collection and current access details: https://www.cancerimagingarchive.net/collection/ispy2/
+- TCIA ACRIN 6698 / I-SPY 2 Breast DWI collection: https://www.cancerimagingarchive.net/collection/acrin-6698/ (DOI: 10.7937/tcia.kk02-6d95)
+- Imaging Data Commons ACRIN-6698 dataset record: https://portal.imaging.datacommons.cancer.gov/collections/acrin_6698/
 - TCIA data usage policy: https://www.cancerimagingarchive.net/data-usage-policies-and-restrictions/
 - Jarrett et al. 2021 protocol: https://www.nature.com/articles/s41596-021-00617-y
 - I-SPY 2 model generalizability analysis (2025): https://doi.org/10.1158/1078-0432.CCR-25-0668
