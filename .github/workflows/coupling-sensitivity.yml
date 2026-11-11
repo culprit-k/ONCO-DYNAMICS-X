@@ -37,15 +37,18 @@ jobs:
       - name: Run full test suite
         run: pytest
 
-      - name: Apply canonical Ruff import ordering to the sweep script
+      - name: Apply canonical Ruff formatting to the sweep script
         run: ruff check --fix scripts/run_coupling_sensitivity.py
 
       - name: Lint source, tests and sweep script
         run: ruff check src tests scripts/run_coupling_sensitivity.py
 
-      - name: Run 2D and 3D synthetic coupling sensitivity sweep
+      - name: Run multi-seed 2D and 3D deposition sensitivity sweep
         run: |
-          python scripts/run_coupling_sensitivity.py             --output results/coupling_sensitivity/synthetic_coupling_sweep.json             --steps 20             --seed 42
+          python scripts/run_coupling_sensitivity.py \
+            --output results/coupling_sensitivity/synthetic_coupling_sweep.json \
+            --steps 20 \
+            --seeds 42 123 2026
 
       - name: Publish aggregate synthetic coupling report
         uses: actions/upload-artifact@v4
