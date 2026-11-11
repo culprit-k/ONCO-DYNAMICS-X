@@ -1,0 +1,92 @@
+{
+  "analysis": "synthetic_bidirectional_pde_agent_coupling_sensitivity",
+  "status": "completed",
+  "date": "2026-11-11",
+  "workflow_run_id": 42984628690,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984628690",
+  "evaluated_commit": "bf468c90263ffd732778c490170b068d1fff2423",
+  "artifact_id": 13839051450,
+  "scenario_count": 40,
+  "dimensions": [
+    2,
+    3
+  ],
+  "coupling_strengths": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1
+  ],
+  "agents_per_unit": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "steps": 20,
+  "seed": 42,
+  "data": "synthetic initial fields and model-generated cell agents only",
+  "selected_aggregate_results": {
+    "2d": {
+      "mean_final_agent_count_by_coupling_strength": {
+        "0.0": 82,
+        "0.25": 80.75,
+        "0.5": 80.75,
+        "0.75": 80.5,
+        "1.0": 80.5
+      },
+      "at_coupling_strength_1_mean_fraction_of_grid_nodes_at_lower_bound": {
+        "cancer": 0.9012,
+        "immune": 0.8025,
+        "fibroblast": 0.8704
+      },
+      "at_coupling_strength_1_mean_fraction_at_upper_cap": {
+        "cancer": 0.0556,
+        "immune": 0.0123,
+        "fibroblast": 0.0093
+      }
+    },
+    "3d": {
+      "mean_final_agent_count_by_coupling_strength": {
+        "0.0": 84,
+        "0.25": 85.5,
+        "0.5": 84.75,
+        "0.75": 84.75,
+        "1.0": 84.75
+      },
+      "at_coupling_strength_1_mean_fraction_of_grid_nodes_at_lower_bound": {
+        "cancer": 0.962,
+        "immune": 0.856,
+        "fibroblast": 0.926
+      },
+      "at_coupling_strength_1_mean_fraction_at_upper_cap": {
+        "cancer": 0.016,
+        "immune": 0.014,
+        "fibroblast": 0.006
+      }
+    }
+  },
+  "interpretation": {
+    "coupling_effect_is_small_for_population_total": true,
+    "grid_occupancy_is_strongly_affected_by_occupancy_scale_and_coupling": true,
+    "high_coupling_produces_sparse_density_fields": true,
+    "upper_cap_saturation_is_not_the_main_high_coupling_pattern": true,
+    "calibration_performed": false,
+    "mass_conservation_proven": false,
+    "conclusion": "The bridge parameters materially alter spatial density-field representation. At coupling strength 1, roughly 80-96% of grid nodes are at the lower bound for one or more cell-density fields, while upper-cap occupancy remains much smaller. This is primarily sparse occupancy from mapping discrete agents to grid nodes, not widespread upper clipping. The scale and coupling strength are arbitrary and must not be treated as biological parameter estimates."
+  },
+  "limitations": [
+    "All simulations use synthetic initial conditions and dimensionless parameters.",
+    "Only one seed and one short 20-step trajectory per scenario were used.",
+    "Nearest-grid deposition is used; cloud-in-cell and kernel deposition were not compared.",
+    "The blend is not derived from a mass-conserving multiscale limit.",
+    "No histology or spatial-omics data were used to calibrate agents_per_unit or coupling_strength.",
+    "This does not validate cell kinetics, tumour progression, treatment response or clinical performance."
+  ],
+  "data_governance": {
+    "patient_data_used": false,
+    "patient_or_sample_identifiers_written": false,
+    "aggregate_synthetic_metrics_only": true
+  }
+}
