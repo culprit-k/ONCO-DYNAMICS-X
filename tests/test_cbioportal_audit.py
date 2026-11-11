@@ -251,3 +251,47 @@ def test_stage_value_inventory_reports_aggregate_categories_without_identifiers(
         "Stage II": {"records_with_value": 2, "unique_entities_with_value": 2},
     }
     assert "S1" not in str(result)
+
+
+def test_post_json_sends_json_body_and_decodes_response(monkeypatch):
+    import json
+
+    from onco_dynamics_x.data_engine import cbioportal
+
+    captured = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def read(self):
+            return b'[{"sampleId":"S1","value":"1.5"}]'
+
+    def fake_urlopen(request, timeout):
+        captured["method"] = request.get_method()
+        captured["url"] = request.full_url
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["content_type"] = request.get_header("Content-type")
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(cbioportal, "urlopen", fake_urlopen)
+    client = CBioPortalClient(timeout=12, retries=0)
+    result = client.post_json(
+        "molecular-profiles/example/molecular-data/fetch",
+        {"entrezGeneIds": [2099, 5241], "sampleListId": "example_mrna"},
+        {"projection": "SUMMARY"},
+    )
+
+    assert captured["method"] == "POST"
+    assert captured["body"] == {
+        "entrezGeneIds": [2099, 5241],
+        "sampleListId": "example_mrna",
+    }
+    assert captured["content_type"] == "application/json"
+    assert captured["timeout"] == 12
+    assert "projection=SUMMARY" in captured["url"]
+    assert result == [{"sampleId": "S1", "value": "1.5"}]
