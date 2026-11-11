@@ -190,9 +190,9 @@ The panel is available in both public profiles and the fixed feature pipeline ex
 This run is a **transductive molecular association experiment**, not a deployable classifier:
 - The per-gene rank transform uses the full unlabelled expression distribution of each cohort, including METABRIC. It is outcome-blind, but not a one-patient-at-a-time transformation.
 - The underlying METABRIC probe annotation and duplicate-probe handling were not reconstructed from the original array data; the cBioPortal gene-level profile was used.
-- Sample-type metadata were unavailable, so primary-tumour status could not be independently confirmed for each expression sample.
+- Primary Solid Tumor status was verified for all 1,082 TCGA and 1,980 METABRIC profile samples using the cBioPortal DETAILED projection; there were zero missing patient links and zero duplicate primary specimens.
 - The model uses unsupervised PCA components from the fixed PAM50 gene inventory. It does not reproduce PAM50 centroids or Prosigna and does not assign intrinsic subtype.
 - The time origin and endpoint semantics should be verified against the original cohort documentation before any clinical interpretation.
 - This analysis does not validate treatment response, tumour immune escape, spatial PDEs, agent-based kinetics, hypoxia fields, drug transport or the integrated digital twin.
 
-**Decision:** retain the age-only model as the clinical reference. Retain the PAM50-PC result as exploratory evidence that warrants an assay-level harmonisation and sample-definition audit, not as a confirmed molecular improvement. A follow-on molecular model must use a predeclared, sample-level applicable transformation, verify array probe mapping and sample type, and be tested on another independent cohort before any stronger claim.
+**Decision:** retain the age-only model as the clinical reference. Retain the PAM50-PC result as exploratory evidence that warrants an assay-level harmonisation and sample-definition audit, not as a confirmed molecular improvement. A follow-on molecular model must reconstruct and verify array probe mapping, replace the transductive rank transform with a predeclared frozen reference suitable for prospective use, and be tested on another independent cohort before any stronger claim.
