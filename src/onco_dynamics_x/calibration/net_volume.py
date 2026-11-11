@@ -23,7 +23,7 @@ class NetVolumeRateFit:
     net_log_rate_per_day: float
     confidence_interval_95_per_day: list[float]
     standard_error_per_day: float
-    intercept_log_mm3: float
+    intercept_log_volume: float
     r_squared: float
     residual_rmse_log: float
     n_observations: int
@@ -42,7 +42,7 @@ class NetVolumeRateFit:
 
 def fit_treatment_exposed_net_volume_rate(
     time_days: NDArray[np.float64] | list[float],
-    volume_mm3: NDArray[np.float64] | list[float],
+    volume_values: NDArray[np.float64] | list[float],
     *,
     volume_unit: str = "cc",
 ) -> NetVolumeRateFit:
@@ -50,8 +50,8 @@ def fit_treatment_exposed_net_volume_rate(
 
     At least three unique visits are required to estimate residual uncertainty.
     All volumes must be strictly positive. The volume unit is a label because a
-    constant unit conversion does not alter the log-volume slope. A zero or below-detection FTV is a
-    censored observation and must not be replaced with an arbitrary pseudocount.
+    constant unit conversion does not alter the log-volume slope. A zero or
+    below-detection FTV is censored and must not be replaced with a pseudocount.
     """
     try:
         from scipy.stats import linregress
@@ -62,7 +62,7 @@ def fit_treatment_exposed_net_volume_rate(
         ) from error
 
     time = np.asarray(time_days, dtype=float)
-    volume = np.asarray(volume_mm3, dtype=float)
+    volume = np.asarray(volume_values, dtype=float)
     if time.ndim != 1 or volume.ndim != 1 or time.shape != volume.shape:
         raise ValueError("time_days and volume_mm3 must be aligned one-dimensional arrays.")
     if len(time) < 3:
@@ -101,7 +101,8 @@ def fit_treatment_exposed_net_volume_rate(
         net_log_rate_per_day=slope,
         confidence_interval_95_per_day=ci,
         standard_error_per_day=stderr,
-        intercept_log_mm3=float(regression.intercept),
+        intercept_log_volume=float(regression.intercept),
+        volume_unit=volume_unit.strip(),
         r_squared=float(regression.rvalue**2),
         residual_rmse_log=rmse,
         n_observations=int(len(time)),
