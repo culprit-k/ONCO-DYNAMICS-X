@@ -43,6 +43,8 @@ This status separates executable code from model components that still require t
 - Censoring-aware age-only Cox evaluation trained in TCGA (1,069 patients; 151 deaths) and evaluated in METABRIC (1,979 patients; 1,143 deaths), with Harrell C-index 0.588 (bootstrap 95% interval 0.568–0.606).
 - METABRIC time-dependent IPCW AUC at 12/36/60 months: 0.578 / 0.515 / 0.539; IPCW Brier scores: 0.0150 / 0.1014 / 0.1713; sparse-grid IBS 0.07935. Results and limitations are recorded in docs/age_only_external_results.md.
 
+- Added an exploratory molecular-to-mechanistic feature interface: four prespecified expression modules (proliferation-associated, estrogen/luminal-associated, HER2-associated, basal/epithelial-associated) are computed as means of rank-normalised panel values with coverage/input checks. A machine-readable hypothesis registry documents candidate ABM phenotype/proliferation targets and explicitly prohibits direct PDE/ABM parameter updates pending matched-data calibration; see docs/molecular_mechanistic_bridge.md.
+
 ### Statistical and model components
 - CPU synthetic training/evaluation completed for FieldPINN, FourierNeuralOperator2D and SpatialCellGNN using analytic heat-equation and engineered graph targets. Latest boundary-aware PINN: held-out relative L2 0.02774, PDE residual RMS 0.02297 and Neumann boundary residual RMS 0.01188; FNO relative L2 0.01666; GNN relative L2 0.06995. These are software benchmarks, not biological training.
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
