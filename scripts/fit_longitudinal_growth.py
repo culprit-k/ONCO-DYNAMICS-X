@@ -132,10 +132,22 @@ def main() -> None:
         "series": reports,
         "limitations": [
             "AICc selects among descriptive curves; it does not prove a biological growth law.",
-            "A fitted whole-tumour rate is not directly equal to the dimensionless PDE cancer_growth coefficient.",
-            "Carrying capacity is weakly identified without observed saturation; inspect each fit warning and Jacobian condition number.",
-            "Treatment-exposed series must be analysed with a treatment-effect model, not this untreated-growth estimator.",
-            "Patient-level outputs remain local and should not be committed to the public repository.",
+            (
+                "A fitted whole-tumour rate is not directly equal to the dimensionless PDE "
+                "cancer_growth coefficient."
+            ),
+            (
+                "Carrying capacity is weakly identified without observed saturation; inspect "
+                "each fit warning and Jacobian condition number."
+            ),
+            (
+                "Treatment-exposed series must be analysed with a treatment-effect model, "
+                "not this untreated-growth estimator."
+            ),
+            (
+                "Patient-level outputs remain local and should not be committed to the "
+                "public repository."
+            ),
         ],
     }
     output_path = Path(args.output)
