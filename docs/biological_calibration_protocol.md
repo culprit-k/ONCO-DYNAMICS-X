@@ -141,3 +141,24 @@ Not yet established:
 - no MRI maps or Ki-67/IHC measurements have been joined to molecular features.
 
 The next data-dependent gate is to run the aggregate clinical-attribute audit, review its matched measurement candidates, then obtain an approved longitudinal MRI/cellularity dataset with at least two calibration timepoints and a later holdout. Until then, the new estimator is validated only for mathematical recovery on synthetic data.
+
+
+## 8. Public clinical-attribute feasibility audit — 11 November 2026
+
+The aggregate-only cBioPortal audit completed successfully in [workflow run 43000949762](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/43000949762). Matching is restricted to explicit field-name patterns; the initial overly broad ER-status rule was corrected after it incorrectly matched a general cancer-status attribute. The current report is stored as a 30-day aggregate-only workflow artifact and contains no row-level clinical values or identifiers.
+
+| Candidate measurement | TCGA-BRCA PanCancer Atlas | METABRIC |
+|---|---|---|
+| Ki-67 / proliferation index | No matching field identified | No matching field identified |
+| ER status | No verified ER IHC/status field in this metadata audit | ER_IHC patient-level: 2,426 entities; ER_STATUS sample-level: 2,469 |
+| PR status | No matching field identified | PR_STATUS sample-level: 1,980 |
+| HER2 status | No matching field identified | HER2_SNP6 patient-level: 1,980; HER2_STATUS sample-level: 1,980 |
+| Histologic grade | GRADE sample attribute present but 0 entities with values in coverage audit | GRADE sample-level: 2,388 |
+| Tumour size | No matching field identified | TUMOR_SIZE sample-level: 2,360 |
+| Cellularity / hypoxia | Buffa, Ragnum and Winter hypoxia scores: 1,079 patient entities each | CELLULARITY patient-level: 1,917 |
+
+These are **metadata coverage counts across each full study**, not confirmed matched counts within the expression sample list, and they are not proof that all measurements are available at the same specimen/timepoint. The ER/PR/HER2 fields need source-dictionary review (assay and coding); grade and tumour-size fields need definition and unit review; the METABRIC cellularity field needs a source-level definition and spatial interpretation check. The TCGA hypoxia scores are derived scores, not direct oxygen measurements. A Ki-67 field was not found by the current attribute-name search.
+
+**Decision:** METABRIC is the more promising candidate for exploratory cross-sectional association between molecular features and pathology annotations (ER/PR/HER2/grade/size/cellularity), after sample-to-patient matching and field-definition review. It still does not provide the repeated spatial measurements required to estimate PDE diffusion, oxygen consumption, immune killing or treatment-response kinetics. The TCGA hypoxia scores may support a separately specified cross-sectional hypothesis test, not an oxygen-transport parameter fit.
+
+The next metadata gate is to calculate exact overlap of each candidate field with the selected expression samples and confirm the field definitions from the original study documentation. The next biological-kinetics gate remains an approved longitudinal MRI/volume dataset with timepoint registration and an early-visit calibration / later-visit prediction split.
