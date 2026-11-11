@@ -104,6 +104,8 @@ The appropriate conclusion is:
 
 **The fixed expression panel is feasible to investigate, but its added prognostic value over age alone remains unconfirmed.**
 
+A separate supervised five-class subtype-transfer benchmark was also run using the existing TCGA and METABRIC subtype annotations. It achieved 81.0% accuracy, 74.7% balanced accuracy and 77.8% macro-F1 on the five shared classes. This is annotation transfer using the same historical gene-panel family, not independent biological subtype discovery. See [the separate subtype report](subtype_transfer_results.md).
+
 This result should be treated as an exploratory baseline for further assay-level and cohort-definition work, not as a validated molecular signature.
 
 ## Limitations and next acceptance gates
