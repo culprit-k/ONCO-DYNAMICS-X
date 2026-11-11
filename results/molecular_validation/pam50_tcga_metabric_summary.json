@@ -1,6 +1,6 @@
 {
   "analysis": "PAM50_panel_rank_normalised_TCGA_to_METABRIC_survival_validation",
-  "status": "completed_exploratory_external_evaluation",
+  "status": "completed_primary_tumour_verified_external_evaluation",
   "date": "2026-11-11",
   "workflow": {
     "run_id": 42984188725,
@@ -13,6 +13,20 @@
       "cohort_retrieval": "passed",
       "model_evaluation": "passed",
       "aggregate_artifact": "published"
+    },
+    "latest_verified_run": {
+      "run_id": 42985971698,
+      "url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42985971698",
+      "evaluated_commit": "a639a3f33835a242b9abc35b4267160098bf4a3c",
+      "artifact_id": 13839059064,
+      "checks": {
+        "full_test_suite": "passed",
+        "ruff": "passed",
+        "cBioPortal_detailed_sample_fetch": "passed",
+        "primary_tumour_sample_filter": "passed",
+        "model_evaluation": "passed",
+        "aggregate_artifact": "published"
+      }
     }
   },
   "data_governance": {
@@ -101,8 +115,8 @@
       "patients_in_survival_analysis": 1069,
       "death_events": 151,
       "censored": 918,
-      "sample_type_metadata": "unavailable in retrieved sample projection",
-      "sample_type_filter": "full profile sample list retained; primary-tumour-only filtering not verified",
+      "sample_type_metadata": "verified from cBioPortal Sample.type using the DETAILED sample projection",
+      "sample_type_filter": "Primary Solid Tumor only",
       "subtype_annotation": {
         "attribute": "SUBTYPE",
         "level": "PATIENT",
@@ -114,7 +128,13 @@
           "BRCA_LumB": 197,
           "BRCA_Normal": 36
         }
-      }
+      },
+      "sample_type_counts": {
+        "Primary Solid Tumor": 1082
+      },
+      "n_primary_tumour_samples": 1082,
+      "samples_without_patient_link": 0,
+      "duplicate_primary_samples_excluded": 0
     },
     {
       "label": "METABRIC",
@@ -130,8 +150,8 @@
       "patients_in_survival_analysis": 1979,
       "death_events": 1143,
       "censored": 836,
-      "sample_type_metadata": "unavailable in retrieved sample projection",
-      "sample_type_filter": "full profile sample list retained; primary-tumour-only filtering not verified",
+      "sample_type_metadata": "verified from cBioPortal Sample.type using the DETAILED sample projection",
+      "sample_type_filter": "Primary Solid Tumor only",
       "subtype_annotation": {
         "attribute": "CLAUDIN_SUBTYPE",
         "display_name": "PAM50 + Claudin-low subtype",
@@ -146,7 +166,13 @@
           "claudin-low": 218,
           "NC": 6
         }
-      }
+      },
+      "sample_type_counts": {
+        "Primary Solid Tumor": 1980
+      },
+      "n_primary_tumour_samples": 1980,
+      "samples_without_patient_link": 0,
+      "duplicate_primary_samples_excluded": 0
     }
   ],
   "expression_processing": {
@@ -184,9 +210,23 @@
       "Cohort-wise rank normalisation uses the full unlabeled expression distribution of each cohort.",
       "The TCGA and METABRIC assays differ: batch-normalised RSEM RNA-seq versus Illumina HT-12 v3 log2 intensities.",
       "Gene-level cBioPortal matrices were used; METABRIC raw probe annotation and duplicate-probe resolution were not independently rederived.",
-      "Sample-type metadata were unavailable in the sample projection; primary-tumour-only filtering was not verified.",
-      "Rank normalisation cannot guarantee removal of platform, batch, probe or sample-composition effects."
-    ]
+      "Rank normalisation cannot guarantee removal of platform, batch, probe or sample-composition effects.",
+      "Both cohorts were confirmed as Primary Solid Tumor with cBioPortal's DETAILED sample projection; no other sample types were present in the selected expression lists in this run."
+    ],
+    "sample_type_verification": {
+      "sample_object_projection": "DETAILED",
+      "source_fields": [
+        "Sample.id",
+        "Sample.type",
+        "Sample.patient.id"
+      ],
+      "primary_tumour_type": "Primary Solid Tumor",
+      "tcga_primary_tumour_samples": 1082,
+      "metabric_primary_tumour_samples": 1980,
+      "samples_without_patient_link": 0,
+      "duplicate_primary_samples_excluded": 0,
+      "note": "All samples used in the molecular profiles were verified as Primary Solid Tumor in the successful DETAILED-projection rerun. They were not assumed to be primary from profile naming."
+    }
   },
   "model": {
     "primary": "Penalised Cox model: age at diagnosis plus five TCGA-fitted PAM50-panel principal components",
