@@ -180,8 +180,15 @@ def run_coupling_sensitivity_sweep(
             "simulation, or clinical result."
         ),
         "limitations": [
-            "The agent-to-grid occupancy scale and coupling strength are not calibrated from tissue observations.",
-            "Cloud-in-cell conserves deposited agent count before field clipping, but the PDE-agent blend and agent kinetics are not a mass-conserving multiscale derivation.",
+            (
+                "The agent-to-grid occupancy scale and coupling strength are not calibrated "
+                "from tissue observations."
+            ),
+            (
+                "Cloud-in-cell conserves deposited agent count before field clipping, but "
+                "the PDE-agent blend and agent kinetics are not a mass-conserving multiscale "
+                "derivation."
+            ),
             "Only three random seeds and short synthetic trajectories are tested.",
             "Only small 2D and 3D grids are used.",
             "No histology or spatial-omics data were used to calibrate the bridge.",
