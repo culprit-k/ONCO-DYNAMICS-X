@@ -172,6 +172,14 @@ def _audit_subtype_annotations(
         {"clinicalDataType": "SAMPLE", "projection": "SUMMARY"},
     )
     result = []
+    selected_patient_labels: dict[str, str] = {}
+    preferred_attribute = (
+        "SUBTYPE"
+        if study_id == "brca_tcga_pan_can_atlas_2018"
+        else "CLAUDIN_SUBTYPE"
+        if study_id == "brca_metabric"
+        else ""
+    )
     for attribute in attributes:
         attribute_id = str(attribute.get("clinicalAttributeId") or "")
         display = str(attribute.get("displayName") or "")
@@ -200,12 +208,22 @@ def _audit_subtype_annotations(
                 "value_counts": dict(sorted(counts.items())),
             }
         )
+        if patient_level and attribute_id.upper() == preferred_attribute:
+            selected_patient_labels = {
+                str(item.get("patientId")): str(item.get("value")).strip()
+                for item in field_records
+                if item.get("patientId") and str(item.get("value")).strip()
+            }
     return {
         "candidate_subtype_fields_found": int(len(result)),
         "fields": result,
+        "patient_subtype_labels": selected_patient_labels,
+        "selected_subtype_attribute": preferred_attribute or None,
         "note": (
-            "These are cohort annotations only. They are not used for feature "
-            "construction, model fitting, transformation or hyperparameter selection."
+            "These are existing cohort annotations. The selected subtype labels "
+            "are used only as supervised training targets in TCGA and held-out "
+            "evaluation labels in METABRIC; they are never used to construct "
+            "expression features or tune the model."
         ),
     }
 
