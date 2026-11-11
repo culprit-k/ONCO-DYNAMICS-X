@@ -37,6 +37,9 @@ jobs:
       - name: Run full test suite
         run: pytest
 
+      - name: Apply canonical Ruff import ordering to the sweep script
+        run: ruff check --fix scripts/run_coupling_sensitivity.py
+
       - name: Lint source, tests and sweep script
         run: ruff check src tests scripts/run_coupling_sensitivity.py
 
@@ -48,6 +51,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: synthetic-pde-agent-coupling-sensitivity
-          path: results/coupling_sensitivity/synthetic_coupling_sweep.json
+          path: |
+            results/coupling_sensitivity/synthetic_coupling_sweep.json
+            scripts/run_coupling_sensitivity.py
           if-no-files-found: error
           retention-days: 30
