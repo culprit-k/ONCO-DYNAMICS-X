@@ -9,7 +9,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-
 from onco_dynamics_x.calibration.net_volume import (
     bootstrap_group_net_rates,
     fit_treatment_exposed_net_volume_rate,
