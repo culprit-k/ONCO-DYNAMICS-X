@@ -40,7 +40,7 @@ def test_pathology_association_uses_patient_level_out_of_fold_predictions():
     assert report["metrics"]["accuracy"] > 0.95
     assert report["metrics"]["balanced_accuracy"] > 0.95
     assert report["metrics"]["macro_f1"] > 0.95
-    assert report["confusion_matrix"]["class_order"] == labels
+    assert report["confusion_matrix"]["class_order"] == sorted(labels)
     assert report["data_governance"]["patient_ids_exported"] is False
     assert "patient-Negative-0" not in str(report)
 
