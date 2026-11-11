@@ -106,6 +106,7 @@ def _fetch_expression_records(
     unrecognised_records = 0
     nonfinite_records = 0
     record_count = 0
+    seen_sample_gene_pairs: set[tuple[int, int]] = set()
 
     for start in range(0, len(sample_ids), CHUNK_SIZE):
         sample_chunk = sample_ids[start : start + CHUNK_SIZE]
@@ -120,13 +121,23 @@ def _fetch_expression_records(
             raise RuntimeError("cBioPortal molecular-data/fetch returned a non-list response.")
         for record in records:
             record_count += 1
-            sample_id = record.get("sampleId")
-            entrez_id = record.get("entrezGeneId")
+            sample_id = str(record.get("sampleId") or "")
+            try:
+                entrez_id = int(record.get("entrezGeneId"))
+            except (TypeError, ValueError):
+                unrecognised_records += 1
+                continue
             if sample_id not in sample_index or entrez_id not in entrez_index:
                 unrecognised_records += 1
                 continue
-            row = sample_index[str(sample_id)]
-            column = entrez_index[int(entrez_id)]
+            row = sample_index[sample_id]
+            column = entrez_index[entrez_id]
+            pair = (row, column)
+            if pair in seen_sample_gene_pairs:
+                duplicate_records += 1
+                values[row, column] = np.nan
+                continue
+            seen_sample_gene_pairs.add(pair)
             raw_value = record.get("value")
             try:
                 numeric_value = float(raw_value)
@@ -136,11 +147,7 @@ def _fetch_expression_records(
             if not np.isfinite(numeric_value):
                 nonfinite_records += 1
                 continue
-            if np.isfinite(values[row, column]):
-                duplicate_records += 1
-                values[row, column] = np.nan
-            else:
-                values[row, column] = numeric_value
+            values[row, column] = numeric_value
 
     return values, {
         "records_returned": int(record_count),
@@ -234,6 +241,14 @@ def _load_cohort(
         raise RuntimeError(f"Unexpected molecular profile for {cohort['label']}.")
     if profile.get("studyId") not in {None, cohort["study_id"]}:
         raise RuntimeError(f"Profile does not belong to {cohort['label']}.")
+    profile_type = str(profile.get("datatype") or "").lower()
+    alteration_type = str(profile.get("molecularAlterationType") or "").lower()
+    if "mrna" not in profile_type and "mrna" not in alteration_type:
+        raise RuntimeError(
+            f"Expected an mRNA expression profile for {cohort['label']}."
+        )
+    if sample_list.get("sampleListId") != cohort["sample_list_id"]:
+        raise RuntimeError(f"Unexpected sample list for {cohort['label']}.")
     sample_ids = sample_list.get("sampleIds")
     if not isinstance(sample_ids, list) or not sample_ids:
         raise RuntimeError(f"Empty or invalid expression sample list for {cohort['label']}.")
