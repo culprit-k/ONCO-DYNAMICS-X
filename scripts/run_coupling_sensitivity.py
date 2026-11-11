@@ -12,7 +12,8 @@ from typing import Any
 
 import numpy as np
 
-from onco_dynamics_x.cellular_simulation import agent_based, coupling
+import onco_dynamics_x.cellular_simulation.agent_based as agent_based
+import onco_dynamics_x.cellular_simulation.coupling as coupling
 from onco_dynamics_x.parameters import ModelParameters
 from onco_dynamics_x.solver import diffusion_timestep_limit
 from onco_dynamics_x.state import initial_state
