@@ -257,7 +257,10 @@ def train_pinn(
             "hidden_layers": 4,
             "optimizer": "Adam",
             "learning_rate": 0.001,
-            "loss": "data MSE + 0.1 * PDE residual MSE + 0.5 * initial-condition MSE + 0.2 * Neumann-boundary derivative MSE",
+            "loss": (
+                "data MSE + 0.1 * PDE residual MSE + 0.5 * initial-condition MSE "
+                "+ 0.2 * Neumann-boundary derivative MSE"
+            ),
             "gradient_clip_norm": 5.0,
         },
     }
