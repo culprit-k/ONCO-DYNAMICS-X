@@ -18,8 +18,9 @@ def _synthetic_observations(parameters, initial, times, dt, dx, fields):
 
     current = initial.copy()
     result = {name: [getattr(current, name).copy()] for name in fields}
-    for _ in range(1, len(times)):
-        for _ in range(int(round((times[_] - times[_ - 1]) / dt))):
+    for index in range(1, len(times)):
+        interval_steps = int(round((times[index] - times[index - 1]) / dt))
+        for _ in range(interval_steps):
             current = step(current, parameters, dx, dt)
         for name in fields:
             result[name].append(getattr(current, name).copy())
