@@ -13,6 +13,7 @@ This status separates executable code from model components that still require t
 
 ### Cellular and spatial AI inputs
 - Stochastic 2D/3D agent-based simulation for cancer, immune and fibroblast cell proxies.
+- Bidirectional operator-split PDE–agent coupling: PDE fields drive agent updates; agent phenotypes are deposited back to the corresponding continuum density fields with explicit dimensionless coupling/occupancy controls.
 - Radius-based cell-neighbour graph construction and a GNN architecture.
 - Patient-grouped train/test split utility.
 
@@ -54,7 +55,7 @@ The survival Cox model is a clinical-only exploratory baseline. It does not use 
 - Perform independent molecular evaluation without using METABRIC outcomes for feature selection or tuning.
 - Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
 - Compare numerical solver with independent methods and document multi-level convergence.
-- Fully couple PDE and agent-based dynamics.
+- Refine and biologically calibrate PDE–agent coupling: mass/number accounting, deposition-kernel comparison, coupling-strength sensitivity and operator-splitting convergence.
 - Validate spatial graphs against registered histology/spatial assay ground truth.
 - Integrate additional compatible modalities/cohorts.
 - Implement the full PDE-constrained control problem.
