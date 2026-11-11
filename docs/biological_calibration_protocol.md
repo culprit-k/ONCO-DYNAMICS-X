@@ -71,7 +71,7 @@ The separate function **fit_treatment_exposed_net_volume_rate()** fits the model
 
     log(V(t)) = alpha + k_net * t + error(t)
 
-For the I-SPY 2 FTV field, the TCIA data dictionary defines the DICOM FTV result in **cc (cm³)**. The local runner therefore defaults to column `ftv_cc` and unit `cc`; confirm the workbook/data-dictionary units before changing this. FTV is enhancement-thresholded functional volume, not the whole anatomical tumour volume or a direct tumour-cell count. <Cite ref="turn432959search22"/><Cite ref="turn432959search0"/>
+For the I-SPY 2 FTV field, the TCIA data dictionary defines the DICOM FTV result in **cc (cm³)**. The local runner therefore defaults to column `ftv_cc` and unit `cc`; confirm the workbook/data-dictionary units before changing this. FTV is enhancement-thresholded functional volume, not the whole anatomical tumour volume or a direct tumour-cell count. [TCIA's FTV data dictionary](https://www.cancerimagingarchive.net/wp-content/uploads/ACRIN-6698-ISPY2-DWI-and-DCE-MRI-Data-Descriptions_20210520.pdf) and [I-SPY 2 collection description](https://www.cancerimagingarchive.net/collection/ispy2/).
 
 The slope k_net is the effective net log-volume change per day. It may be negative (net shrinkage) or positive (net growth). Its 95% interval is based on the log-linear regression standard error and Student-t reference distribution. The cohort summary uses a patient-series bootstrap of the median slope.
 
@@ -95,7 +95,8 @@ python scripts/fit_treatment_net_volume.py \
   --input /path/to/local_ispy2_ftv_long.csv \
   --id-column subject_id \
   --time-column time_days \
-  --volume-column ftv_mm3 \
+  --volume-column ftv_cc \\
+  --volume-unit cc \\
   --group-column regimen \
   --bootstrap 2000 \
   --output /path/to/local_net_volume_rates.json
