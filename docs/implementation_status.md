@@ -34,6 +34,9 @@ This status separates executable code from model components that still require t
 - Exploratory Cox proportional-hazards clinical baseline trained on TCGA (1,050 patients; 143 deaths) and evaluated once on METABRIC (1,454 patients; 821 deaths).
 - External METABRIC Harrell C-index 0.616 (patient bootstrap 95% interval 0.592–0.641) for age + broad stage; age-only comparator C-index 0.591 (95% interval 0.570–0.617).
 - Survival workflow uploads aggregate metrics only; no row-level clinical data, patient/sample identifiers or expression matrices are uploaded.
+- Fixed 50-gene PAM50-panel research feature pipeline completed: cohort-wise mid-rank inverse-normal transformation, five-component PCA fitted in TCGA and applied frozen to METABRIC, and age + five-PC Cox external evaluation. All 50 genes were finite in both profiles; no imputation was required.
+- PAM50-panel external comparison: age-only C-index 0.5882; age + five PCs C-index 0.5992; paired delta +0.0111 with 95% bootstrap interval -0.0019 to +0.0241 (includes zero). This is exploratory and transductive; see docs/pam50_molecular_validation.md.
+- A separate 40-scenario PDE-agent coupling sensitivity sweep completed for 2D/3D, five coupling strengths and four occupancy scales. At full coupling, mean lower-bound node occupancy for cell-density fields was 80–96%; the result indicates sparse-grid sensitivity, not biological calibration.
 - Fixed 16-gene expression availability audit across TCGA-BRCA RSEM (1,082 samples) and METABRIC Illumina HT-12 v3 (1,980 samples): all marker-sample values finite and complete in the queried profiles; no missing/non-finite or duplicate records. No harmonization or model fitting performed.
 - Censoring-aware age-only Cox evaluation trained in TCGA (1,069 patients; 151 deaths) and evaluated in METABRIC (1,979 patients; 1,143 deaths), with Harrell C-index 0.588 (bootstrap 95% interval 0.568–0.606).
 - METABRIC time-dependent IPCW AUC at 12/36/60 months: 0.578 / 0.515 / 0.539; IPCW Brier scores: 0.0150 / 0.1014 / 0.1713; sparse-grid IBS 0.07935. Results and limitations are recorded in docs/age_only_external_results.md.
@@ -52,16 +55,17 @@ This status separates executable code from model components that still require t
 
 PINN, GNN, neural operator, expression transformer, Bayesian, causal and optimal-control modules are code components. They are not trained or biologically validated models by simply being present in source.
 
-The survival Cox model is a clinical-only exploratory baseline. It does not use molecular expression and does not validate the digital twin.
+The age-only and age-plus-stage Cox models are clinical-only exploratory baselines. The separate age-plus-PAM50-PC model is an exploratory molecular association analysis, not a validated clinical predictor. None of these analyses validates the spatial digital twin.
 
 ## Still outstanding
 - Review source-level endpoint definitions and raw TCGA/METABRIC stage-value distributions; aggregate category counts are now recorded, but TCGA patient-level AJCC pathologic stage and METABRIC sample-level generic tumour stage are not yet established as equivalent.
 - Extend calibration and time-dependent survival evaluation to future molecular models and alternative endpoints; review marginal independent-censoring assumptions. Keep the age-only model as the primary clinical reference until stage-field semantics are verified.
-- Build a fixed molecular feature/signature pipeline and solve cross-platform harmonization between TCGA RNA-seq RSEM and METABRIC Illumina HT-12 v3 microarray; marker presence is established, but assay/probe mapping and normalization remain outstanding.
-- Perform independent molecular evaluation without using METABRIC outcomes for feature selection or tuning.
+- Complete array-level METABRIC probe annotation and duplicate-probe summarisation; the current cBioPortal gene-level PAM50 profile did not rederive the underlying probe mapping.
+- Replace transductive cohort-wise rank normalisation with a prespecified reference/frozen transform suitable for single-sample or prospective use; validate on a second independent cohort without using external outcomes for feature selection or tuning.
+- Verify sample-type metadata and original cohort endpoint definitions; profile sample type was UNKNOWN in the PAM50 run, so primary-tumour-only status could not be confirmed.
 - Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
 - Expand the adaptive DOP853 comparison to a multi-resolution convergence ladder and report the resulting error trends; numerical consistency does not establish biological validity.
-- Refine and biologically calibrate PDE–agent coupling: mass/number accounting, deposition-kernel comparison, coupling-strength sensitivity and operator-splitting convergence.
+- Refine and biologically calibrate PDE–agent coupling: mass/number accounting, deposition-kernel comparison (nearest-grid versus cloud-in-cell/kernel), multi-seed coupling sensitivity and operator-splitting convergence. A single-seed 40-scenario sweep showed high lower-bound occupancy at strong coupling.
 - Validate spatial graphs against registered histology/spatial assay ground truth.
 - Integrate additional compatible modalities/cohorts.
 - Implement the full PDE-constrained control problem.
