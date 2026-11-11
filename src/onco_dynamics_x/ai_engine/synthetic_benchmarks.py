@@ -44,7 +44,7 @@ def periodic_heat_operator(
     """Apply the exact periodic heat semigroup to [batch, height, width] fields."""
     if initial_field.ndim != 3:
         raise ValueError("initial_field must have shape [batch, height, width].")
-    if min(initial_field.shape) < 4:
+    if min(initial_field.shape[-2:]) < 4:
         raise ValueError("Each spatial grid dimension must be at least 4.")
     if diffusion <= 0 or not math.isfinite(diffusion):
         raise ValueError("diffusion must be finite and positive.")
