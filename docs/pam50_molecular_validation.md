@@ -92,7 +92,11 @@ No threshold is selected using METABRIC survival. A performance increase over ag
 
 ## Subtype annotation handling
 
-The runner inventories available TCGA/METABRIC clinical attributes that appear to contain PAM50 or molecular-subtype annotations. It records aggregate value counts only. These annotations are not used in gene selection, normalization, PCA, model fitting or hyperparameter tuning. If sufficiently reliable annotations are available in both cohorts, a separate descriptive concordance study can be prespecified later. This run does not claim intrinsic subtype classification.
+The survival analysis audits the available patient-level subtype annotations but does not use these labels for gene selection, rank normalisation, PCA, Cox model fitting or survival-model tuning.
+
+A separate supervised label-transfer task is implemented in [the subtype-transfer benchmark](subtype_transfer_benchmark.md). In that distinct task, TCGA `SUBTYPE` labels are used only as training targets and METABRIC `CLAUDIN_SUBTYPE` labels are used only for held-out evaluation of the five shared classes. The additional METABRIC claudin-low and NC labels are excluded and counted separately. The transfer results are reported separately in [the subtype results](subtype_transfer_results.md).
+
+This distinction matters: the survival C-index analysis is a prognostic-association task; the subtype benchmark is annotation transfer. Neither one is independent biological discovery, official PAM50/Prosigna reproduction, treatment-response prediction, or clinical validation.
 
 ## Data governance
 
