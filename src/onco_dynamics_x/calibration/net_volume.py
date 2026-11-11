@@ -51,7 +51,8 @@ def fit_treatment_exposed_net_volume_rate(
     censored observation and must not be replaced with an arbitrary pseudocount.
     """
     try:
-        from scipy.stats import linregress, t as student_t
+        from scipy.stats import linregress
+        from scipy.stats import t as student_t
     except ImportError as error:
         raise ImportError(
             "Install the science extra: pip install -e '.[science]'."
