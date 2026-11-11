@@ -313,7 +313,10 @@ def evaluate_intrinsic_subtype_transfer(
     matrix = confusion_matrix(y_test, predictions, labels=classes)
 
     majority_class = max(train_counts, key=train_counts.get)
-    majority_prediction = np.full(len(y_test), majority_class, dtype=f"<U{max(len(label) for label in classes)}")
+    max_label_length = max(len(label) for label in classes)
+    majority_prediction = np.full(
+        len(y_test), majority_class, dtype=f"<U{max_label_length}"
+    )
     majority_accuracy = float(accuracy_score(y_test, majority_prediction))
     majority_macro_f1 = float(
         f1_score(
