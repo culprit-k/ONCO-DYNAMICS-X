@@ -88,3 +88,40 @@ The audit can establish marker data availability, coverage, missingness and with
 - hypoxia or immune-cell spatial distributions;
 - tumour dynamics or drug penetration;
 - biological or clinical validity of the ONCO-DYNAMICS-X digital twin.
+
+
+## Completed audit — 11 November 2026
+
+**Workflow:** [run 42982626324](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982626324)  
+**Evaluated commit:** `1f251ed54031130909ae9dd62808b0306055c2f0`  
+**Committed aggregate report:** `results/molecular_audit/marker_panel_overlap_summary.json`
+
+| Cohort | Profile | Sample count | Markers with finite values | Marker-sample values returned | Missing / non-finite | Duplicate sample records |
+|---|---|---:|---:|---:|---:|---:|
+| TCGA-BRCA PanCancer Atlas | RSEM batch-normalized RNA-seq | 1,082 | 16 / 16 | 17,312 / 17,312 | 0 | 0 |
+| METABRIC | Illumina HT-12 v3 microarray log2 intensity | 1,980 | 16 / 16 | 31,680 / 31,680 | 0 | 0 |
+
+Each marker had 100% sample-list coverage in both profiles. All Entrez IDs resolved to the expected HUGO symbols. No patient or sample identifiers or raw expression values were written to the report.
+
+### Selected within-profile summaries
+
+| Gene | TCGA median (p25–p75) | METABRIC median (p25–p75) |
+|---|---:|---:|
+| ESR1 | 7,065.11 (1,251.32–15,618.05) | 10.2235 (7.9225–11.2588) |
+| PGR | 726.782 (58.526–3,870.138) | 5.8665 (5.4083–6.8968) |
+| ERBB2 | 7,025.295 (4,476.123–10,792.15) | 10.5260 (9.9584–11.1618) |
+| MKI67 | 1,699.535 (952.002–2,981.413) | 5.8125 (5.6159–6.0551) |
+| HIF1A | 2,159.915 (1,296.903–3,446.438) | 6.6309 (6.2069–7.0939) |
+| VEGFA | 1,753.415 (1,212.743–2,704.330) | 7.0711 (6.6975–7.5543) |
+| CA9 | 3.9656 (0.5407–47.4461) | 5.5828 (5.4417–5.9143) |
+| CD274 | 19.7097 (10.8313–37.4860) | 5.4751 (5.3800–5.5782) |
+| CXCL9 | 690.9985 (234.095–2,464.820) | 8.2036 (6.9615–9.6484) |
+| CD8A | 153.8000 (73.7001–325.5670) | 7.1708 (6.4483–7.9641) |
+
+The difference in numeric scale is conspicuous and expected from the distinct measurement platforms and processing. The table is for within-cohort descriptive reporting only. **It does not imply that values from TCGA and METABRIC are on a common scale or directly comparable.**
+
+### Decision from this audit
+
+The selected marker panel is sufficiently represented in both cohorts to justify a carefully designed next-stage harmonization feasibility study. This does not establish that an expression signature is transportable. Before fitting a molecular predictor, the next required work is probe-to-gene mapping for the METABRIC microarray, duplicate-probe summarization, versioned gene identifier mapping, a training-only transformation, and a frozen external evaluation design. No METABRIC outcome should be used to choose genes, transformations, cut-offs or model parameters.
+
+**Current status:** expression availability verified for this small marker panel; molecular harmonization and molecular model training remain pending.
