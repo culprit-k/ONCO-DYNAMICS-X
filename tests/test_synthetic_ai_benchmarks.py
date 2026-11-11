@@ -26,8 +26,8 @@ def test_exact_neumann_heat_solution_has_expected_shape_and_nonnegative_values()
     assert values.shape == (3, 1)
     assert torch.isfinite(values).all()
     assert torch.all(values >= 0)
-    assert values[0, 0].item() == pytest.approx(0.0, abs=1e-6)
-    assert values[1, 0] > values[2, 0]
+    assert values[0, 0].item() == pytest.approx(1.0, abs=1e-6)
+    assert values[2, 0] > values[1, 0]
 
 
 def test_exact_neumann_heat_solution_rejects_negative_time():
