@@ -23,13 +23,10 @@ from onco_dynamics_x.data_engine.cohort_metadata import (
 from onco_dynamics_x.data_engine.molecular_mechanistic_bridge import (
     score_molecular_modules,
 )
+from onco_dynamics_x.data_engine import molecular_model
 from onco_dynamics_x.data_engine.molecular_model import (
     PAM50_GENES,
     rank_normalise_expression,
-)
-from scripts.run_pam50_molecular_validation import (
-    _fetch_expression_records,
-    _resolve_entrez_ids,
 )
 
 STUDY_ID = "brca_metabric"
@@ -42,6 +39,82 @@ TARGETS = {
     "GRADE": "SAMPLE",
     "CELLULARITY": "PATIENT",
 }
+CHUNK_SIZE = 300
+
+
+def _resolve_entrez_ids(
+    client: CBioPortalClient,
+) -> dict[str, int]:
+    """Resolve the fixed panel through current cBioPortal gene records."""
+    resolved: dict[str, int] = {}
+    for symbol in PAM50_GENES:
+        last_error: Exception | None = None
+        for candidate in molecular_model.PAM50_SYMBOL_ALIASES.get(symbol, (symbol,)):
+            try:
+                gene = client.get_json(f"genes/{candidate}")
+            except Exception as error:
+                last_error = error
+                continue
+            entrez_id = gene.get("entrezGeneId")
+            if entrez_id:
+                resolved[symbol] = int(entrez_id)
+                break
+        if symbol not in resolved:
+            raise RuntimeError(f"Could not resolve {symbol}: {last_error}")
+    if len(set(resolved.values())) != len(resolved):
+        raise ValueError("Panel symbols unexpectedly resolve to duplicate Entrez IDs.")
+    return resolved
+
+
+def _fetch_expression_records(
+    client: CBioPortalClient,
+    sample_ids: list[str],
+    entrez_ids: list[int],
+) -> tuple[np.ndarray, dict[str, int]]:
+    """Fetch fixed-panel expression in bounded batches."""
+    sample_index = {sample_id: index for index, sample_id in enumerate(sample_ids)}
+    gene_index = {gene_id: index for index, gene_id in enumerate(entrez_ids)}
+    values = np.full((len(sample_ids), len(entrez_ids)), np.nan, dtype=float)
+    record_count = 0
+    duplicates = 0
+    for start in range(0, len(sample_ids), CHUNK_SIZE):
+        records = client.post_json(
+            f"molecular-profiles/{PROFILE_ID}/molecular-data/fetch",
+            {
+                "sampleIds": sample_ids[start : start + CHUNK_SIZE],
+                "entrezGeneIds": entrez_ids,
+            },
+        )
+        if not isinstance(records, list):
+            raise RuntimeError("cBioPortal molecular-data/fetch returned a non-list.")
+        seen: set[tuple[int, int]] = set()
+        for record in records:
+            record_count += 1
+            sample_id = str(record.get("sampleId") or "")
+            try:
+                gene_id = int(record.get("entrezGeneId"))
+                value = float(record.get("value"))
+            except (TypeError, ValueError):
+                continue
+            if sample_id not in sample_index or gene_id not in gene_index:
+                continue
+            pair = (sample_index[sample_id], gene_index[gene_id])
+            if pair in seen:
+                duplicates += 1
+                values[pair] = np.nan
+                continue
+            seen.add(pair)
+            if np.isfinite(value):
+                values[pair] = value
+    qc = {
+        "records_returned": int(record_count),
+        "duplicate_records": int(duplicates),
+        "finite_measurements": int(np.isfinite(values).sum()),
+        "expected_measurements": int(values.size),
+    }
+    return values, qc
+
+
 
 
 def _unique_patient_annotations(
@@ -83,7 +156,7 @@ def run_metabric_pathology_calibration(
 ) -> dict[str, Any]:
     """Fetch METABRIC primary-tumour expression and evaluate module associations."""
     client = CBioPortalClient(timeout=60, retries=3)
-    gene_ids, resolved_symbols = _resolve_entrez_ids(client)
+    gene_ids = _resolve_entrez_ids(client)
     sample_list = client.get_json(f"sample-lists/{SAMPLE_LIST_ID}")
     sample_ids = sample_list.get("sampleIds")
     if not isinstance(sample_ids, list) or not sample_ids:
@@ -107,10 +180,7 @@ def run_metabric_pathology_calibration(
     }
 
     raw_expression, expression_qc = _fetch_expression_records(
-        client,
-        PROFILE_ID,
-        primary_sample_ids,
-        [gene_ids[gene] for gene in PAM50_GENES],
+        client, primary_sample_ids, [gene_ids[gene] for gene in PAM50_GENES]
     )
     patient_rows: dict[str, list[np.ndarray]] = defaultdict(list)
     for index, sample_id in enumerate(primary_sample_ids):
