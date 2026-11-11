@@ -254,7 +254,7 @@ def _load_cohort(
     survival_by_patient = {row["patient_id"]: row for row in survival_rows}
     samples = client.get_all(
         f"studies/{cohort['study_id']}/samples",
-        {"projection": "ALL"},
+        {"projection": "DETAILED"},
     )
     sample_list = client.get_json(f"sample-lists/{cohort['sample_list_id']}")
     profile = client.get_json(f"molecular-profiles/{cohort['profile_id']}")
