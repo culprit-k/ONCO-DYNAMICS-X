@@ -101,7 +101,7 @@ def run_validation(
         raise ValueError("Evaluation horizons must be positive.")
     if any(
         right <= left
-        for left, right in zip(horizons_months, horizons_months[1:])
+        for left, right in zip(horizons_months, horizons_months[1:], strict=False)
     ):
         raise ValueError("Evaluation horizons must be sorted and unique.")
 
