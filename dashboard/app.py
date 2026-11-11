@@ -6,6 +6,13 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
+from onco_dynamics_x.cellular_simulation.agent_based import (
+    CANCER,
+    FIBROBLAST,
+    IMMUNE,
+    initialize_agents,
+)
+from onco_dynamics_x.cellular_simulation.coupling import simulate_coupled
 from onco_dynamics_x.hardware.serial_protocol import (
     ControlMessage,
     apply_controls,
@@ -68,6 +75,25 @@ with st.sidebar:
         "Time increment (dimensionless)", value=0.0003, min_value=0.00001, format="%.5f"
     )
     infusion = st.slider("Illustrative drug-field input", 0.0, 0.5, 0.0, 0.01)
+    coupled_mode = st.checkbox(
+        "Enable bidirectional PDE–agent coupling",
+        value=False,
+        help="Agents sample PDE fields and feed phenotype density proxies back to the grid.",
+    )
+    if coupled_mode:
+        coupling_strength = st.slider("PDE–agent coupling strength", 0.0, 1.0, 0.15, 0.05)
+        agents_per_unit = st.number_input(
+            "Agents per grid node for density=1", min_value=0.1, value=4.0, step=0.5
+        )
+        initial_cancer_agents = st.number_input("Initial cancer agents", 0, 1000, 80, 10)
+        initial_immune_agents = st.number_input("Initial immune agents", 0, 1000, 50, 10)
+        initial_fibroblast_agents = st.number_input("Initial fibroblast agents", 0, 1000, 35, 5)
+    else:
+        coupling_strength = 0.0
+        agents_per_unit = 4.0
+        initial_cancer_agents = 0
+        initial_immune_agents = 0
+        initial_fibroblast_agents = 0
     manual_run = st.button("Run simulation", type="primary")
     hardware_run = st.session_state.pop("hardware_run", False)
     run = manual_run or hardware_run
@@ -84,15 +110,40 @@ if run:
         return float(infusion)
 
     try:
-        _, snapshots = simulate(
-            initial_state(grid_size, spatial_dimensions=dimensions),
-            parameters,
-            dx=dx,
-            dt=float(dt),
-            steps=steps,
-            infusion_schedule=schedule,
-            save_every=steps,
-        )
+        final_population = None
+        if coupled_mode:
+            initial_population = initialize_agents(
+                cancer_count=int(initial_cancer_agents),
+                immune_count=int(initial_immune_agents),
+                fibroblast_count=int(initial_fibroblast_agents),
+                seed=42,
+                spatial_dimensions=dimensions,
+            )
+            _, snapshots, population_snapshots = simulate_coupled(
+                initial_state(grid_size, spatial_dimensions=dimensions),
+                initial_population,
+                parameters,
+                dx=dx,
+                dt=float(dt),
+                steps=steps,
+                coupling_strength=float(coupling_strength),
+                agents_per_unit=float(agents_per_unit),
+                infusion_schedule=schedule,
+                save_every=steps,
+                seed=42,
+                maximum_agents=5000,
+            )
+            final_population = population_snapshots[-1]
+        else:
+            _, snapshots = simulate(
+                initial_state(grid_size, spatial_dimensions=dimensions),
+                parameters,
+                dx=dx,
+                dt=float(dt),
+                steps=steps,
+                infusion_schedule=schedule,
+                save_every=steps,
+            )
         final = snapshots[-1]
         fields = final.as_dict()
 
@@ -117,6 +168,23 @@ if run:
                     )
                 ]
             )
+            if final_population is not None and final_population.z is not None:
+                for cell_type, label in (
+                    (CANCER, "Cancer agents"),
+                    (IMMUNE, "Immune agents"),
+                    (FIBROBLAST, "Fibroblast agents"),
+                ):
+                    mask = final_population.cell_type == cell_type
+                    volume.add_trace(
+                        go.Scatter3d(
+                            x=final_population.x[mask],
+                            y=final_population.y[mask],
+                            z=final_population.z[mask],
+                            mode="markers",
+                            name=label,
+                            marker={"size": 3},
+                        )
+                    )
             volume.update_layout(
                 height=650,
                 scene={
@@ -135,6 +203,11 @@ if run:
             st.subheader("Computed cancer-cell field — 2D spatial map")
             figure, axis = plt.subplots(figsize=(6, 4))
             image = axis.imshow(fields["cancer"], origin="lower")
+            if final_population is not None:
+                columns_xy = (final_population.x + 1.0) * 0.5 * (grid_size - 1)
+                rows_xy = (final_population.y + 1.0) * 0.5 * (grid_size - 1)
+                axis.scatter(columns_xy, rows_xy, s=10, label="Cell agents")
+                axis.legend(fontsize=7)
             axis.set_xlabel("Grid x")
             axis.set_ylabel("Grid y")
             figure.colorbar(image, ax=axis, label="Dimensionless cancer field")
@@ -181,6 +254,19 @@ if run:
                 st.pyplot(figure, clear_figure=True)
                 plt.close(figure)
 
+        if final_population is not None:
+            st.subheader("Discrete cell-agent population")
+            st.json(
+                {
+                    "total_agents": len(final_population.x),
+                    "cancer_agents": final_population.count(CANCER),
+                    "immune_agents": final_population.count(IMMUNE),
+                    "fibroblast_agents": final_population.count(FIBROBLAST),
+                    "coupling_strength": float(coupling_strength),
+                    "agents_per_unit": float(agents_per_unit),
+                    "biological_calibration": "not established",
+                }
+            )
         st.subheader("Mean state at final simulation time")
         st.json({name: round(float(field.mean()), 5) for name, field in fields.items()})
     except ValueError as error:
