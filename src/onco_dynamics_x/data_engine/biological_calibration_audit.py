@@ -27,7 +27,7 @@ def _matches_target(target: str, attribute_id: Any, display_name: Any) -> bool:
         )
     if target == "er_status":
         return (
-            field_id.startswith(("ERSTATUS", "ERIC H".replace(" ", "")))
+            field_id.startswith(("ERSTATUS", "ERIHC"))
             or label.startswith(("ERSTATUS", "ESTROGENRECEPTOR"))
         )
     if target == "pr_status":
