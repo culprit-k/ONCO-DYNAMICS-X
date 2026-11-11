@@ -30,7 +30,7 @@ class NetVolumeRateFit:
     doubling_time_days: float | None
     halving_time_days: float | None
     time_unit: str = "day"
-    volume_unit: str = "mm^3"
+    volume_unit: str = "cc"
     interpretation: str = (
         "treatment-exposed net log-volume slope; not a proliferation or "
         "drug-killing parameter"
@@ -43,11 +43,14 @@ class NetVolumeRateFit:
 def fit_treatment_exposed_net_volume_rate(
     time_days: NDArray[np.float64] | list[float],
     volume_mm3: NDArray[np.float64] | list[float],
+    *,
+    volume_unit: str = "cc",
 ) -> NetVolumeRateFit:
     """Fit log(volume) against actual elapsed days, allowing shrinkage.
 
     At least three unique visits are required to estimate residual uncertainty.
-    All volumes must be strictly positive. A zero or below-detection FTV is a
+    All volumes must be strictly positive. The volume unit is a label because a
+    constant unit conversion does not alter the log-volume slope. A zero or below-detection FTV is a
     censored observation and must not be replaced with an arbitrary pseudocount.
     """
     try:
@@ -66,6 +69,8 @@ def fit_treatment_exposed_net_volume_rate(
         raise ValueError("At least three longitudinal visits are required for uncertainty.")
     if not np.isfinite(time).all() or not np.isfinite(volume).all():
         raise ValueError("Time and volume observations must be finite.")
+    if not isinstance(volume_unit, str) or not volume_unit.strip():
+        raise ValueError("volume_unit must be a non-empty unit label.")
     if np.any(volume <= 0):
         raise ValueError(
             "Volumes must be positive; zero/below-detection values require a "
