@@ -1,4 +1,4 @@
-name: Synthetic PINN and FNO training benchmarks
+name: Synthetic PINN, FNO and GNN training benchmarks
 
 on:
   workflow_dispatch:
@@ -7,6 +7,7 @@ on:
     paths:
       - "src/onco_dynamics_x/ai_engine/pinn.py"
       - "src/onco_dynamics_x/ai_engine/neural_operator.py"
+      - "src/onco_dynamics_x/ai_engine/spatial_gnn.py"
       - "src/onco_dynamics_x/ai_engine/synthetic_benchmarks.py"
       - "scripts/train_synthetic_ai_benchmarks.py"
       - "tests/test_synthetic_ai_benchmarks.py"
