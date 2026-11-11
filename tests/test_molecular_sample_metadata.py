@@ -44,7 +44,7 @@ def test_parse_cBioPortal_sample_objects_ignores_unlinked_records():
         {"id": "S2", "type": "Primary Solid Tumor", "patient": {}},
     ]
 
-    result = _parse_sample_metadata(samples)
+    result = parse_cbioportal_sample_metadata(samples)
 
     assert "S2" in result
     assert result["S2"]["patientId"] == ""
