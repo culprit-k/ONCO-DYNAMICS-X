@@ -60,3 +60,23 @@ def test_periodic_heat_operator_smooths_random_field():
     assert output.shape == field.shape
     assert torch.isfinite(output).all()
     assert torch.std(output) < torch.std(field)
+
+def test_synthetic_spatial_graph_is_reproducible_and_has_valid_neighbour_targets():
+    torch, benchmark = _benchmark_modules()
+    first = benchmark.synthetic_spatial_neighbour_graph(
+        num_nodes=48, radius=0.5, seed=7
+    )
+    second = benchmark.synthetic_spatial_neighbour_graph(
+        num_nodes=48, radius=0.5, seed=7
+    )
+    features, edge_index, targets = first
+
+    assert features.shape == (48, 5)
+    assert edge_index.shape[0] == 2
+    assert targets.shape == (48, 1)
+    assert torch.equal(features, second[0])
+    assert torch.equal(edge_index, second[1])
+    assert torch.equal(targets, second[2])
+    assert torch.all((targets >= 0) & (targets <= 1))
+    if edge_index.numel():
+        assert torch.all(edge_index[0] != edge_index[1])
