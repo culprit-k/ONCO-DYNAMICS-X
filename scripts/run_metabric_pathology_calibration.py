@@ -97,12 +97,12 @@ def run_metabric_pathology_calibration(
         str(sample_id)
         for sample_id in sample_ids
         if metadata.get(str(sample_id), {}).get("type") == "Primary Solid Tumor"
-        and metadata.get(str(sample_id), {}).get("patient_id")
+        and metadata.get(str(sample_id), {}).get("patientId")
     ]
     if not primary_sample_ids:
         raise RuntimeError("No verified Primary Solid Tumor samples were found.")
     sample_to_patient = {
-        sample_id: str(metadata[sample_id]["patient_id"])
+        sample_id: str(metadata[sample_id]["patientId"])
         for sample_id in primary_sample_ids
     }
 
