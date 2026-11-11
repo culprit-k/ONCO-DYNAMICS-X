@@ -62,6 +62,46 @@ class CBioPortalClient:
             time.sleep(self.retry_delay * (2**attempt))
         raise CBioPortalError(f"Could not retrieve {path}: {last_error}") from last_error
 
+    def post_json(
+        self,
+        path: str,
+        payload: dict[str, Any],
+        params: dict[str, Any] | None = None,
+    ) -> Any:
+        """POST a JSON request body to a public cBioPortal fetch endpoint."""
+        query = f"?{urlencode(params)}" if params else ""
+        url = f"{self.base_url}/{path.lstrip('/')}{query}"
+        body = json.dumps(payload).encode("utf-8")
+        request = Request(
+            url,
+            data=body,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "ONCO-DYNAMICS-X-cohort-audit/1.0",
+            },
+            method="POST",
+        )
+        last_error = None
+        for attempt in range(self.retries + 1):
+            try:
+                with urlopen(request, timeout=self.timeout) as response:
+                    response_payload = response.read().decode("utf-8")
+                return json.loads(response_payload)
+            except HTTPError as exc:
+                last_error = exc
+                if exc.code not in {429, 500, 502, 503, 504} or attempt >= self.retries:
+                    detail = exc.read().decode("utf-8", errors="replace")[:500]
+                    raise CBioPortalError(
+                        f"cBioPortal returned HTTP {exc.code} for {path}: {detail}"
+                    ) from exc
+            except (URLError, TimeoutError, json.JSONDecodeError) as exc:
+                last_error = exc
+                if attempt >= self.retries:
+                    break
+            time.sleep(self.retry_delay * (2**attempt))
+        raise CBioPortalError(f"Could not submit {path}: {last_error}") from last_error
+
     def get_all(
         self,
         path: str,
