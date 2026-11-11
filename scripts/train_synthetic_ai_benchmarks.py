@@ -1,4 +1,4 @@
-"""Train PINN and FNO architectures on analytic synthetic heat-equation tasks.
+"""Train PINN, FNO and GNN architectures on analytic synthetic tasks.
 
 This measures implementation/training behaviour only; no breast-cancer cohort,
 patient, or clinical data are used.
@@ -227,19 +227,19 @@ def train_pinn(
         initial_condition_error = _relative_l2(
             test_initial_prediction, test_initial_targets
         )
+    torch.manual_seed(seed + 20_000)
     initial_model = FieldPINN(
         output_fields=1, hidden_width=64, hidden_layers=4
     ).to(device)
     with torch.no_grad():
         initial_error = _relative_l2(initial_model(test_coordinates), test_targets)
+    best_row = min(history, key=lambda row: row["validation_objective"])
 
     return {
         "task": "2D Neumann heat equation with known analytic solution",
         "architecture": "FieldPINN",
         "training_epochs_requested": int(epochs),
-        "best_epoch": int(
-            min(history, key=lambda row: row["validation_mse"])["epoch"]
-        ),
+        "best_epoch": int(best_row["epoch"]),
         "train_samples": int(len(train_coordinates)),
         "validation_samples": int(len(validation_coordinates)),
         "test_samples": int(len(test_coordinates)),
@@ -250,7 +250,11 @@ def train_pinn(
         "held_out_pde_residual_rms": residual_rms,
         "held_out_neumann_boundary_residual_rms": boundary_residual_rms,
         "held_out_initial_condition_relative_l2_error": initial_condition_error,
-        "best_validation_mse": best_validation,
+        "best_validation_mse": float(best_row["validation_mse"]),
+        "best_validation_initial_condition_mse": float(
+            best_row["validation_initial_condition_mse"]
+        ),
+        "best_validation_objective": float(best_row["validation_objective"]),
         "training_history_checkpoints": history,
         "model_configuration": {
             "hidden_width": 64,
@@ -291,6 +295,7 @@ def train_fno(
     seed: int,
     device: torch.device,
 ) -> dict[str, Any]:
+    torch.manual_seed(seed + 111)
     size = 16
     diffusion = 0.05
     duration = 0.2
