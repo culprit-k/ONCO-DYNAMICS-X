@@ -125,3 +125,41 @@ def test_invalid_density_scaling_and_coupling_are_rejected():
             coupling_strength=1.5,
             agents_per_unit=1.0,
         )
+
+
+def test_simulate_coupled_returns_reproducible_snapshots_and_time_grid():
+    from onco_dynamics_x.cellular_simulation.coupling import simulate_coupled
+
+    parameters = ModelParameters()
+    state = initial_state(7)
+    population = initialize_agents(6, 4, 3, seed=18)
+    dx = 2.0 / 6
+    dt = min(1e-5, diffusion_timestep_limit(parameters, dx) * 0.1)
+    kwargs = {
+        "coupling_strength": 0.2,
+        "agents_per_unit": 2.0,
+        "save_every": 2,
+        "seed": 91,
+    }
+
+    first = simulate_coupled(
+        state, population, parameters, dx, dt, steps=3, **kwargs
+    )
+    second = simulate_coupled(
+        state, population, parameters, dx, dt, steps=3, **kwargs
+    )
+    first_times, first_states, first_populations = first
+    second_times, second_states, second_populations = second
+
+    assert np.allclose(first_times, [0.0, 2.0 * dt, 3.0 * dt])
+    assert len(first_states) == 3
+    assert len(first_populations) == 3
+    assert np.array_equal(first_times, second_times)
+    for left, right in zip(first_states, second_states, strict=True):
+        left.validate()
+        for name in left.FIELD_NAMES:
+            assert np.allclose(left.as_dict()[name], right.as_dict()[name])
+    for left, right in zip(first_populations, second_populations, strict=True):
+        left.validate()
+        assert np.array_equal(left.cell_type, right.cell_type)
+        assert np.array_equal(left.x, right.x)
