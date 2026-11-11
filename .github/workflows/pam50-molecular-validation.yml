@@ -36,6 +36,9 @@ jobs:
       - name: Run full test suite
         run: pytest
 
+      - name: Show canonical Ruff diff for molecular runner
+        run: ruff check --diff scripts/run_pam50_molecular_validation.py || true
+
       - name: Lint source, tests and molecular runner
         run: ruff check src tests scripts/run_pam50_molecular_validation.py
 
