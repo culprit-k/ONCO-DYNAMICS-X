@@ -268,3 +268,24 @@ The four module means were evaluated against five existing pathology annotations
 **Decision:** retain the four modules as exploratory phenotype descriptors. ER/HER2 scores may be considered receptor-associated expression summaries only; grade/cellularity scores are not sufficiently predictive to serve as model inputs. No PDE/ABM parameter was estimated or changed by this pilot.
 
 Next, review the METABRIC source dictionary and assay provenance, then seek an independent cohort with matching receptor/pathology assays. For actual mechanistic parameter estimation, continue with longitudinal I-SPY 2/ACRIN imaging: validate the observation operator and physical scale first, then estimate only identifiable low-dimensional PDE parameters against registered serial observations.
+
+
+## 10. Cross-sectional METABRIC pathology association — 11 November 2026
+
+The fixed molecular modules were evaluated against available METABRIC clinical annotations using five-fold stratified patient-level out-of-fold predictions. The workflow verified all **1,980/1,980 primary solid tumour expression samples**, with **99,000/99,000 finite panel measurements**, no duplicate expression records, and one primary sample per patient. All four module groups had 100% prespecified gene coverage.
+
+| Pathology label | Patients | Accuracy | Balanced accuracy | Macro-F1 | Majority accuracy |
+|---|---:|---:|---:|---:|---:|
+| ER status | 1,980 | 94.0% | 94.4% | 92.1% | 76.1% |
+| PR status | 1,980 | 78.4% | 78.2% | 78.2% | 52.5% |
+| HER2 status | 1,980 | 97.0% | 97.9% | 93.7% | 87.5% |
+| Histologic grade | 1,892 | 56.9% | 57.7% | 50.9% | 50.3% |
+| Cellularity category | 1,917 | 44.0% | 45.8% | 39.1% | 50.3% |
+
+The JSON contains the full class counts, confusion matrices and patient-bootstrap intervals: [aggregate METABRIC pathology module association](../results/biological_calibration/metabric_pathology_module_association_summary.json). The GitHub workflow completed successfully: [run 43003477612](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/43003477612).
+
+**Interpretation matters more than the highest accuracy.** The ER/HER2/PR targets overlap directly with the feature modules: ESR1/PGR are included in the estrogen/luminal module, and ERBB2/GRB7 are included in the HER2 module. The high ER/HER2 scores therefore represent expected marker-to-annotation concordance within the same cross-sectional cohort, not independent validation of a mechanism. Grade association is modest. The cellularity classification is below the majority-class accuracy and does not support using these four modules as a cellularity surrogate.
+
+The bootstrap intervals resample the fixed out-of-fold predictions; they are conditional on the trained fold models and do not include all training-sample/model-selection uncertainty. The rank transformation remains transductive. This was not an external-cohort validation, a prospective analysis, or a causal test.
+
+**Calibration decision:** this analysis supports using the expression modules as descriptive phenotype annotations only. It does not calibrate tumour growth, cellular proliferation kinetics, spatial diffusion, oxygen supply/consumption, immune killing, drug killing, or any PDE coefficient. No Ki-67 measurement was available in the current audit. The next biological-rate gate remains longitudinal MRI/FTV and registered quantitative spatial maps with a validated image-to-model observation operator.
