@@ -451,7 +451,8 @@ def run_benchmarks(
         "interpretation": (
             "Demonstrates that PINN, FNO and spatial GNN implementations can be "
             "trained and evaluated on separate analytic/synthetic mathematical tasks. "
-            "Metrics are not breast-cancer accuracy and provide no clinical or biological validation."
+            "Metrics are not breast-cancer accuracy and provide no clinical or biological "
+            "validation."
         ),
     }
 
