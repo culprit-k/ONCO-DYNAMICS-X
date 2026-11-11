@@ -35,6 +35,7 @@ PAM50_GENES: tuple[str, ...] = (
 # Historical identifiers retained by the published PAM50 mapping; cBioPortal
 # can expose the current HUGO symbol for the same Entrez Gene ID.
 PAM50_SYMBOL_ALIASES: dict[str, tuple[str, ...]] = {
+    "CDCA1": ("CDCA1", "NUF2"),
     "KNTC2": ("KNTC2", "NDC80"),
     "ORC6L": ("ORC6L", "ORC6"),
 }
