@@ -36,17 +36,17 @@ jobs:
       - name: Run full test suite
         run: pytest
 
-      - name: Resolve molecular runner import layout with Ruff
-        run: |
-          ruff check --fix scripts/run_pam50_molecular_validation.py
-          sed -n '1,36p' scripts/run_pam50_molecular_validation.py
-
       - name: Lint source, tests and molecular runner
         run: ruff check src tests scripts/run_pam50_molecular_validation.py
 
       - name: Run fixed-panel TCGA-to-METABRIC molecular evaluation
         run: |
-          python scripts/run_pam50_molecular_validation.py             --output results/molecular_validation/pam50_tcga_metabric_survival.json             --components 5             --bootstrap 250             --seed 42             --cox-penalizer 0.5
+          python scripts/run_pam50_molecular_validation.py \
+            --output results/molecular_validation/pam50_tcga_metabric_survival.json \
+            --components 5 \
+            --bootstrap 250 \
+            --seed 42 \
+            --cox-penalizer 0.5
 
       - name: Publish aggregate-only molecular report
         uses: actions/upload-artifact@v4
