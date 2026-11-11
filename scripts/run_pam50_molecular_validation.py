@@ -20,9 +20,9 @@ import pandas as pd
 
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine.molecular_model import (
+    fit_tcga_pca_projection,
     PAM50_GENES,
     PAM50_SYMBOL_ALIASES,
-    fit_tcga_pca_projection,
     rank_normalise_expression,
 )
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
@@ -276,7 +276,6 @@ def _load_cohort(
         [gene_ids[gene] for gene in PAM50_GENES],
     )
     panel_entrez = [gene_ids[gene] for gene in PAM50_GENES]
-    entrez_to_column = {entrez_id: index for index, entrez_id in enumerate(panel_entrez)}
 
     selected_sample_ids: list[str] = []
     selected_patient_rows: list[dict[str, Any]] = []
@@ -616,7 +615,9 @@ def run_pam50_molecular_validation(
             "common_genes_used": common_genes,
             "common_gene_count": len(common_genes),
             "resolved_hugo_symbols": resolved_symbols,
-            "gene_identifier_source": "cBioPortal gene endpoint; aliases resolved to current HUGO symbols",
+            "gene_identifier_source": (
+                "cBioPortal gene endpoint; aliases resolved to current HUGO symbols"
+            ),
         },
         "cohorts": cohort_metadata,
         "harmonisation": {
@@ -632,10 +633,23 @@ def run_pam50_molecular_validation(
             "transductive": True,
             "individual_sample_deployment_supported": False,
             "limitations": [
-                "Cohort-wise rank normalisation uses the full unlabeled expression distribution of each cohort.",
-                "Gene-level cBioPortal matrices are used; the underlying METABRIC probe-level annotation and duplicate-probe resolution are not rederived here.",
-                "Rank normalisation reduces scale differences but cannot remove all platform-specific gene measurement bias.",
-                "PCA captures variance in the TCGA feature matrix and is not a validated intrinsic-subtype classifier.",
+                (
+                    "Cohort-wise rank normalisation uses the full unlabeled expression "
+                    "distribution of each cohort."
+                ),
+                (
+                    "Gene-level cBioPortal matrices are used; the underlying METABRIC "
+                    "probe-level annotation and duplicate-probe resolution are not "
+                    "rederived here."
+                ),
+                (
+                    "Rank normalisation reduces scale differences but cannot remove "
+                    "all platform-specific gene measurement bias."
+                ),
+                (
+                    "PCA captures variance in the TCGA feature matrix and is not a "
+                    "validated intrinsic-subtype classifier."
+                ),
             ],
         },
         "survival_endpoint": {
