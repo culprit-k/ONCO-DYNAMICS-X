@@ -88,12 +88,21 @@ with st.sidebar:
         initial_cancer_agents = st.number_input("Initial cancer agents", 0, 1000, 80, 10)
         initial_immune_agents = st.number_input("Initial immune agents", 0, 1000, 50, 10)
         initial_fibroblast_agents = st.number_input("Initial fibroblast agents", 0, 1000, 35, 5)
+        deposition_method = st.selectbox(
+            "Agent-to-grid deposition",
+            ["nearest_grid", "cloud_in_cell"],
+            help=(
+                "Cloud-in-cell distributes each agent across adjacent nodes with "
+                "multilinear weights; both methods are numerical options, not calibrated biology."
+            ),
+        )
     else:
         coupling_strength = 0.0
         agents_per_unit = 4.0
         initial_cancer_agents = 0
         initial_immune_agents = 0
         initial_fibroblast_agents = 0
+        deposition_method = "nearest_grid"
     manual_run = st.button("Run simulation", type="primary")
     hardware_run = st.session_state.pop("hardware_run", False)
     run = manual_run or hardware_run
@@ -128,6 +137,7 @@ if run:
                 steps=steps,
                 coupling_strength=float(coupling_strength),
                 agents_per_unit=float(agents_per_unit),
+                deposition_method=deposition_method,
                 infusion_schedule=schedule,
                 save_every=steps,
                 seed=42,
