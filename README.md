@@ -16,7 +16,7 @@ ONCO-DYNAMICS-X is a research and university-project prototype that combines dim
 | AI architectures | PINN, FNO and spatial GNN trained and tested on synthetic ground-truth tasks; expression transformer module | Training/evaluation on biological data and independent validation |
 | Cohort pipeline | Public GDC/cBioPortal workflows; 16-marker availability audit and exploratory 50-gene PAM50-panel PC model externally evaluated | Probe-level rederivation, deployable single-sample normalization and independent-cohort molecular validation |
 | Survival baseline | Age-only and age + PAM50-panel-PC Cox models evaluated in METABRIC with IPCW time-dependent metrics | Clinical utility, prospective validation, stable molecular improvement and covariate-dependent censoring analysis |
-| Biological calibration | Untreated exponential/logistic/Gompertz volume fitter; treatment-exposed net-volume slope fitter; low-dimensional PDE parameter estimator; aggregate clinical-target audit | Synthetic recovery only; real series, registered image observation operators, biological PDE calibration and external temporal validation remain pending |
+| Biological calibration | Untreated and treatment-exposed volume estimators; low-dimensional PDE parameter estimator; METABRIC pathology-module association; aggregate clinical-target audit | Synthetic PDE recovery and cross-sectional pathology association only; real longitudinal series, registered image observation operators and biological PDE calibration remain pending |
 | Dashboard | Streamlit 2D/3D PDE console and optional coupled agent mode | Full experiment-management layer and validated patient-data ingestion |
 | Hardware concept | ESP32 firmware, serial protocol, OpenSCAD phantom and build guide | Physical fabrication, wiring verification and bench testing |
 
@@ -201,7 +201,7 @@ The workflows publish aggregate reports only. Do not commit controlled-access or
 
 ## Biological calibration
 
-The scalar growth/net-volume fitters and low-dimensional PDE coefficient estimator are calibration tools, not evidence of biological validation. Their measurement requirements, MRI data pathway and parameter-identifiability gates are documented in [the biological calibration protocol](docs/biological_calibration_protocol.md). Only synthetic parameter recovery has been tested; no patient- or animal-derived parameter estimates have been generated.
+The scalar growth/net-volume fitters and low-dimensional PDE coefficient estimator are calibration tools, not evidence of biological validation. The METABRIC pathology-module exercise is cross-sectional and overlaps marker genes with ER/HER2/PR labels; it does not estimate mechanistic rates. Results are in [the aggregate pathology summary](results/biological_calibration/metabric_pathology_module_association_summary.json). The measurement requirements, MRI data pathway and identifiability gates are in [the biological calibration protocol](docs/biological_calibration_protocol.md). Only synthetic PDE parameter recovery has been tested; no patient- or animal-derived PDE parameter estimates have been generated.
 
 ## Data and clinical disclaimer
 
