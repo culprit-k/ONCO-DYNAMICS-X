@@ -95,8 +95,8 @@ python scripts/fit_treatment_net_volume.py \
   --input /path/to/local_ispy2_ftv_long.csv \
   --id-column subject_id \
   --time-column time_days \
-  --volume-column ftv_cc \\
-  --volume-unit cc \\
+  --volume-column ftv_cc \
+  --volume-unit cc \
   --group-column regimen \
   --bootstrap 2000 \
   --output /path/to/local_net_volume_rates.json
