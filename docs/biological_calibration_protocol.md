@@ -71,6 +71,8 @@ The separate function **fit_treatment_exposed_net_volume_rate()** fits the model
 
     log(V(t)) = alpha + k_net * t + error(t)
 
+For the I-SPY 2 FTV field, the TCIA data dictionary defines the DICOM FTV result in **cc (cm³)**. The local runner therefore defaults to column `ftv_cc` and unit `cc`; confirm the workbook/data-dictionary units before changing this. FTV is enhancement-thresholded functional volume, not the whole anatomical tumour volume or a direct tumour-cell count. <Cite ref="turn432959search22"/><Cite ref="turn432959search0"/>
+
 The slope k_net is the effective net log-volume change per day. It may be negative (net shrinkage) or positive (net growth). Its 95% interval is based on the log-linear regression standard error and Student-t reference distribution. The cohort summary uses a patient-series bootstrap of the median slope.
 
 Use actual acquisition days, not nominal T0/T1/T2/T3 labels. A regimen/subtype grouping can be supplied for descriptive cohort summaries, but this is not a causal treatment comparison. At least three positive-volume visits are required to estimate within-series uncertainty. Zero or below-detection FTV is censored and is excluded until a proper left-censored observation model is implemented; no arbitrary pseudocount is added.
@@ -78,7 +80,7 @@ Use actual acquisition days, not nominal T0/T1/T2/T3 labels. A regimen/subtype g
 The expected local CSV schema is:
 
 ```csv
-subject_id,time_days,ftv_mm3,regimen
+subject_id,time_days,ftv_cc,regimen
 subject_A,0,12.4,standard
 subject_A,21,8.1,standard
 subject_A,70,3.9,standard
