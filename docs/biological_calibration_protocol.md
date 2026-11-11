@@ -90,21 +90,31 @@ A future PDE calibration must specify physical length, time and density scales, 
 | Fibroblast activation/suppression | Matched CAF/fibroblast density and stromal/ECM measurements | A bulk stromal marker score does not estimate a transition rate |
 | Drug killing / EC50 / field decay | Time-aligned drug exposure or pharmacokinetics and serial response measurements | Treatment-history flags without timing, regimen and concentration do not identify pharmacodynamics |
 
-## 5. Data pathway selected for spatial calibration
+## 5. Data pathway selected for biological and spatial calibration
 
-A relevant public research pathway is the MRI-informed breast-cancer modelling literature:
+The leading public data source is the **I-SPY 2 Breast Dynamic Contrast Enhanced MRI Trial collection at TCIA**:
 
-- Jarrett et al., *Nature Protocols* (2021), describes acquisition, registration and processing of serial diffusion/perfusion MRI, followed by calibration of a spatial model. Its data-availability statement provides one fully preprocessed example patient dataset specifically so researchers can verify the calibration/prediction software pipeline. That single demo patient is a pipeline test, not a cohort for validating ONCO-DYNAMICS-X.
-- The associated openly available example code is MIT-licensed, but that does not make every downstream clinical dataset unrestricted. Check each data collection's own access, terms and publication conditions. Do not copy the external model's calibrated coefficients into this different PDE.
-- The 2025 I-SPY 2 analysis reports three quantitative MRI visits (baseline V1, early-treatment V2 and post-course V3) for 91 patients across 10 sites. Its design calibrates to V1/V2 and evaluates the held-out V3 state. The reported MRI data were obtained through TCIA collections, with figure-generating data described as available on reasonable request. This is a strong design reference, but images still require registration, segmentation, quantitative-map construction, patient/timepoint verification and access checks before use.
+- The current TCIA collection page reports 719 participants, DCE-MRI and derived parametric maps, MR/SEG data, follow-up and treatment information, and a multi-feature MRI spreadsheet for a 384-participant subset. The full image collection is approximately 1.75 TB; the compact feature spreadsheet is approximately 130 KB. The collection includes up to four MRI time points (pre-treatment T0, early treatment T1, mid-treatment T2 and post-treatment T3), with the early scan around three weeks after starting regimen 1.
+- For a complete I-SPY 2 Imaging Cohort 1 replication, TCIA directs researchers to use the combined 985-case manifest (719 I-SPY 2 cases plus 266 ACRIN-6698 cases), rather than treating the 719-case collection alone as that full cohort.
+- The TCIA collection lists CC BY 4.0 and requires the collection DOI data citation and compliance with the TCIA Data Usage Policy. Verify the exact version and terms again at download time; keep the DOI and attribution with derived results.
+- The compact spreadsheet is the preferred first download. It permits a metadata/schema and feature-coverage audit before any multi-terabyte DICOM retrieval. Do not copy participant-level rows to this public GitHub repository.
+
+**Important model-design implication:** these I-SPY 2 scans are obtained during neoadjuvant treatment. They are not an untreated growth series. The first analysis should estimate a *treatment-exposed net functional-tumour-volume change rate* by interval, retaining exact visit day, treatment arm/regimen and subtype. It must not call this untreated proliferation, drug EC50, or a PDE cell-killing coefficient. Untreated growth and treatment-induced death cannot be separated from a treated volume trajectory without additional measurements/design assumptions.
+
+A 2025 I-SPY 2 mathematical-model analysis reports three visits (baseline V1, early-treatment V2 and post-course V3) for 91 patients across 10 sites. Its design calibrates on V1/V2 and predicts held-out V3. The paper reports that the imaging data came from TCIA and states that figure-generating data are available on reasonable request; therefore this paper is a strong design/benchmark reference, but its exact 91-person analytic subset and map availability must be verified rather than assumed to be identical to the full public TCIA collection.
+
+Additional method references:
+- Jarrett et al., *Nature Protocols* (2021), describes serial quantitative MRI acquisition, registration, segmentation, perfusion/diffusion processing, spatial-model calibration and prediction. At least two registered visits are required; a single preprocessed example patient is a software pipeline check, not cohort validation.
+- Wang et al., *Journal of Mathematical Biology* (2024), applies sequential Monte Carlo approximate Bayesian computation to in-vivo tumour-volume time series, including mouse breast-cancer xenografts. This supports a likelihood-free uncertainty framework for stochastic models, but its Voronoi ABM and assumptions are not the ONCO-DYNAMICS-X PDE/ABM and its estimates must not be transferred.
 
 External references:
+- TCIA I-SPY 2 collection and current access details: https://www.cancerimagingarchive.net/collection/ispy2/
+- TCIA data usage policy: https://www.cancerimagingarchive.net/data-usage-policies-and-restrictions/
 - Jarrett et al. 2021 protocol: https://www.nature.com/articles/s41596-021-00617-y
-- Example MRI processing/calibration repository: https://github.com/ChengyueWu/Quantitative-MRI-of-breast-cancer-patients-to-forecast-response-to-therapy
-- I-SPY 2 model generalizability analysis (2025): https://aacrjournals.org/clincancerres/article/doi/10.1158/1078-0432.CCR-25-0668/765893/p/MRI-Based-Mathematical-Modeling-to-Predict-the
-- Tumour-growth ABM calibration using in-vivo volume data and approximate Bayesian computation: https://pmc.ncbi.nlm.nih.gov/articles/PMC10869399/
+- I-SPY 2 model generalizability analysis (2025): https://doi.org/10.1158/1078-0432.CCR-25-0668
+- Tumour-growth ABM calibration using in-vivo volume data and approximate Bayesian computation (2024): https://doi.org/10.1007/s00285-024-02045-4
 
-The cited MRI models and their calibrated parameters are not identical to ONCO-DYNAMICS-X. Their value here is the observation design and calibration/held-out-prediction strategy, not plug-in parameter values or assumed equivalence of governing equations.
+The cited MRI and ABM models use different state variables, observation operators and governing equations. Their value here is the measurement design, uncertainty treatment and held-out-prediction strategy—not plug-in coefficients or assumed mathematical equivalence.
 
 ## 6. Calibration sequence and acceptance gates
 
