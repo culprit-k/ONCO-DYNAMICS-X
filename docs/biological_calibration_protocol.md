@@ -174,24 +174,22 @@ The current reaction model contains many confounded terms. For example, observed
 ## 7. Current implementation and honest status
 
 Implemented:
-- exponential/logistic/Gompertz comparison for untreated longitudinal volume data;
-- log-scale nonlinear least-squares estimation with positive-rate/capacity parameterization;
-- AICc/BIC and Jacobian/SVD local identifiability diagnostics;
-- parametric residual bootstrap confidence intervals;
-- explicit conversion of physical rates to a model-time unit without silently assigning them to PDE coefficients;
-- local CSV CLI with pseudonymous subject keys;
-- aggregate-only TCGA/METABRIC calibration-target metadata audit;
-- synthetic parameter-recovery unit tests and dedicated CI workflows.
+- exponential/logistic/Gompertz comparison for untreated longitudinal volume data, with log-scale fitting, AICc/BIC, residual bootstrap intervals and Jacobian/SVD identifiability diagnostics;
+- a separate treatment-exposed log-volume slope estimator for positive FTV measurements, with a within-series regression interval and subject-series bootstrap summaries;
+- a low-dimensional PDE parameter estimator for one to three positive dimensionless reaction coefficients, using registered field snapshots, fixed remaining parameters, weighted nonlinear least squares and a local Jacobian rank/conditioning gate;
+- conditional local-linear covariance for the PDE fit, withheld when the fitted subset is rank deficient or ill-conditioned;
+- local CSV runners that retain no raw observations or source identifiers in exported summaries;
+- an aggregate-only TCGA/METABRIC biomarker-availability audit;
+- synthetic parameter-recovery and non-identifiability tests in the dedicated Python 3.11/3.12 CI workflow.
 
 Not yet established:
-- no genuine patient or animal volume series has been fitted by this new ONCO-DYNAMICS-X code;
-- no new biological parameter estimate is claimed;
-- no spatial PDE coefficient is calibrated;
-- no therapy-response parameter is calibrated;
-- no MRI maps or Ki-67/IHC measurements have been joined to molecular features.
+- no genuine patient or animal series has been fitted by the new ONCO-DYNAMICS-X estimators;
+- no patient-derived biological parameter estimate is claimed;
+- no MRI/ADC/segmentation fields have been registered to the ONCO-DYNAMICS-X grid or passed through a validated image-to-model observation operator;
+- no spatial PDE diffusion, oxygen, immune, stromal or treatment-effect coefficient is biologically calibrated;
+- no MRI maps or Ki-67/IHC measurements have been linked to the molecular features.
 
-The next data-dependent gate is to run the aggregate clinical-attribute audit, review its matched measurement candidates, then obtain an approved longitudinal MRI/cellularity dataset with at least two calibration timepoints and a later holdout. Until then, the new estimator is validated only for mathematical recovery on synthetic data.
-
+The next data-dependent gate is to download the compact I-SPY 2 multi-feature MRI workbook and the relevant DCE/DWI/SEG manifests from TCIA into approved local/institutional storage; audit visit coverage, exact case overlap, acquisition days, treatment regimen, FTV availability and censoring; then apply the net-volume estimator to the treated visits with a later visit held out. Spatial PDE fitting must wait for registered quantitative maps, image-to-model units and an independently justified observation operator. Synthetic recovery validates implementation only, not biological accuracy.
 
 ## 8. Public clinical-attribute feasibility audit — 11 November 2026
 
