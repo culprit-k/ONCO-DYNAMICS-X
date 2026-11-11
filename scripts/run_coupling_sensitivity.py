@@ -47,13 +47,17 @@ def _field_summary(state, parameters: ModelParameters) -> dict[str, Any]:
     for name, values in state.as_dict().items():
         array = np.asarray(values, dtype=float)
         upper = upper_bounds[name]
-        saturated = (array <= 1e-10) | (array >= upper - 1e-10)
+        at_lower_bound = array <= 1e-10
+        at_upper_bound = array >= upper - 1e-10
+        at_either_bound = at_lower_bound | at_upper_bound
         summaries[name] = {
             "mean": float(np.mean(array)),
             "standard_deviation": float(np.std(array)),
             "minimum": float(np.min(array)),
             "maximum": float(np.max(array)),
-            "fraction_at_or_near_bounds": float(np.mean(saturated)),
+            "fraction_at_lower_bound": float(np.mean(at_lower_bound)),
+            "fraction_at_upper_bound": float(np.mean(at_upper_bound)),
+            "fraction_at_or_near_bounds": float(np.mean(at_either_bound)),
             "finite": bool(np.isfinite(array).all()),
         }
     return summaries
