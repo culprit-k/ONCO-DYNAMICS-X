@@ -16,9 +16,11 @@ All originally requested workstreams remain in scope. Phases describe implementa
 
 ## Immediate next tasks
 
+The first cross-sectional molecular/pathology association pilot is complete, but it does not calibrate a PDE parameter. The next decisive milestone is registered longitudinal MRI/FTV data with a defensible observation operator and a later-visit holdout.
+
 The low-dimensional PDE fitter and synthetic parameter-recovery tests are now implemented. The next blocker is not an optimizer: it is obtaining matched, correctly scaled biological observations and defining a defensible image-to-model observation operator.
 
-0. Verify METABRIC ER/PR/HER2/grade/size/cellularity field definitions and exact specimen/timepoint overlap before pairing annotations with expression. No Ki-67 field was found by the aggregate audit.
+0. Review METABRIC ER/PR/HER2/grade/cellularity source definitions and assay provenance. The cross-sectional molecular-module association pilot is complete (strong ER/HER2, moderate PR, weak grade/cellularity); no Ki-67 field was found.
 1. Audit TCIA I-SPY 2 DCE/FTV and companion ACRIN 6698 DWI/ADC/SEG manifests locally; confirm matched subjects, visit dates, masks, treatment regimen and later holdout. Apply the treatment-exposed net-volume fitter first; it estimates net volume change, not intrinsic proliferation or a drug parameter.
 2. Feed registered field snapshots and their justified noise scales to the new PDE estimator. First validate its observation operator and physical-to-model scaling; test one coefficient at a time, then only add parameters if independent fields identify them. Validate ADC as a cellularity proxy against pathology before use.
 
