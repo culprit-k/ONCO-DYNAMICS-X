@@ -78,6 +78,19 @@ The 11 November workflow passed tests, Ruff lint and all three training runs. Th
 
 A fixed 16-marker panel was queried in the public TCGA-BRCA PanCancer Atlas RSEM profile and METABRIC Illumina HT-12 v3 profile. All **16/16 markers** returned finite expression values for all **1,082 TCGA samples** and all **1,980 METABRIC samples**; no missing, non-finite or duplicate sample records were observed in this run. This is data-availability evidence only. TCGA and METABRIC values are on different assay scales and have not been harmonized or compared directly. See [audit methodology/results](docs/molecular_marker_audit.md) and [aggregate marker report](results/molecular_audit/marker_panel_overlap_summary.json).
 
+### Phase 3 — 50-gene molecular external evaluation
+
+A fixed 50-gene PAM50 research-panel feature inventory was evaluated using TCGA-BRCA for development and METABRIC for external testing. The model used cohort-wise, outcome-blind rank normalisation, five principal components fitted in TCGA only, and a penalised Cox model compared with age-only:
+
+- METABRIC age-only C-index: **0.5882** (95% CI 0.5683–0.6065).
+- METABRIC age + molecular PCs C-index: **0.5992** (95% CI 0.5798–0.6201).
+- Paired C-index difference: **+0.0111** (95% CI −0.0019 to +0.0241); the interval includes zero, so the gain is not conclusive.
+- All 50 genes had finite values in both expression profiles: 54,100 TCGA and 99,000 METABRIC sample–gene measurements.
+
+**Critical limitation:** sample-type metadata were unavailable in the queried cBioPortal sample projection, so primary-tumour-only filtering could not be verified; all profile sample-list entries were retained. The expression transformation is transductive and uses each cohort's full unlabelled expression distribution. This is not a clinical PAM50/Prosigna assay, an intrinsic-subtype classifier, or an individual-patient deployment pipeline.
+
+See [methodology](docs/pam50_molecular_validation.md), [external results and limitations](docs/pam50_molecular_validation_results.md), and [aggregate metrics](results/molecular_validation/pam50_tcga_metabric_summary.json).
+
 ## Architecture
 
 The current continuum state is:
@@ -151,6 +164,7 @@ python scripts/run_survival_validation_metrics.py
 - [Synthetic AI benchmark results](docs/synthetic_ai_benchmarks.md)
 - [Molecular marker audit](docs/molecular_marker_audit.md)
 - [PAM50-panel molecular external validation](docs/pam50_molecular_validation.md)
+- [PAM50-panel molecular external results](docs/pam50_molecular_validation_results.md)
 - [Data sources and governance](docs/data_sources.md)
 - [Safety and limitations](docs/safety_and_limitations.md)
 - [Hardware build guide](docs/hardware_build_guide.md)
