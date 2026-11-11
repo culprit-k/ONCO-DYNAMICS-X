@@ -328,7 +328,7 @@ def evaluate_ipcw_survival(
         # through the prespecified evaluation horizons.
         times = np.asarray([0.0] + [item[0] for item in valid_briers])
         scores = np.asarray([0.0] + [item[1] for item in valid_briers])
-        ibs = float(np.trapezoid(scores, times) / times[-1])
+        ibs = float(np.sum(0.5 * (scores[1:] + scores[:-1]) * np.diff(times)) / times[-1])
 
     return {
         "method": (
