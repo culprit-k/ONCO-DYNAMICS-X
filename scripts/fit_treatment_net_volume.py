@@ -24,7 +24,8 @@ def main() -> None:
     parser.add_argument("--input", required=True, help="Local CSV; not uploaded.")
     parser.add_argument("--id-column", default="subject_id")
     parser.add_argument("--time-column", default="time_days")
-    parser.add_argument("--volume-column", default="ftv_mm3")
+    parser.add_argument("--volume-column", default="ftv_cc")
+    parser.add_argument("--volume-unit", default="cc", help="Source volume unit; I-SPY2 FTV is reported in cc.")
     parser.add_argument("--group-column", help="Optional regimen/subtype column.")
     parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
@@ -77,6 +78,7 @@ def main() -> None:
             fit = fit_treatment_exposed_net_volume_rate(
                 [pair[0] for pair in observations],
                 [pair[1] for pair in observations],
+                volume_unit=args.volume_unit,
             )
         except ValueError as error:
             message = str(error)
@@ -114,7 +116,7 @@ def main() -> None:
         "analysis": "treatment_exposed_net_functional_tumour_volume_change",
         "input_policy": "local input only; no raw observations or source IDs exported",
         "model": "log(volume) = intercept + net_log_rate_per_day * elapsed_days",
-        "units": {"time": "day", "volume": "mm^3"},
+        "units": {"time": "day", "volume": args.volume_unit},
         "series_fitted": len(reports),
         "series_skipped": dict(skipped),
         "group_summary": group_summary,
