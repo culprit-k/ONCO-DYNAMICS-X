@@ -97,10 +97,8 @@ def _fetch_expression_records(
     profile_id: str,
     sample_ids: list[str],
     entrez_ids: list[int],
-) -> tuple[FloatArray, dict[str, Any]]:
+) -> tuple[np.ndarray, dict[str, Any]]:
     """Fetch the gene-by-sample matrix in bounded sample batches."""
-    from numpy.typing import NDArray
-
     sample_index = {sample_id: index for index, sample_id in enumerate(sample_ids)}
     entrez_index = {entrez_id: index for index, entrez_id in enumerate(entrez_ids)}
     values = np.full((len(sample_ids), len(entrez_ids)), np.nan, dtype=float)
@@ -526,12 +524,6 @@ def run_pam50_molecular_validation(
     cox_penalizer: float = COX_PENALIZER,
 ) -> dict[str, Any]:
     """Fetch, harmonise and externally evaluate the fixed 50-gene molecular panel."""
-    from onco_dynamics_x.data_engine.molecular_model import (
-        PAM50_GENES,
-        rank_normalise_expression,
-        fit_tcga_pca_projection,
-    )
-
     client = CBioPortalClient(timeout=60, retries=3)
     gene_ids, resolved_symbols = _resolve_entrez_ids(client)
     cohorts = [_load_cohort(client, cohort, gene_ids) for cohort in COHORTS]
