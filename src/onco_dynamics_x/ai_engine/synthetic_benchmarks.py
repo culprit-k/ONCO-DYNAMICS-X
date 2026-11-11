@@ -17,7 +17,9 @@ def exact_neumann_heat_solution(
 ) -> Tensor:
     """Exact non-negative heat-equation solution on [-1,1]^2 with no-flux edges.
 
-    u(x,y,t) = cos(pi*(x+1)/2) cos(pi*(y+1)/2) exp(-D*pi^2*t/2)
+    u(x,y,t) = h(x,t) * h(y,t), where
+    h(q,t) = (1 + exp(-D*pi^2*t)*cos(pi*q))/2.
+    It is non-negative, has zero normal derivative at x/y = +/-1,
     and satisfies u_t - D*(u_xx+u_yy)=0.
     Coordinates are [batch,3] ordered x,y,t.
     """
@@ -28,12 +30,10 @@ def exact_neumann_heat_solution(
     x, y, time = coordinates.unbind(dim=1)
     if torch.any(time < 0):
         raise ValueError("time coordinates must be non-negative.")
-    wave_number = math.pi / 2.0
-    spatial = torch.cos(wave_number * (x + 1.0)) * torch.cos(
-        wave_number * (y + 1.0)
-    )
-    decay = torch.exp(-diffusion * (math.pi**2 / 2.0) * time)
-    return (spatial * decay).unsqueeze(1)
+    decay = torch.exp(-diffusion * math.pi**2 * time)
+    field_x = 0.5 * (1.0 + decay * torch.cos(math.pi * x))
+    field_y = 0.5 * (1.0 + decay * torch.cos(math.pi * y))
+    return (field_x * field_y).unsqueeze(1)
 
 
 def periodic_heat_operator(
