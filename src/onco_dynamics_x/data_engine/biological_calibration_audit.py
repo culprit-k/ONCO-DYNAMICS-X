@@ -11,21 +11,66 @@ from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient, audit_cbiop
 from onco_dynamics_x.data_engine.molecular_audit import DEFAULT_COHORTS
 
 
-_TARGET_PATTERNS = {
-    "ki67_or_proliferation_index": ("KI67", "MIB1", "PROLIFERATIONINDEX"),
-    "er_status": ("ERSTATUS", "ESTROGENRECEPTOR"),
-    "pr_status": ("PRSTATUS", "PROGESTERONERECEPTOR"),
-    "her2_status": ("HER2STATUS", "ERBB2STATUS", "HER2IHC"),
-    "tumour_grade": ("TUMORGRADE", "TUMOURGRADE", "HISTOLOGICGRADE", "GRADE"),
-    "tumour_size": ("TUMORSIZE", "TUMOURSIZE", "TUMORDIAMETER", "TUMOURDIAMETER"),
-    "cellularity_or_hypoxia": (
-        "CELLULARITY", "ADC", "HYPOXIA", "OXYGEN", "HIF1",
-    ),
-}
-
-
 def _normalise(value: Any) -> str:
     return re.sub(r"[^A-Z0-9]", "", str(value or "").upper())
+
+
+def _matches_target(target: str, attribute_id: Any, display_name: Any) -> bool:
+    """Use specific clinical-attribute names; avoid substring false positives."""
+    field_id = _normalise(attribute_id)
+    label = _normalise(display_name)
+
+    if target == "ki67_or_proliferation_index":
+        return (
+            field_id.startswith(("KI67", "MIB1", "PROLIFERATIONINDEX"))
+            or label.startswith(("KI67", "MIB1", "PROLIFERATIONINDEX"))
+        )
+    if target == "er_status":
+        return (
+            field_id.startswith(("ERSTATUS", "ERIC H".replace(" ", "")))
+            or label.startswith(("ERSTATUS", "ESTROGENRECEPTOR"))
+        )
+    if target == "pr_status":
+        return (
+            field_id.startswith(("PRSTATUS", "PRICH"))
+            or label.startswith(("PRSTATUS", "PROGESTERONERECEPTOR"))
+        )
+    if target == "her2_status":
+        return (
+            field_id.startswith(("HER2STATUS", "HER2IHC", "HER2SNP6", "ERBB2STATUS"))
+            or label.startswith(("HER2STATUS", "ERBB2STATUS"))
+        )
+    if target == "tumour_grade":
+        return (
+            field_id in {"GRADE", "TUMORGRADE", "TUMOURGRADE", "HISTOLOGICGRADE"}
+            or label.endswith(("HISTOLOGICGRADE", "TUMORGRADE", "TUMOURGRADE"))
+        )
+    if target == "tumour_size":
+        return (
+            field_id.startswith(("TUMORSIZE", "TUMOURSIZE", "TUMORDIAMETER", "TUMOURDIAMETER"))
+            or label.startswith(("TUMORSIZE", "TUMOURSIZE", "TUMORDIAMETER", "TUMOURDIAMETER"))
+        )
+    if target == "cellularity_or_hypoxia":
+        target_prefixes = (
+            "CELLULARITY",
+            "BUFFAHYPOXIA",
+            "RAGNUMHYPOXIA",
+            "WINTERHYPOXIA",
+            "HYPOXIA",
+        )
+        return field_id.startswith(target_prefixes) or label.startswith(target_prefixes)
+    raise ValueError(f"Unknown calibration target category: {target}")
+
+
+_TARGETS = (
+    "ki67_or_proliferation_index",
+    "er_status",
+    "pr_status",
+    "her2_status",
+    "tumour_grade",
+    "tumour_size",
+    "cellularity_or_hypoxia",
+)
 
 
 def summarise_calibration_targets(
@@ -34,14 +79,11 @@ def summarise_calibration_targets(
     attribute_coverage: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Match candidate target attributes by metadata name and report coverage."""
-    targets = {}
-    for target, patterns in _TARGET_PATTERNS.items():
+    targets: dict[str, list[dict[str, Any]]] = {}
+    for target in _TARGETS:
         matches = []
         for row in attribute_coverage:
-            token = _normalise(
-                f"{row.get('attribute_id', '')} {row.get('display_name', '')}"
-            )
-            if any(pattern in token for pattern in patterns):
+            if _matches_target(target, row.get("attribute_id"), row.get("display_name")):
                 matches.append(
                     {
                         "attribute_id": row.get("attribute_id"),
@@ -98,30 +140,3 @@ def run_audit(timeout: float = 60.0, retries: int = 3) -> dict[str, Any]:
             "status": "metadata_feasibility_audit_only",
         },
     }
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Audit public TCGA/METABRIC clinical measurement availability."
-    )
-    parser.add_argument(
-        "--output",
-        default="results/biological_calibration/target_availability.json",
-    )
-    parser.add_argument("--timeout", type=float, default=60.0)
-    parser.add_argument("--retries", type=int, default=3)
-    args = parser.parse_args()
-    report = run_audit(timeout=args.timeout, retries=args.retries)
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    for cohort in report["cohorts"]:
-        print(
-            f"{cohort['study_id']}: candidate target categories "
-            f"{cohort['matched_target_categories']}"
-        )
-    print(f"Aggregate audit: {output}")
-
-
-if __name__ == "__main__":
-    main()
