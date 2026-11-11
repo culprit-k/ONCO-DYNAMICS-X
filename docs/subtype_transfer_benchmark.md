@@ -3,7 +3,7 @@
 **Implementation:** `evaluate_intrinsic_subtype_transfer` in `src/onco_dynamics_x/data_engine/molecular_model.py`  
 **Runner:** `scripts/run_pam50_molecular_validation.py`  
 **Workflow:** `.github/workflows/pam50-molecular-validation.yml`  
-**Status:** implementation and synthetic unit tests passed; public-cohort subtype metrics are pending the current GitHub Actions evaluation run.
+**Status:** completed successfully on public TCGA-BRCA and METABRIC cohorts; full tests and direct Ruff checks passed.
 
 ## Question
 
@@ -57,6 +57,20 @@ External METABRIC outputs:
 - raw annotation counts and explicit counts of excluded claudin-low/NC labels.
 
 All values are aggregate-only. Patient IDs, sample IDs and row-level subtype labels are not written to the report.
+
+## Completed external results
+
+**Workflow:** [run 42987068037](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42987068037)
+
+- Training: 968 TCGA patients with one of the five shared labels.
+- External test: 1,756 METABRIC patients with one of the five shared labels.
+- METABRIC extra labels excluded: claudin-low 217; NC 6.
+- Accuracy: **81.0%** (bootstrap 95% CI 79.1–82.7%).
+- Balanced accuracy: **74.7%** (95% CI 72.4–76.8%).
+- Macro-F1: **77.8%** (95% CI 75.3–79.9%).
+- Majority-class baseline accuracy: 39.9%.
+
+The weakest class was Normal-like (F1 0.60), driven largely by confusion with LumA. LumB-to-LumA confusion was also common. See [full result and confusion matrix](subtype_transfer_results.md) and the [aggregate JSON report](../results/molecular_validation/pam50_tcga_metabric_summary.json).
 
 ## Interpretation limits
 
