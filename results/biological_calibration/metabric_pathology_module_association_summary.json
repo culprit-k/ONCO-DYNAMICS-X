@@ -1,0 +1,126 @@
+{
+  "analysis": "METABRIC_cross_validated_molecular_module_pathology_association",
+  "run_date": "2026-11-11",
+  "source_workflow_run": 43003477612,
+  "cohort": {
+    "study_id": "brca_metabric",
+    "expression_samples": 1980,
+    "verified_primary_solid_tumour_samples": 1980,
+    "unique_primary_tumour_patients": 1980,
+    "multiple_primary_samples_per_patient": 0,
+    "expression_measurements_finite": 99000,
+    "expression_measurements_expected": 99000,
+    "duplicate_expression_records": 0
+  },
+  "features": {
+    "panel": "fixed 50-gene PAM50 research inventory",
+    "modules": [
+      "proliferation_expression",
+      "estrogen_luminal_expression",
+      "her2_associated_expression",
+      "basal_epithelial_expression"
+    ],
+    "module_gene_coverage": {
+      "proliferation_expression": 1.0,
+      "estrogen_luminal_expression": 1.0,
+      "her2_associated_expression": 1.0,
+      "basal_epithelial_expression": 1.0
+    },
+    "normalisation": "cohort-wise mid-rank inverse-normal per gene",
+    "transductive": true,
+    "pathology_labels_used_for_feature_construction": false
+  },
+  "evaluation": {
+    "method": "5-fold stratified patient-level out-of-fold predictions",
+    "model": "StandardScaler plus class-balanced L2 logistic regression, C=1",
+    "hyperparameter_tuning": false,
+    "bootstrap_replicates": 500,
+    "bootstrap_interval": "patient-stratified bootstrap of fixed out-of-fold predictions; conditional on fitted folds"
+  },
+  "pathology_targets": {
+    "ER_STATUS": {
+      "patients": 1980,
+      "class_counts": {"Negative": 474, "Positive": 1506},
+      "accuracy": 0.9398989899,
+      "balanced_accuracy": 0.9438658867,
+      "macro_f1": 0.9214788189,
+      "multiclass_brier_score": 0.0814317008,
+      "log_loss": 0.134903444,
+      "accuracy_bootstrap_95ci": [0.9287878788, 0.9505050505],
+      "balanced_accuracy_bootstrap_95ci": [0.9329066645, 0.9544860642],
+      "macro_f1_bootstrap_95ci": [0.9080608505, 0.9344988606],
+      "majority_class_baseline_accuracy": 0.7606060606
+    },
+    "PR_STATUS": {
+      "patients": 1980,
+      "class_counts": {"Negative": 940, "Positive": 1040},
+      "accuracy": 0.7838383838,
+      "balanced_accuracy": 0.7815466448,
+      "macro_f1": 0.7822708942,
+      "multiclass_brier_score": 0.2980878606,
+      "log_loss": 0.4559117665,
+      "accuracy_bootstrap_95ci": [0.7661616162, 0.8005050505],
+      "balanced_accuracy_bootstrap_95ci": [0.7640397402, 0.7984390344],
+      "macro_f1_bootstrap_95ci": [0.7646831358, 0.7992585269],
+      "majority_class_baseline_accuracy": 0.5252525253
+    },
+    "HER2_STATUS": {
+      "patients": 1980,
+      "class_counts": {"Negative": 1733, "Positive": 247},
+      "accuracy": 0.9696969697,
+      "balanced_accuracy": 0.9792174297,
+      "macro_f1": 0.9366568915,
+      "multiclass_brier_score": 0.0470207423,
+      "log_loss": 0.0824993071,
+      "accuracy_bootstrap_95ci": [0.9621212121, 0.9772727273],
+      "balanced_accuracy_bootstrap_95ci": [0.9716995171, 0.9857231673],
+      "macro_f1_bootstrap_95ci": [0.9226907753, 0.9514547996],
+      "majority_class_baseline_accuracy": 0.8752525253
+    },
+    "GRADE": {
+      "patients": 1892,
+      "excluded_missing_or_unknown": 88,
+      "class_counts": {"1": 169, "2": 771, "3": 952},
+      "accuracy": 0.5687103594,
+      "balanced_accuracy": 0.5770239895,
+      "macro_f1": 0.5085603734,
+      "multiclass_brier_score": 0.5235789763,
+      "log_loss": 0.8683371458,
+      "accuracy_bootstrap_95ci": [0.5470401691, 0.5903805497],
+      "balanced_accuracy_bootstrap_95ci": [0.5456088276, 0.6035039949],
+      "macro_f1_bootstrap_95ci": [0.4868348123, 0.5293355193],
+      "majority_class_baseline_accuracy": 0.5031712474
+    },
+    "CELLULARITY": {
+      "patients": 1917,
+      "excluded_missing_or_unknown": 63,
+      "class_counts": {"High": 965, "Low": 215, "Moderate": 737},
+      "accuracy": 0.4402712572,
+      "balanced_accuracy": 0.4581868233,
+      "macro_f1": 0.3906513321,
+      "multiclass_brier_score": 0.6280701658,
+      "log_loss": 1.0320507053,
+      "accuracy_bootstrap_95ci": [0.418362024, 0.4600938967],
+      "balanced_accuracy_bootstrap_95ci": [0.4303825931, 0.4822937553],
+      "macro_f1_bootstrap_95ci": [0.3706418189975142, 0.4109389576],
+      "majority_class_baseline_accuracy": 0.5033907147
+    }
+  },
+  "interpretation_and_limits": [
+    "This is cross-sectional within-METABRIC 5-fold cross-validation, not an external-cohort validation.",
+    "The fixed molecular modules overlap genes used to describe the targets: ESR1/PGR are in the luminal module and ERBB2/GRB7 are in the HER2 module. High ER/HER2 classification therefore measures expected marker-label concordance, not independent biological validation.",
+    "PR_STATUS also overlaps PGR in the luminal module.",
+    "GRADE association is modest; CELLULARITY prediction is below the majority-class accuracy and does not support using the current modules as a cellularity surrogate.",
+    "No Ki-67/proliferation-index annotation was identified in the current cBioPortal attribute audit.",
+    "The labels are study-provided clinical annotations; assay definitions and provenance must be verified before biological interpretation.",
+    "No analysis estimates a PDE coefficient, proliferation rate, oxygen kinetics, immune killing rate, or drug-response parameter.",
+    "The expression normalisation is transductive and uses the unlabeled expression distribution of the full cohort; it is not a prospective single-sample transformation."
+  ],
+  "data_governance": {
+    "patient_identifiers_exported": false,
+    "sample_identifiers_exported": false,
+    "row_level_clinical_values_exported": false,
+    "row_level_expression_exported": false,
+    "aggregate_metrics_only": true
+  }
+}
