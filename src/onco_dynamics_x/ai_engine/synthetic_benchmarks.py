@@ -31,8 +31,8 @@ def exact_neumann_heat_solution(
     if torch.any(time < 0):
         raise ValueError("time coordinates must be non-negative.")
     decay = torch.exp(-diffusion * math.pi**2 * time)
-    field_x = 0.5 * (1.0 + decay * torch.cos(math.pi * x))
-    field_y = 0.5 * (1.0 + decay * torch.cos(math.pi * y))
+    field_x = 0.5 * (1.0 - decay * torch.cos(math.pi * x))
+    field_y = 0.5 * (1.0 - decay * torch.cos(math.pi * y))
     return (field_x * field_y).unsqueeze(1)
 
 
