@@ -109,3 +109,15 @@ All runs used CPU and seed 42. PINN trained for 500 epochs, FNO for 120, and GNN
 - **PINN:** learned the analytic field substantially better than random initialization, but its held-out error and PDE residual remain material. It needs further tuning, including sampling, loss balance and explicit boundary-condition assessment.
 
 The workflow's tests and Ruff lint checks passed, and all three training runs completed. These metrics are synthetic software benchmarks only. They are not cancer accuracy, tumour-growth prediction, immune infiltration, treatment response, prognosis, or biological validation.
+
+
+## Independent rerun — 11 November 2026
+
+A second CPU run was completed after correcting the Neumann analytic-solution test. [Workflow run 42982733597](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982733597) passed the full test suite, Ruff lint, all three training jobs and artifact publication.
+
+The rerun reproduced the same qualitative results:
+- PINN held-out relative L2 0.09091; held-out PDE residual RMS 0.05325.
+- FNO held-out relative L2 0.01363.
+- Spatial GNN held-out relative L2 0.06995; test MSE 0.000687 versus constant-mean baseline 0.04054.
+
+The aggregate output is also recorded in `results/ai_benchmarks/synthetic_pinn_fno_gnn_summary.json`. The earlier completed run and this rerun are independent executions with the same fixed seed and configuration; small floating-point differences are expected across runner/library execution details. Neither run uses patient or cohort data.
