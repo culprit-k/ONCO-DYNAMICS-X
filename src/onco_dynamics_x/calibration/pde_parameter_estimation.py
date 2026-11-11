@@ -168,6 +168,10 @@ def fit_pde_parameter_subset(
         scale = float(observation_sd[field])
         if not np.isfinite(scale) or scale <= 0:
             raise ValueError(f"observation_sd for {field} must be finite and positive.")
+        if not np.allclose(array[0], getattr(initial_state, field), rtol=1e-6, atol=1e-8):
+            raise ValueError(
+                f"{field} observation at time zero must match initial_state."
+            )
         arrays[field] = array
 
     lower, upper, start = [], [], []
