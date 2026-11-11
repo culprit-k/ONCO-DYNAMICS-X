@@ -140,7 +140,7 @@ Any molecular association must be interpreted alongside the external cohort's ca
 **Workflow:** [GitHub Actions run 42984188725](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42984188725)  
 **Evaluated commit:** `9d14003f04602fe40e10a2c1070c2b7dffaa7824`  
 **Workflow result:** tests, Ruff lint, molecular evaluation and aggregate-artifact publication all passed.  
-**Committed aggregate report:** `results/molecular_audit/pam50_pc_external_validation.json`
+**Committed aggregate report:** `results/molecular_validation/pam50_tcga_metabric_summary.json` and [results narrative](pam50_molecular_validation_results.md)
 
 ### Cohort and panel quality
 
