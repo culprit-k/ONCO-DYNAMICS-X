@@ -91,7 +91,7 @@ A fixed 50-gene PAM50 research-panel feature inventory was evaluated using TCGA-
 
 See [methodology](docs/pam50_molecular_validation.md), [external results and limitations](docs/pam50_molecular_validation_results.md), and [aggregate metrics](results/molecular_validation/pam50_tcga_metabric_summary.json).
 
-A separate five-class subtype-transfer benchmark has also been implemented: it trains on TCGA's existing subtype annotations and evaluates against METABRIC's five shared subtype labels, excluding claudin-low/NC from the shared-class task. Its unit tests and lint pass; the live external-cohort metrics are pending. This is annotation transfer, not official PAM50 classification or independent subtype discovery. See [subtype-transfer methodology](docs/subtype_transfer_benchmark.md).
+A separate five-class subtype-transfer benchmark was trained in TCGA and evaluated in METABRIC using the five shared annotation classes. It achieved **81.0% accuracy**, **74.7% balanced accuracy**, and **77.8% macro-F1**, versus 39.9% accuracy for the TCGA majority-class baseline. METABRIC's claudin-low (217) and NC (6) labels were excluded from this five-class task. Normal-like was the weakest class (F1 0.60), and LumB-to-LumA confusion was common. This is annotation transfer using the same historical subtype gene panel, not independent subtype discovery or an official PAM50/Prosigna classifier. See [methodology](docs/subtype_transfer_benchmark.md) and [full subtype results/confusion matrix](docs/subtype_transfer_results.md).
 
 ## Architecture
 
