@@ -15,8 +15,11 @@ on:
     branches: [main]
     paths:
       - "src/onco_dynamics_x/calibration/biological.py"
+      - "src/onco_dynamics_x/data_engine/biological_calibration_audit.py"
       - "tests/test_biological_calibration.py"
+      - "tests/test_biological_calibration_audit.py"
       - "scripts/fit_longitudinal_growth.py"
+      - "scripts/audit_biological_calibration_targets.py"
       - ".github/workflows/biological-calibration-validation.yml"
 
 permissions:
