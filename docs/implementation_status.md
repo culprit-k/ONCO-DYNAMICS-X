@@ -10,6 +10,8 @@ This status separates executable code from model components that still require t
 - Dimension-aware explicit diffusion stability guard.
 - Synthetic initial states, CLI 2D/3D simulations and Streamlit 2D maps / 3D voxel-volume visualization.
 - Timestep refinement and nested-grid refinement diagnostics for 2D and 3D.
+- Independent adaptive SciPy DOP853 method-of-lines reference integrator and explicit-Euler comparison runner on identical spatial discretizations.
+- Automated synthetic 2D/3D numerical validation workflow covering timestep refinement, grid refinement and adaptive-reference comparison.
 
 ### Cellular and spatial AI inputs
 - Stochastic 2D/3D agent-based simulation for cancer, immune and fibroblast cell proxies.
@@ -32,6 +34,8 @@ This status separates executable code from model components that still require t
 - Exploratory Cox proportional-hazards clinical baseline trained on TCGA (1,050 patients; 143 deaths) and evaluated once on METABRIC (1,454 patients; 821 deaths).
 - External METABRIC Harrell C-index 0.616 (patient bootstrap 95% interval 0.592–0.641) for age + broad stage; age-only comparator C-index 0.591 (95% interval 0.570–0.617).
 - Survival workflow uploads aggregate metrics only; no row-level clinical data, patient/sample identifiers or expression matrices are uploaded.
+- Censoring-aware age-only Cox evaluation trained in TCGA (1,069 patients; 151 deaths) and evaluated in METABRIC (1,979 patients; 1,143 deaths), with Harrell C-index 0.588 (bootstrap 95% interval 0.568–0.606).
+- METABRIC time-dependent IPCW AUC at 12/36/60 months: 0.578 / 0.515 / 0.539; IPCW Brier scores: 0.0150 / 0.1014 / 0.1713; sparse-grid IBS 0.07935. Results and limitations are recorded in docs/age_only_external_results.md.
 
 ### Statistical and model components
 - Local finite-difference parameter sensitivity and Monte Carlo propagation of user-supplied parameter ranges.
@@ -50,11 +54,11 @@ The survival Cox model is a clinical-only exploratory baseline. It does not use 
 
 ## Still outstanding
 - Review source-level endpoint definitions and raw TCGA/METABRIC stage-value distributions; aggregate category counts are now recorded, but TCGA patient-level AJCC pathologic stage and METABRIC sample-level generic tumour stage are not yet established as equivalent.
-- Assess calibration and time-dependent survival performance, in addition to discrimination; resolve stage-field semantics and the below-0.5 stage-only transport warning before relying on stage-adjusted external estimates or advancing to molecular modelling.
+- Extend calibration and time-dependent survival evaluation to future molecular models and alternative endpoints; review marginal independent-censoring assumptions. Keep the age-only model as the primary clinical reference until stage-field semantics are verified.
 - Build a fixed molecular feature/signature pipeline and solve cross-platform harmonization between TCGA RNA-seq RSEM and METABRIC Illumina HT-12 v3 microarray.
 - Perform independent molecular evaluation without using METABRIC outcomes for feature selection or tuning.
 - Calibrate biological parameter values and assess identifiability and uncertainty using compatible observed data.
-- Compare numerical solver with independent methods and document multi-level convergence.
+- Expand the adaptive DOP853 comparison to a multi-resolution convergence ladder and report the resulting error trends; numerical consistency does not establish biological validity.
 - Refine and biologically calibrate PDE–agent coupling: mass/number accounting, deposition-kernel comparison, coupling-strength sensitivity and operator-splitting convergence.
 - Validate spatial graphs against registered histology/spatial assay ground truth.
 - Integrate additional compatible modalities/cohorts.
