@@ -7,10 +7,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from onco_dynamics_x.data_engine.cbioportal import (
-    CBioPortalClient,
-    audit_cbioportal_study,
-)
+from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient, audit_cbioportal_study
 from onco_dynamics_x.data_engine.molecular_audit import DEFAULT_COHORTS
 
 
