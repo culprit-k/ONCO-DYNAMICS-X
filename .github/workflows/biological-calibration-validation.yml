@@ -6,14 +6,17 @@ on:
     paths:
       - "src/onco_dynamics_x/calibration/biological.py"
       - "src/onco_dynamics_x/calibration/net_volume.py"
+      - "src/onco_dynamics_x/calibration/pathology.py"
       - "src/onco_dynamics_x/calibration/pde_parameter_estimation.py"
       - "src/onco_dynamics_x/data_engine/biological_calibration_audit.py"
       - "tests/test_biological_calibration.py"
       - "tests/test_net_volume_calibration.py"
+      - "tests/test_pathology_calibration.py"
       - "tests/test_pde_parameter_estimation.py"
       - "tests/test_biological_calibration_audit.py"
       - "scripts/fit_longitudinal_growth.py"
       - "scripts/fit_treatment_net_volume.py"
+      - "scripts/run_metabric_pathology_calibration.py"
       - "scripts/audit_biological_calibration_targets.py"
       - ".github/workflows/biological-calibration-validation.yml"
   pull_request:
@@ -21,14 +24,17 @@ on:
     paths:
       - "src/onco_dynamics_x/calibration/biological.py"
       - "src/onco_dynamics_x/calibration/net_volume.py"
+      - "src/onco_dynamics_x/calibration/pathology.py"
       - "src/onco_dynamics_x/calibration/pde_parameter_estimation.py"
       - "src/onco_dynamics_x/data_engine/biological_calibration_audit.py"
       - "tests/test_biological_calibration.py"
       - "tests/test_net_volume_calibration.py"
+      - "tests/test_pathology_calibration.py"
       - "tests/test_pde_parameter_estimation.py"
       - "tests/test_biological_calibration_audit.py"
       - "scripts/fit_longitudinal_growth.py"
       - "scripts/fit_treatment_net_volume.py"
+      - "scripts/run_metabric_pathology_calibration.py"
       - "scripts/audit_biological_calibration_targets.py"
       - ".github/workflows/biological-calibration-validation.yml"
 
@@ -54,6 +60,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,science]"
       - name: Test synthetic parameter recovery
-        run: pytest -q tests/test_biological_calibration.py tests/test_biological_calibration_audit.py tests/test_net_volume_calibration.py tests/test_pde_parameter_estimation.py
+        run: pytest -q tests/test_biological_calibration.py tests/test_biological_calibration_audit.py tests/test_net_volume_calibration.py tests/test_pde_parameter_estimation.py tests/test_pathology_calibration.py
       - name: Lint calibration additions
-        run: ruff check src/onco_dynamics_x/calibration/biological.py src/onco_dynamics_x/calibration/net_volume.py src/onco_dynamics_x/calibration/pde_parameter_estimation.py src/onco_dynamics_x/data_engine/biological_calibration_audit.py tests/test_biological_calibration.py tests/test_biological_calibration_audit.py tests/test_net_volume_calibration.py tests/test_pde_parameter_estimation.py scripts/fit_longitudinal_growth.py scripts/fit_treatment_net_volume.py scripts/audit_biological_calibration_targets.py
+        run: ruff check src/onco_dynamics_x/calibration/biological.py src/onco_dynamics_x/calibration/net_volume.py src/onco_dynamics_x/calibration/pde_parameter_estimation.py src/onco_dynamics_x/calibration/pathology.py src/onco_dynamics_x/data_engine/biological_calibration_audit.py tests/test_biological_calibration.py tests/test_biological_calibration_audit.py tests/test_net_volume_calibration.py tests/test_pde_parameter_estimation.py tests/test_pathology_calibration.py scripts/run_metabric_pathology_calibration.py scripts/fit_longitudinal_growth.py scripts/fit_treatment_net_volume.py scripts/audit_biological_calibration_targets.py
