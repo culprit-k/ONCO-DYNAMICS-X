@@ -18,8 +18,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine import molecular_model
+from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient
 from onco_dynamics_x.data_engine.survival_analysis import fetch_survival_cohort
 from onco_dynamics_x.data_engine.survival_metrics import evaluate_ipcw_survival
 
