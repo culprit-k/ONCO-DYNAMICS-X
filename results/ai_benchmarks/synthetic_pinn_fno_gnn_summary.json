@@ -1,0 +1,66 @@
+{
+  "analysis": "synthetic_ai_architecture_training_benchmark",
+  "workflow_run_id": 42982733597,
+  "workflow_run_url": "https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42982733597",
+  "artifact_id": 13838257067,
+  "source_commit": "93f4941faf14d7fba32ca3e92519edf3c3a338f6",
+  "execution": "GitHub Actions, Ubuntu runner, Python 3.11, CPU",
+  "seed": 42,
+  "data": "Analytic synthetic heat-equation and generated graph data only; no patient, clinical or cohort data.",
+  "results": {
+    "pinn": {
+      "architecture": "FieldPINN",
+      "task": "2D Neumann heat equation with known analytic solution",
+      "train_samples": 1024,
+      "validation_samples": 512,
+      "test_samples": 1024,
+      "epochs": 500,
+      "best_epoch": 500,
+      "relative_l2_test_error": 0.09091082960367203,
+      "untrained_initialization_relative_l2_error": 1.3800239562988281,
+      "best_validation_mse": 0.0009141057380475104,
+      "held_out_pde_residual_rms": 0.05325149744749069,
+      "interpretation": "Improved substantially over the untrained initialization but retains about 9.1% held-out relative L2 error and a nonzero PDE residual; further tuning and independent benchmark cases are needed."
+    },
+    "fno": {
+      "architecture": "FourierNeuralOperator2D",
+      "task": "2D periodic heat semigroup with exact Fourier solution",
+      "train_samples": 128,
+      "validation_samples": 32,
+      "test_samples": 64,
+      "epochs": 120,
+      "best_epoch": 120,
+      "relative_l2_test_error": 0.013628171756863594,
+      "persistence_baseline_relative_l2_error": 8.10826301574707,
+      "best_validation_mse": 0.000003004803829753655,
+      "interpretation": "Held-out error about 1.36%, substantially below the no-evolution persistence baseline on this synthetic operator."
+    },
+    "gnn": {
+      "architecture": "SpatialCellGNN",
+      "task": "Predict synthetic local immune-type neighbour fraction from generated spatial graph features",
+      "train_graphs": 48,
+      "validation_graphs": 12,
+      "test_graphs": 12,
+      "nodes_per_graph": 64,
+      "epochs": 80,
+      "best_epoch": 80,
+      "test_mse": 0.0006871297955513,
+      "relative_l2_test_error": 0.06994560360908508,
+      "constant_mean_baseline_mse": 0.04053523764014244,
+      "best_validation_mse": 0.0007018371834419668,
+      "interpretation": "Learns the synthetic graph statistic with lower held-out MSE than a constant-mean baseline; the target is generated from graph topology and is not a measured biological phenotype."
+    }
+  },
+  "workflow_checks": {
+    "full_test_suite": "passed",
+    "ruff_lint": "passed",
+    "training_and_artifact_upload": "passed"
+  },
+  "limitations": [
+    "All tasks are analytic or synthetic; no breast-cancer molecular, pathology, imaging, treatment or outcome data were used.",
+    "Different architectures solve different mathematical tasks; their errors must not be compared as a model ranking.",
+    "The PINN benchmark retains non-negligible error and PDE residual.",
+    "The GNN predicts a graph-construction statistic by design; it does not infer tumour immune infiltration.",
+    "No biological validity, clinical performance, treatment-response prediction or patient-level utility is established."
+  ]
+}
