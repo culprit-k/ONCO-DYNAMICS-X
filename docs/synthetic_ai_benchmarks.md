@@ -1,0 +1,86 @@
+# Synthetic AI architecture benchmarks
+
+**Status:** benchmark code and automated workflow are committed; final training metrics are pending a passing CPU workflow.  
+**Purpose:** test whether the optional PINN, Fourier neural operator (FNO), and spatial GNN implementations can be trained against mathematical or synthetic ground truth before any biological data are introduced.
+
+These benchmarks are software/model-development checks. They do not train a breast-cancer predictor and must not be reported as biological or clinical performance.
+
+## PINN: analytic 2D no-flux heat equation
+
+The coordinate-to-field network is trained against an analytic solution of:
+
+```
+u_t = D * (u_xx + u_yy)
+```
+
+on the square `[-1,1] x [-1,1]`, with zero normal derivative at the boundary. The exact non-negative solution is:
+
+```
+h(q,t) = (1 - exp(-D*pi^2*t)*cos(pi*q))/2
+u(x,y,t) = h(x,t)*h(y,t)
+```
+
+where `D=0.02`. This satisfies the heat equation, is non-negative and has no-flux edges. The model is the repository's `FieldPINN` with a Softplus output. The training objective combines supervised data error and automatic-differentiation PDE residual error:
+
+```
+loss = data_MSE + 0.1 * PDE_residual_MSE
+```
+
+Training, validation and test coordinate samples use separate fixed random seeds. The report contains held-out relative L2 error, residual RMS, initial untrained-model error and validation checkpoints.
+
+## FNO: exact periodic heat semigroup
+
+The FNO learns the map from an initial random spatial field to its exact periodic diffusion result:
+
+```
+u_hat(k,t) = u_hat(k,0) * exp(-D * |k|^2 * T)
+```
+
+with `D=0.05`, `T=0.2`, and a 16 x 16 grid. The exact Fourier multiplier generates targets, while the repository's `FourierNeuralOperator2D` is trained with mean squared error. Held-out relative L2 error is compared with the identity/persistence baseline (predicting no diffusion). Training/validation/test fields use independent deterministic seeds.
+
+## Spatial GNN: synthetic neighbourhood statistic
+
+Each graph contains 64 nodes with:
+- 2D coordinates uniformly sampled in [-1,1];
+- one-hot cancer, immune or fibroblast phenotype labels;
+- directed edges for neighbour pairs within Euclidean radius 0.4.
+
+The node target is the fraction of each node's neighbours labelled immune. A two-layer `SpatialCellGNN` is trained to estimate this local statistic on disjoint synthetic graphs. Held-out MSE and relative L2 error are compared with a constant-mean training-set baseline.
+
+This benchmark checks graph message passing and neighbourhood aggregation. The target is an engineered statistic, not a biological immune-recruitment probability, cell-contact measurement, or patient-derived label.
+
+## Reproducibility
+
+The workflow `.github/workflows/ai-benchmarks.yml` installs CPU PyTorch, runs the full test suite and Ruff checks, trains the three models with fixed seeds and publishes aggregate metrics only.
+
+Default run:
+
+```bash
+pip install "torch>=2.3" --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[dev]"
+python scripts/train_synthetic_ai_benchmarks.py \
+  --output results/ai_benchmarks/synthetic_pinn_fno_training.json \
+  --pinn-epochs 500 \
+  --fno-epochs 120 \
+  --gnn-epochs 80 \
+  --seed 42
+```
+
+No checkpoints or row-level data are committed by the workflow.
+
+## Interpretation and next gate
+
+A successful run demonstrates that each architecture can learn its respective controlled synthetic task. It does not establish:
+- cancer-cell segmentation or detection;
+- immune infiltration or immune evasion in patient tissue;
+- tumour growth prediction or survival prediction;
+- drug response or treatment benefit;
+- accuracy on GDC, TCGA, METABRIC or spatial-omics data;
+- biological validity of the PDE/agent-based model.
+
+The next gate for each architecture is separate:
+- **PINN:** compare on more than one PDE, include known boundary/initial conditions, and assess residuals and parameter identifiability.
+- **FNO:** vary grid resolution, domain and diffusion coefficients; test generalization outside the training parameter distribution.
+- **GNN:** compare against non-graph baselines, vary node count and radius, and only then validate against registered segmentation-derived tissue graphs.
+
+Biological model training requires compatible, permissioned datasets and explicit sample linkage/QC. Bulk expression data alone cannot provide spatial cell coordinates or graph ground truth.
