@@ -9,8 +9,10 @@ The original reaction-diffusion PDE and cell-agent model can now exchange inform
 
 1. Advance the eight continuum fields by one PDE solver step.
 2. Advance discrete cancer, immune and fibroblast agents in the updated PDE environment. Agents sample local cancer, oxygen, nutrient, immune, drug, fibroblast and immune-evasion fields.
-3. Deposit the updated agents onto the PDE grid by nearest-grid mapping, separately for cancer, immune and fibroblast phenotypes.
-4. Convert per-voxel counts into dimensionless density proxies using a user-specified agents-per-unit scale.
+3. Deposit the updated agents onto the PDE grid separately for cancer, immune and fibroblast phenotypes. Two options are available:
+   - `nearest_grid`: assign each agent to the nearest grid node.
+   - `cloud_in_cell`: distribute each agent over the adjacent (2^d) grid nodes using multilinear weights; the weights for each agent sum to one.
+4. Convert deposited counts into dimensionless density proxies using a user-specified agents-per-unit scale.
 5. Blend the agent-derived density proxies with the corresponding PDE cell-density fields using a user-specified coupling strength.
 6. Carry the coupled fields and updated agents into the next macro step.
 
@@ -33,8 +35,8 @@ The occupancy scale has units of agents per grid node per dimensionless density 
 
 ## Software interface
 
-- agent_density_fields(population, grid_shape, agents_per_unit=...)
-- couple_agents_to_pde(state, population, parameters, coupling_strength=..., agents_per_unit=...)
+- agent_density_fields(population, grid_shape, agents_per_unit=..., deposition_method="nearest_grid"|"cloud_in_cell")
+- couple_agents_to_pde(state, population, parameters, coupling_strength=..., agents_per_unit=..., deposition_method=...)
 - coupled_step(state, population, parameters, dx, dt, ...)
 - simulate_coupled(initial_state, initial_population, parameters, dx, dt, steps, ...)
 
@@ -42,7 +44,7 @@ The simulator returns time points, continuum-state snapshots and agent-populatio
 
 ## Numerical and biological limitations
 
-- Nearest-grid deposition is simple and reproducible but may introduce voxel-scale aliasing. A future version should compare nearest-grid, cloud-in-cell and kernel deposition.
+- Nearest-grid deposition is simple and reproducible but may introduce voxel-scale aliasing. Cloud-in-cell deposition is now implemented as a mass-preserving pre-clipping alternative; the two methods still require multi-seed, multi-resolution comparison and validation against spatial observations.
 - The blend is an operator-splitting bridge, not a mass-conserving derivation of the continuum equations from the agent model.
 - The PDE and ABM use overlapping phenomenological processes; without a carefully derived conservation/consistency framework, blending can double-count births, deaths or recruitment.
 - Cell-agent motility, division, death and recruitment rules are illustrative, not calibrated to patient measurements.
