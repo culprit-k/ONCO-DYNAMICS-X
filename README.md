@@ -48,6 +48,16 @@ These results check numerical consistency for selected synthetic conditions. The
 
 See [numerical validation results](docs/synthetic_pde_validation_results.md) and [aggregate results JSON](results/numerical_validation/synthetic_pde_validation_summary.json).
 
+### Synthetic AI architecture training (not biological validation)
+
+The optional PINN, FNO and spatial GNN implementations have now completed CPU training on separate analytic/synthetic tasks, with held-out evaluation:
+
+- PINN relative L2 error 0.0909; held-out PDE residual RMS 0.0533. It learned substantially from initialization but still needs improvement.
+- FNO relative L2 error 0.0136, compared with 8.1083 for the no-diffusion persistence baseline on the fixed periodic heat task.
+- Spatial GNN relative L2 error 0.0699 on a synthetic neighbourhood-fraction task; test MSE 0.000687 compared with 0.040535 for the constant-mean baseline.
+
+The full workflow passed tests and lint. These scores are not breast-cancer accuracy and do not validate the biological model. See [synthetic AI benchmark methodology and results](docs/synthetic_ai_benchmarks.md) and [aggregate metrics](results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json).
+
 ## Architecture
 
 The current continuum state is:
