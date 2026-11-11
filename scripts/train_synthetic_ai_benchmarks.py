@@ -527,7 +527,7 @@ def train_gnn(
 
 def run_benchmarks(
     *,
-    pinn_epochs: int = 500,
+    pinn_epochs: int = 1000,
     fno_epochs: int = 120,
     gnn_epochs: int = 80,
     seed: int = 42,
@@ -562,7 +562,7 @@ def main() -> None:
         "--output",
         default="results/ai_benchmarks/synthetic_pinn_fno_training.json",
     )
-    parser.add_argument("--pinn-epochs", type=int, default=500)
+    parser.add_argument("--pinn-epochs", type=int, default=1000)
     parser.add_argument("--fno-epochs", type=int, default=120)
     parser.add_argument("--gnn-epochs", type=int, default=80)
     parser.add_argument("--seed", type=int, default=42)
