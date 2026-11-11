@@ -1,0 +1,38 @@
+name: Biological calibration target audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/audit_biological_calibration_targets.py"
+      - "src/onco_dynamics_x/data_engine/biological_calibration_audit.py"
+      - ".github/workflows/biological-calibration-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Test audit helpers
+        run: pytest -q tests/test_biological_calibration_audit.py
+      - name: Query public cohort metadata
+        run: python scripts/audit_biological_calibration_targets.py
+      - name: Upload aggregate-only audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: biological-calibration-target-availability
+          path: results/biological_calibration/target_availability.json
+          retention-days: 30
