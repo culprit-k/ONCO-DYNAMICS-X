@@ -44,6 +44,34 @@ def _coordinates(
     return values
 
 
+
+def _initial_coordinates(
+    count: int,
+    *,
+    seed: int,
+    device: torch.device,
+) -> Tensor:
+    coordinates = _coordinates(count, seed=seed, device=device)
+    coordinates[:, 2] = 0.0
+    return coordinates
+
+
+def _neumann_boundary_coordinates(
+    count: int,
+    *,
+    seed: int,
+    device: torch.device,
+) -> tuple[Tensor, int]:
+    if count % 4:
+        raise ValueError("Boundary sample count must be divisible by four.")
+    coordinates = _coordinates(count, seed=seed, device=device)
+    quarter = count // 4
+    coordinates[:quarter, 0] = -1.0
+    coordinates[quarter : 2 * quarter, 0] = 1.0
+    coordinates[2 * quarter : 3 * quarter, 1] = -1.0
+    coordinates[3 * quarter :, 1] = 1.0
+    return coordinates, 2 * quarter
+
 def train_pinn(
     *,
     epochs: int,
@@ -63,10 +91,20 @@ def train_pinn(
     test_coordinates = _coordinates(1024, seed=seed + 3, device=device)
     test_targets = exact_neumann_heat_solution(test_coordinates, diffusion=diffusion)
 
-    model = FieldPINN(output_fields=1, hidden_width=48, hidden_layers=3).to(device)
+    model = FieldPINN(output_fields=1, hidden_width=64, hidden_layers=4).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     def zero_reaction(prediction: Tensor) -> Tensor:
         return torch.zeros_like(prediction)
+    initial_coordinates = _initial_coordinates(256, seed=seed + 5, device=device)
+    initial_targets = exact_neumann_heat_solution(
+        initial_coordinates, diffusion=diffusion
+    )
+    validation_initial_coordinates = _initial_coordinates(
+        128, seed=seed + 6, device=device
+    )
+    validation_initial_targets = exact_neumann_heat_solution(
+        validation_initial_coordinates, diffusion=diffusion
+    )
     best_validation = float("inf")
     best_state = None
     history = []
@@ -75,16 +113,37 @@ def train_pinn(
         model.train()
         optimizer.zero_grad(set_to_none=True)
         data_prediction = model(train_coordinates)
-        collocation = _coordinates(192, seed=seed + 10_000 + epoch, device=device)
+        collocation = _coordinates(256, seed=seed + 10_000 + epoch, device=device)
         residual = pde_residual(
             model,
             collocation,
             diffusion_coefficients=(diffusion,),
             reaction_function=zero_reaction,
         )
+        boundary_coordinates, x_boundary_count = _neumann_boundary_coordinates(
+            256, seed=seed + 20_000 + epoch, device=device
+        )
+        boundary_coordinates.requires_grad_(True)
+        boundary_prediction = model(boundary_coordinates)
+        boundary_gradient = torch.autograd.grad(
+            boundary_prediction.sum(),
+            boundary_coordinates,
+            create_graph=True,
+        )[0]
+        boundary_loss = (
+            torch.mean(boundary_gradient[:x_boundary_count, 0] ** 2)
+            + torch.mean(boundary_gradient[x_boundary_count:, 1] ** 2)
+        )
+        initial_prediction = model(initial_coordinates)
         data_loss = torch.mean((data_prediction - train_targets) ** 2)
         physics_loss = torch.mean(residual**2)
-        loss = data_loss + 0.1 * physics_loss
+        initial_loss = torch.mean((initial_prediction - initial_targets) ** 2)
+        loss = (
+            data_loss
+            + 0.1 * physics_loss
+            + 0.5 * initial_loss
+            + 0.2 * boundary_loss
+        )
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5.0)
         optimizer.step()
@@ -93,21 +152,34 @@ def train_pinn(
             model.eval()
             with torch.no_grad():
                 validation_prediction = model(validation_coordinates)
+                validation_initial_prediction = model(validation_initial_coordinates)
                 validation_loss = float(
                     torch.mean((validation_prediction - validation_targets) ** 2)
                     .detach()
                     .cpu()
                 )
+                validation_initial_loss = float(
+                    torch.mean(
+                        (validation_initial_prediction - validation_initial_targets) ** 2
+                    )
+                    .detach()
+                    .cpu()
+                )
+            validation_objective = validation_loss + 0.5 * validation_initial_loss
             history.append(
                 {
                     "epoch": epoch,
                     "training_data_mse": float(data_loss.detach().cpu()),
                     "training_physics_mse": float(physics_loss.detach().cpu()),
+                    "training_initial_condition_mse": float(initial_loss.detach().cpu()),
+                    "training_neumann_boundary_mse": float(boundary_loss.detach().cpu()),
                     "validation_mse": validation_loss,
+                    "validation_initial_condition_mse": validation_initial_loss,
+                    "validation_objective": validation_objective,
                 }
             )
-            if validation_loss < best_validation:
-                best_validation = validation_loss
+            if validation_objective < best_validation:
+                best_validation = validation_objective
                 best_state = {
                     name: value.detach().cpu().clone()
                     for name, value in model.state_dict().items()
@@ -130,8 +202,33 @@ def train_pinn(
         reaction_function=zero_reaction,
     )
     residual_rms = float(torch.sqrt(torch.mean(diagnostic_residual**2)).detach().cpu())
+    diagnostic_boundary, diagnostic_x_count = _neumann_boundary_coordinates(
+        512, seed=seed + 7, device=device
+    )
+    diagnostic_boundary.requires_grad_(True)
+    diagnostic_boundary_prediction = model(diagnostic_boundary)
+    diagnostic_boundary_gradient = torch.autograd.grad(
+        diagnostic_boundary_prediction.sum(),
+        diagnostic_boundary,
+        create_graph=False,
+    )[0]
+    boundary_residual_rms = float(
+        torch.sqrt(
+            torch.mean(diagnostic_boundary_gradient[:diagnostic_x_count, 0] ** 2)
+            + torch.mean(diagnostic_boundary_gradient[diagnostic_x_count:, 1] ** 2)
+        ).detach().cpu()
+    )
+    test_initial_coordinates = _initial_coordinates(512, seed=seed + 8, device=device)
+    test_initial_targets = exact_neumann_heat_solution(
+        test_initial_coordinates, diffusion=diffusion
+    )
+    with torch.no_grad():
+        test_initial_prediction = model(test_initial_coordinates)
+        initial_condition_error = _relative_l2(
+            test_initial_prediction, test_initial_targets
+        )
     initial_model = FieldPINN(
-        output_fields=1, hidden_width=48, hidden_layers=3
+        output_fields=1, hidden_width=64, hidden_layers=4
     ).to(device)
     with torch.no_grad():
         initial_error = _relative_l2(initial_model(test_coordinates), test_targets)
@@ -151,14 +248,16 @@ def train_pinn(
         "relative_l2_test_error": test_error,
         "untrained_initialization_relative_l2_error": initial_error,
         "held_out_pde_residual_rms": residual_rms,
+        "held_out_neumann_boundary_residual_rms": boundary_residual_rms,
+        "held_out_initial_condition_relative_l2_error": initial_condition_error,
         "best_validation_mse": best_validation,
         "training_history_checkpoints": history,
         "model_configuration": {
-            "hidden_width": 48,
-            "hidden_layers": 3,
+            "hidden_width": 64,
+            "hidden_layers": 4,
             "optimizer": "Adam",
             "learning_rate": 0.001,
-            "loss": "data MSE + 0.1 * PDE residual MSE",
+            "loss": "data MSE + 0.1 * PDE residual MSE + 0.5 * initial-condition MSE + 0.2 * Neumann-boundary derivative MSE",
             "gradient_clip_norm": 5.0,
         },
     }
