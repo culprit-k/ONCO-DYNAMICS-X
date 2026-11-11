@@ -84,3 +84,28 @@ The next gate for each architecture is separate:
 - **GNN:** compare against non-graph baselines, vary node count and radius, and only then validate against registered segmentation-derived tissue graphs.
 
 Biological model training requires compatible, permissioned datasets and explicit sample linkage/QC. Bulk expression data alone cannot provide spatial cell coordinates or graph ground truth.
+
+
+## Completed CPU benchmark — 11 November 2026
+
+**Workflow:** [run 42981975418](https://github.com/culprit-k/ONCO-DYNAMICS-X/actions/runs/42981975418)  
+**Evaluated commit:** `743608b1906af75bcd8f6e2619c7ecc2d15720a8`  
+**Result artifact:** `synthetic-pinn-fno-training` (aggregate-only; retained by GitHub Actions for 30 days)  
+**Committed summary:** `results/ai_benchmarks/synthetic_pinn_fno_gnn_training_summary.json`
+
+| Model | Held-out metric | Result | Comparator |
+|---|---|---:|---:|
+| PINN | Relative L2 field error | 0.09091 | Untrained initialization: 1.3800 |
+| PINN | Held-out PDE residual RMS | 0.05325 | Residual is still non-negligible |
+| FNO | Relative L2 operator error | 0.01363 | Persistence/no-diffusion baseline: 8.1083 |
+| GNN | Relative L2 node-target error | 0.06995 | Test MSE 0.000687 vs constant-mean MSE 0.04054 |
+
+All runs used CPU and seed 42. PINN trained for 500 epochs, FNO for 120, and GNN for 80.
+
+### Readout
+
+- **FNO:** performed well on this 16×16 periodic heat-semigroup task. Cross-resolution and out-of-distribution generalization remain untested.
+- **GNN:** learned the engineered neighbour-fraction statistic on separately generated spatial graphs. It has not learned immune-cell behaviour from tissue data.
+- **PINN:** learned the analytic field substantially better than random initialization, but its held-out error and PDE residual remain material. It needs further tuning, including sampling, loss balance and explicit boundary-condition assessment.
+
+The workflow's tests and Ruff lint checks passed, and all three training runs completed. These metrics are synthetic software benchmarks only. They are not cancer accuracy, tumour-growth prediction, immune infiltration, treatment response, prognosis, or biological validation.
