@@ -127,8 +127,14 @@ def fit_tcga_pca_projection(
         raise ValueError("n_components must be within the training matrix dimensions.")
 
     model = PCA(n_components=n_components, svd_solver="full", random_state=random_state)
-    train_scores = model.fit_transform(train)
-    external_scores = model.transform(external)
+    raw_train_scores = model.fit_transform(train)
+    raw_external_scores = model.transform(external)
+    score_means = np.mean(raw_train_scores, axis=0)
+    score_scales = np.std(raw_train_scores, axis=0, ddof=0)
+    if not np.isfinite(score_scales).all() or np.any(score_scales <= 0):
+        raise ValueError("A fitted PCA component has zero or invalid training variance.")
+    train_scores = (raw_train_scores - score_means) / score_scales
+    external_scores = (raw_external_scores - score_means) / score_scales
     loadings = []
     for component_index, vector in enumerate(model.components_):
         positive = np.argsort(vector)[::-1][:6]
@@ -154,6 +160,9 @@ def fit_tcga_pca_projection(
         "external_transform": "frozen TCGA PCA components",
         "n_components": int(n_components),
         "random_state": int(random_state),
+        "score_standardisation": "zero mean and unit standard deviation fitted in TCGA",
+        "score_means_tcga": [float(value) for value in score_means],
+        "score_scales_tcga": [float(value) for value in score_scales],
         "total_explained_variance_ratio": float(
             model.explained_variance_ratio_.sum()
         ),
