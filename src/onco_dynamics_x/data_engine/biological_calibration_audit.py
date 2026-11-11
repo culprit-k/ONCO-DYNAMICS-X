@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from statistics import median
 from typing import Any
 
 from onco_dynamics_x.data_engine.cbioportal import CBioPortalClient, audit_cbioportal_study
@@ -16,7 +17,6 @@ def _matches_target(target: str, attribute_id: Any, display_name: Any) -> bool:
     """Use specific clinical-attribute names; avoid substring false positives."""
     field_id = _normalise(attribute_id)
     label = _normalise(display_name)
-
     if target == "ki67_or_proliferation_index":
         return (
             field_id.startswith(("KI67", "MIB1", "PROLIFERATIONINDEX"))
@@ -48,14 +48,14 @@ def _matches_target(target: str, attribute_id: Any, display_name: Any) -> bool:
             or label.startswith(("TUMORSIZE", "TUMOURSIZE", "TUMORDIAMETER", "TUMOURDIAMETER"))
         )
     if target == "cellularity_or_hypoxia":
-        target_prefixes = (
+        prefixes = (
             "CELLULARITY",
             "BUFFAHYPOXIA",
             "RAGNUMHYPOXIA",
             "WINTERHYPOXIA",
             "HYPOXIA",
         )
-        return field_id.startswith(target_prefixes) or label.startswith(target_prefixes)
+        return field_id.startswith(prefixes) or label.startswith(prefixes)
     raise ValueError(f"Unknown calibration target category: {target}")
 
 
@@ -68,6 +68,99 @@ _TARGETS = (
     "tumour_size",
     "cellularity_or_hypoxia",
 )
+
+
+def _nonempty(value: Any) -> bool:
+    return value is not None and str(value).strip() not in {"", "NA", "NaN", "null"}
+
+
+def summarise_target_value_overlap(
+    attributes: list[dict[str, Any]],
+    patient_records: list[dict[str, Any]],
+    sample_records: list[dict[str, Any]],
+    samples: list[dict[str, Any]],
+    expression_sample_ids: set[str],
+) -> list[dict[str, Any]]:
+    """Summarise target value distributions and exact expression-list overlap.
+
+    Entity identifiers are used only in memory for matching and are never
+    returned. Ambiguous entities with conflicting values are counted separately.
+    """
+    sample_to_patient = {
+        str(row["sampleId"]): str(row["patientId"])
+        for row in samples
+        if row.get("sampleId") and row.get("patientId")
+    }
+    expression_patients = {
+        sample_to_patient[sample_id]
+        for sample_id in expression_sample_ids
+        if sample_id in sample_to_patient
+    }
+    output = []
+    for target in _TARGETS:
+        for attribute in attributes:
+            attribute_id = str(attribute.get("clinicalAttributeId") or "")
+            display = attribute.get("displayName") or attribute_id
+            if not _matches_target(target, attribute_id, display):
+                continue
+            patient_level = bool(attribute.get("patientAttribute"))
+            records = patient_records if patient_level else sample_records
+            entity_key = "patientId" if patient_level else "sampleId"
+            eligible = expression_patients if patient_level else expression_sample_ids
+            grouped: dict[str, set[str]] = {}
+            for row in records:
+                if row.get("clinicalAttributeId") != attribute_id:
+                    continue
+                entity_id = row.get(entity_key)
+                value = row.get("value")
+                if entity_id and _nonempty(value):
+                    grouped.setdefault(str(entity_id), set()).add(str(value).strip())
+            relevant = set(grouped) & eligible
+            unambiguous = {
+                entity_id: next(iter(grouped[entity_id]))
+                for entity_id in relevant
+                if len(grouped[entity_id]) == 1
+            }
+            ambiguous_count = sum(
+                len(grouped[entity_id]) > 1 for entity_id in relevant
+            )
+            counts: dict[str, int] = {}
+            numeric_values: list[float] = []
+            all_numeric = bool(unambiguous)
+            for value in unambiguous.values():
+                counts[value] = counts.get(value, 0) + 1
+                try:
+                    numeric_values.append(float(value))
+                except ValueError:
+                    all_numeric = False
+            value_summary: dict[str, Any]
+            if all_numeric and len(set(numeric_values)) > 20:
+                ordered = sorted(numeric_values)
+                value_summary = {
+                    "numeric_min": min(ordered),
+                    "numeric_median": float(median(ordered)),
+                    "numeric_max": max(ordered),
+                }
+            else:
+                value_summary = {
+                    "category_counts": dict(sorted(counts.items())[:40]),
+                    "categories_truncated": len(counts) > 40,
+                }
+            output.append(
+                {
+                    "target": target,
+                    "attribute_id": attribute_id,
+                    "display_name": display,
+                    "level": "PATIENT" if patient_level else "SAMPLE",
+                    "expression_entities_with_value": len(unambiguous),
+                    "expression_entities_ambiguous": int(ambiguous_count),
+                    "expression_entities_without_unambiguous_value": (
+                        len(eligible) - len(unambiguous)
+                    ),
+                    "value_summary": value_summary,
+                }
+            )
+    return output
 
 
 def summarise_calibration_targets(
@@ -101,8 +194,7 @@ def summarise_calibration_targets(
         ],
         "note": (
             "Attribute-name matches are candidates only. Source definitions, assay "
-            "method, temporal ordering, units and sample correspondence must be "
-            "verified before values are used as calibration targets."
+            "method, units and temporal ordering must be verified before calibration."
         ),
     }
 
@@ -116,24 +208,50 @@ def run_audit(timeout: float = 60.0, retries: int = 3) -> dict[str, Any]:
             study_id=cohort.study_id,
             expression_sample_list_id=cohort.sample_list_id,
         )
-        cohorts.append(
-            summarise_calibration_targets(
-                cohort.study_id,
-                report.get("study", {}).get("name"),
-                report.get("clinical_inventory", {}).get("attribute_coverage", []),
-            )
+        sample_list = client.get_json(f"sample-lists/{cohort.sample_list_id}")
+        samples = client.get_all(
+            f"studies/{cohort.study_id}/samples", {"projection": "SUMMARY"}
         )
+        attributes = client.get_all(
+            f"studies/{cohort.study_id}/clinical-attributes"
+        )
+        patient_records = client.get_all(
+            f"studies/{cohort.study_id}/clinical-data",
+            {"clinicalDataType": "PATIENT"},
+        )
+        sample_records = client.get_all(
+            f"studies/{cohort.study_id}/clinical-data",
+            {"clinicalDataType": "SAMPLE"},
+        )
+        summary = summarise_calibration_targets(
+            cohort.study_id,
+            report.get("study", {}).get("name"),
+            report.get("clinical_inventory", {}).get("attribute_coverage", []),
+        )
+        expression_sample_ids = {
+            str(value) for value in sample_list.get("sampleIds", [])
+        }
+        summary["expression_list_sample_count"] = len(expression_sample_ids)
+        summary["target_value_overlap"] = summarise_target_value_overlap(
+            attributes,
+            patient_records,
+            sample_records,
+            samples,
+            expression_sample_ids,
+        )
+        cohorts.append(summary)
     return {
         "analysis": "public_cBioPortal_breast_cancer_biological_calibration_target_audit",
         "cohorts": cohorts,
         "privacy": (
-            "Aggregate attribute metadata and entity counts only; no patient/sample "
-            "identifiers, row-level clinical values, or expression values are exported."
+            "Aggregate metadata, category distributions and expression-list overlap only; "
+            "no patient/sample identifiers, row-level clinical values, or expression "
+            "values are exported."
         ),
         "calibration_readiness": {
             "longitudinal_tumour_volume_available_from_this_audit": False,
             "patient_matched_mri_cellularity_maps_available_from_this_audit": False,
             "serial_treatment_exposure_timeline_available_from_this_audit": False,
-            "status": "metadata_feasibility_audit_only",
+            "status": "cross_sectional_target_overlap_audit_only",
         },
     }
