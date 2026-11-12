@@ -113,7 +113,6 @@ def ftv_from_analysis_mask(
     voxel_spacing_mm: Sequence[float],
     *,
     reference_ftv_cc: float | None = None,
-    comparison_tolerance_cc: float = 0.05,
 ) -> FTVMeasurement:
     """Integrate the official binary FTV analysis mask in physical voxel units.
 
@@ -124,8 +123,10 @@ def ftv_from_analysis_mask(
     """
     mask = _validate_binary_mask(analysis_mask, "analysis_mask")
     spacing = _validate_spacing(voxel_spacing_mm)
-    if comparison_tolerance_cc < 0:
-        raise ValueError("comparison_tolerance_cc cannot be negative")
+    if reference_ftv_cc is not None and (
+        not np.isfinite(reference_ftv_cc) or reference_ftv_cc < 0
+    ):
+        raise ValueError("reference_ftv_cc must be finite and non-negative")
     voxel_volume_cc = float(np.prod(spacing) / 1000.0)
     voxel_count = int(mask.sum())
     ftv_cc = voxel_count * voxel_volume_cc
