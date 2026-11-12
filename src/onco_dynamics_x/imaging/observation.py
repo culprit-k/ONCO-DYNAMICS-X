@@ -7,7 +7,7 @@ not supplied: it must be calibrated against registered voxel-level observations.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 
@@ -47,6 +47,49 @@ class FTVMeasurement:
         return asdict(self)
 
 
+
+def decode_ftv_bitmask(
+    encoded_mask: np.ndarray,
+    *,
+    bit_masks: Mapping[str, int],
+) -> dict[str, np.ndarray]:
+    """Decode FTV mask layers from explicit, externally verified bit values.
+
+    Required layer names are precontrast_pass, pe_pass, voi_pass and omit.
+    Optional connectivity_pass is supported if the dataset-specific mask
+    documentation defines such a bit. This function intentionally does not
+    hard-code layer bit values.
+    """
+    required = {"precontrast_pass", "pe_pass", "voi_pass", "omit"}
+    missing = required - set(bit_masks)
+    if missing:
+        raise ValueError(f"Missing verified bit definitions: {sorted(missing)}")
+    data = np.asarray(encoded_mask)
+    if data.ndim != 3 or not np.issubdtype(data.dtype, np.integer):
+        raise ValueError("encoded_mask must be a 3D integer bitmask array")
+    if np.any(data < 0):
+        raise ValueError("encoded_mask cannot contain negative values")
+    names = sorted(required)
+    if "connectivity_pass" in bit_masks:
+        names.append("connectivity_pass")
+    values = [int(bit_masks[name]) for name in names]
+    if any(value <= 0 or value & (value - 1) for value in values):
+        raise ValueError("Each bit definition must be a positive power of two")
+    if len(set(values)) != len(values):
+        raise ValueError("Bit definitions must be distinct")
+    layers = {name: (data & int(bit_masks[name])) != 0 for name in names}
+    eligible = (
+        layers["precontrast_pass"]
+        & layers["voi_pass"]
+        & ~layers["omit"]
+    )
+    if "connectivity_pass" in layers:
+        eligible &= layers["connectivity_pass"]
+    layers["eligibility_mask_without_pe_ser_threshold"] = eligible
+    layers["pe_pass"] = layers["pe_pass"]
+    return layers
+
+
 def ftv_from_analysis_mask(
     analysis_mask: np.ndarray,
     voxel_spacing_mm: Sequence[float],
@@ -56,9 +99,10 @@ def ftv_from_analysis_mask(
 ) -> FTVMeasurement:
     """Integrate the official binary FTV analysis mask in physical voxel units.
 
-    The mask must already encode the approved I-SPY 2 analysis/OMIT/filter
-    decisions. Fractional DICOM SEG data must be explicitly converted to a
-    binary segment before calling this function.
+    The input must be a decoded binary FTV-positive mask. Do not convert the
+    raw bit-encoded DICOM analysis mask with >0: that would combine distinct
+    filtering layers. Decode it first using bit assignments verified against
+    the official Analysis mask files description.
     """
     mask = _validate_binary_mask(analysis_mask, "analysis_mask")
     spacing = _validate_spacing(voxel_spacing_mm)
