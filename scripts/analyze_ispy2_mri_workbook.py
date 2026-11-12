@@ -165,7 +165,7 @@ def main() -> None:
     result = analyze_workbook(args.input, bootstrap_iterations=args.bootstrap, seed=args.seed)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"Subjects analysed: {result['n_subjects']}")
     print(f"Missing cells: {result['missing_cells']}")
     print(f"Aggregate report: {output}")
