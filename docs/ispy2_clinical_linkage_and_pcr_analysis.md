@@ -14,7 +14,7 @@ Join key: `CLINICAL-TRIAL-SUBJECT-ID = Patient_ID`. The 601 clinical-only record
 
 ## Outcome and subgroup summaries
 
-In the linked cohort, pCR code 1 appears in 113/384 (29.43%) and code 0 in 271/384 (70.57%). **The code direction is provisional** until checked against the official data dictionary.
+In the linked cohort, pCR code 1 appears in 113/384 (29.43%) and code 0 in 271/384 (70.57%). The original 384-participant MRI paper specifies binary pCR coding as 1 = pCR and 0 = non-pCR; this is the coding basis used here. Retain the variable-specific mapping when transferring to another release or cohort.
 
 | HR | HER2 | n | pCR code 1 | Rate |
 |---:|---:|---:|---:|---:|
@@ -70,6 +70,12 @@ Before mechanistic calibration or publication:
 3. Pre-specify a parsimonious prediction model and treatment-arm adjustment strategy; use locked validation and calibration assessment.
 4. Only after verified units and time intervals, estimate treatment-exposed phenomenological kinetics. Do not label them cell birth/death rates without a validated observation model.
 5. Keep the participant-level linked workbook private. This repository contains aggregate results and code only.
+
+## Follow-on response model
+
+A first patient-separated model comparison has been completed using the same linked cohort. The 80/20 stratified split was made on unique participant identifiers (307 train, 77 test; zero patient overlap). A linear response reference and a quadratic nonlinear response surface were evaluated using T1/T2 log-volume ratios, age, HR, HER2 and treatment arm. The pCR classifier did not use T3; a separate model forecast T3 response without using pCR. Test pCR AUC was 0.726 for the linear reference and 0.739 for the quadratic model; the paired difference was +0.013 (95% bootstrap CI -0.018 to +0.050). T3 forecast RMSE was 0.997 versus 1.001. These results do not establish a reliable nonlinear-model advantage.
+
+The coupled reaction-diffusion model was not numerically fitted. Whole-lesion volume and scalar morphology summaries do not identify spatial diffusion under no-flux boundaries, and actual acquisition times, treatment exposure timelines, registered spatial fields and a validated MRI observation operator are not available in the linked workbooks. See [the full response-model comparison and mathematical identifiability argument](ispy2_pcr_response_model_comparison.md). No elapsed-day rates or biological PDE parameters are reported.
 
 ## Data provenance
 
