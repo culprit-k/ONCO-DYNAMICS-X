@@ -15,7 +15,7 @@
     "pCR_code_1_n": 113,
     "pCR_code_0_n": 271,
     "pCR_code_1_rate": 0.2942708333,
-    "code_direction": "provisional; verify official data dictionary"
+    "code_direction": "1 = pCR and 0 = non-pCR, supported by Li et al. (2020) for the 384-person multi-feature MRI cohort"
   },
   "pCR_by_HR_HER2": [
     {
