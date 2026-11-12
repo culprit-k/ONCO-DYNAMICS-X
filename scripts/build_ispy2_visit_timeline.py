@@ -44,37 +44,75 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     for (patient_id, visit, study_uid), group in data.groupby(
         ["patient_id", "_visit_stage", "study_instance_uid"], dropna=False
     ):
-        dates = sorted(set(group["scan_datetime"].dropna().astype(str)))
-        flag_values = set()
-        for raw in group["date_flags"].fillna("").astype(str):
-            flag_values.update(x for x in raw.split("|") if x)
-        date_flags = sorted(flag_values)
-        record = {
+        raw_codes = sorted(set(group["visit_code"].dropna().astype(str)))
+        study_datetimes = (
+            sorted(set(group["study_datetime"].dropna().astype(str)))
+            if "study_datetime" in group.columns else []
+        )
+        inconsistent_study_rows = False
+        if "study_datetime_consistent" in group.columns:
+            for _, series_row in group.iterrows():
+                has_study_values = False
+                if "study_datetime_values_json" in group.columns:
+                    raw_values = series_row.get("study_datetime_values_json")
+                    has_study_values = (
+                        isinstance(raw_values, str)
+                        and raw_values not in ("", "[]", "null")
+                    )
+                if has_study_values and not bool(series_row["study_datetime_consistent"]):
+                    inconsistent_study_rows = True
+
+        if len(study_datetimes) == 1 and not inconsistent_study_rows:
+            scan_datetime = study_datetimes[0]
+            scan_datetime_source = "StudyDate/StudyTime"
+            precision_values = (
+                sorted(set(group["study_time_precision"].dropna().astype(str)))
+                if "study_time_precision" in group.columns else ["date_and_time"]
+            )
+        elif not study_datetimes and not inconsistent_study_rows:
+            acquisition_starts = (
+                sorted(set(group["acquisition_start_datetime"].dropna().astype(str)))
+                if "acquisition_start_datetime" in group.columns else []
+            )
+            if not acquisition_starts:
+                fallback_dates = sorted(set(group["scan_datetime"].dropna().astype(str)))
+                acquisition_starts = fallback_dates
+            scan_datetime = acquisition_starts[0] if acquisition_starts else None
+            scan_datetime_source = "earliest available series acquisition datetime"
+            precision_values = (
+                sorted(set(group["acquisition_time_precision"].dropna().astype(str)))
+                if "acquisition_time_precision" in group.columns else ["date_and_time"]
+            )
+        else:
+            scan_datetime = None
+            scan_datetime_source = "ambiguous study/acquisition date metadata"
+            precision_values = []
+
+        date_flags = sorted({
+            token
+            for raw in group["date_flags"].fillna("").astype(str)
+            for token in raw.split("|")
+            if token
+        })
+        date_flag_valid = (
+            bool(group["date_flag_consistent"].fillna(False).astype(bool).all())
+            if "date_flag_consistent" in group.columns
+            else len(date_flags) == 1 and date_flags[0] in VALID_DATE_FLAGS
+        )
+        records.append({
             "patient_id": str(patient_id),
             "visit_code": str(visit),
-            "visit_code_raw": "|".join(sorted(set(group["visit_code"].dropna().astype(str)))),
+            "visit_code_raw": "|".join(raw_codes),
             "study_instance_uid": "" if pd.isna(study_uid) else str(study_uid),
-            "scan_datetime": dates[0] if len(dates) == 1 else None,
-            "scan_datetime_consistent": len(dates) == 1,
-            "scan_datetime_source": "|".join(sorted(set(
-                group["scan_datetime_source"].dropna().astype(str)
-            ))),
-            "scan_time_precision": (
-                "|".join(sorted(set(group["scan_time_precision"].dropna().astype(str))))
-                if "scan_time_precision" in group.columns else "date_and_time"
-            ),
+            "scan_datetime": scan_datetime,
+            "scan_datetime_consistent": scan_datetime is not None,
+            "scan_datetime_source": scan_datetime_source,
+            "scan_time_precision": "|".join(precision_values),
             "longitudinal_date_flag": "|".join(date_flags),
-            "date_flag_valid": (
-                bool(group["date_flag_consistent"].fillna(False).astype(bool).all())
-                if "date_flag_consistent" in group.columns
-                else len(date_flags) == 1 and date_flags[0] in VALID_DATE_FLAGS
-            ),
+            "date_flag_valid": date_flag_valid,
             "series_count": int(len(group)),
-            "study_datetime_consistent_across_series": bool(
-                group["study_datetime_consistent"].fillna(False).astype(bool).all()
-            ),
-        }
-        records.append(record)
+            "study_datetime_consistent_across_series": not inconsistent_study_rows,
+        })
 
     visits = pd.DataFrame(records)
     visits["elapsed_days_from_T0"] = pd.NA
