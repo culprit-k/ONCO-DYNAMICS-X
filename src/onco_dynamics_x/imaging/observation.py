@@ -48,7 +48,6 @@ class FTVMeasurement:
         return asdict(self)
 
 
-
 def decode_ftv_bitmask(
     encoded_mask: np.ndarray,
     *,
