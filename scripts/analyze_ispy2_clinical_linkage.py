@@ -61,6 +61,26 @@ def _or_row(y: pd.Series, x: pd.Series) -> dict:
             "p_value": float(fit.pvalues.iloc[1])}
 
 
+def _adjusted_or_rows(y: pd.Series, data: pd.DataFrame, visit: str) -> list[dict]:
+    """Adjusted logistic coefficients: standardized log-ratio plus age, HR and HER2."""
+    import statsmodels.api as sm
+    predictors = [f"logratio_{visit}_T0", "Age_at_Screening", "HR", "HER2"]
+    x = data[predictors].astype(float).copy()
+    for col in predictors[:2]:
+        x[col] = (x[col] - x[col].mean()) / x[col].std(ddof=0)
+    fit = sm.Logit(y.astype(float), sm.add_constant(x)).fit(disp=False)
+    rows = []
+    for col in predictors:
+        beta, se = float(fit.params[col]), float(fit.bse[col])
+        rows.append({
+            "variable": col,
+            "odds_ratio": float(np.exp(beta)),
+            "ci95": [float(np.exp(beta - 1.96*se)), float(np.exp(beta + 1.96*se))],
+            "p_value": float(fit.pvalues[col])
+        })
+    return rows
+
+
 def analyze(features: pd.DataFrame, clinical: pd.DataFrame) -> dict:
     d = exact_one_to_one_link(features, clinical)
     vcols = ["VOLUME_TUM_BLU_V10", "VOLUME_TUM_BLU_V20",
@@ -100,6 +120,7 @@ def analyze(features: pd.DataFrame, clinical: pd.DataFrame) -> dict:
         "pCR_by_arm": [],
         "ftv_candidate_change_by_pCR": {},
         "unadjusted_logistic": {},
+        "adjusted_logistic_age_HR_HER2": {},
         "internal_repeated_cv": {},
         "limitations": [
             "pCR code direction must be confirmed against the official data dictionary.",
@@ -132,6 +153,8 @@ def analyze(features: pd.DataFrame, clinical: pd.DataFrame) -> dict:
         out["unadjusted_logistic"][visit]["mann_whitney_p"] = float(
             mannwhitneyu(a, b, alternative="two-sided").pvalue
         )
+        if visit in ["T1", "T2"]:
+            out["adjusted_logistic_age_HR_HER2"][visit] = _adjusted_or_rows(y, d, visit)
 
     # Repeated stratified CV is internal only. T1/T2 are separated from post-treatment T3.
     cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=10, random_state=20261112)
