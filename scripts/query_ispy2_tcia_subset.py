@@ -49,8 +49,12 @@ def _request_json(url: str, *, data: dict[str, str] | None = None,
         raise ValueError(f"TCIA returned a non-JSON response for {url}: {preview}") from exc
 
 
-def _request_with_retry(url: str, *, headers: dict[str, str], workersafe: bool = True,
-                        attempts: int = 5) -> Any:
+def _request_with_retry(
+    url: str,
+    *,
+    headers: dict[str, str],
+    attempts: int = 5,
+) -> Any:
     for attempt in range(attempts):
         try:
             return _request_json(url, headers=headers)
@@ -106,6 +110,8 @@ def extract_tag_values(payload: Any, wanted_tag: str) -> set[str]:
         rows = payload.get("data", payload.get("tags", [payload]))
     else:
         rows = payload
+    if isinstance(rows, dict):
+        rows = [rows]
     if not isinstance(rows, list):
         return set()
     wanted = _normalise_tag(wanted_tag)
@@ -173,7 +179,7 @@ def build_candidate_rows(
     records: list[dict[str, Any]] = []
     matched_studies: set[str] = set()
     matched_subjects: set[str] = set()
-    blocked_studies = 0
+    blocked_study_uids: set[str] = set()
     for row in series_rows:
         study_uid = str(row.get("StudyInstanceUID") or row.get("studyInstanceUID") or "").strip()
         series_uid = str(row.get("SeriesInstanceUID") or row.get("seriesInstanceUID") or "").strip()
@@ -187,7 +193,7 @@ def build_candidate_rows(
             or tags.get("subject_tag_value_count") != 1
             or tags.get("visit_tag_value_count") != 1
         ):
-            blocked_studies += 1
+            blocked_study_uids.add(study_uid)
             continue
         if subject_id not in target_subject_ids:
             continue
@@ -238,7 +244,7 @@ def build_candidate_rows(
             frame["suggested_role"].value_counts().sort_index().astype(int).to_dict()
             if not frame.empty else {}
         ),
-        "blocked_study_count_missing_or_ambiguous_trial_tags": blocked_studies,
+        "blocked_study_count_missing_or_ambiguous_trial_tags": len(blocked_study_uids),
         "subject_mapping": "Verified from DICOM ClinicalTrialSubjectID (0012,0040), not inferred from PatientID",
         "selection_policy": "include defaults to 0; human review is mandatory",
         "privacy": "Candidate CSV contains participant IDs and SeriesInstanceUIDs; keep local and private",
