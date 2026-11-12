@@ -96,18 +96,18 @@ Register a follow-up anatomical volume to the T0 reference:
       --fixed-series-uid T0_SERIES_UID \
       --moving-dicom-dir /private/T1_series \
       --moving-series-uid T1_SERIES_UID \
-      --output-image /private/registered_T1_to_T0.nii.gz \
-      --output-transform /private/T1_to_T0.tfm \
+      --output-image /private/registered_T1_on_T0_grid.nii.gz \
+      --output-transform /private/T0_to_T1_pull.tfm \
       --qc-json /private/T1_registration_qc.json
 
-The current implementation is a conservative 3D rigid Euler registration using Mattes mutual information and a multi-resolution schedule. It is a first-pass alignment, not a validated breast-motion solution. Breast positioning, compression, deformation and post-treatment shape changes may not be captured by a rigid transform. Visual overlays, anatomical landmarks and tumour-mask Dice (when independent masks exist) must be reviewed before use. Do not use numerical registration metrics alone as proof of anatomical correctness.
+The current implementation is a conservative 3D rigid Euler registration using Mattes mutual information and a multi-resolution schedule. In SimpleITK, the estimated transform maps points from the fixed/reference T0 physical coordinate system to the moving/follow-up physical coordinate system; this is the pull transform used by the resampler to write the moving volume on the fixed grid. It is not a forward moving-to-fixed point transform. It is a first-pass alignment, not a validated breast-motion solution. Breast positioning, compression, deformation and post-treatment shape changes may not be captured by a rigid transform. Visual overlays, anatomical landmarks and tumour-mask Dice (when independent masks exist) must be reviewed before use. Do not use numerical registration metrics alone as proof of anatomical correctness.
 
 The same-visit DCE PE/SER maps and analysis mask may be resampled with the anatomical transform only when each derived map's DICOM FrameOfReferenceUID has been verified to match that visit's anatomical reference. The resampling helper requires those UID pairs explicitly:
 
     python scripts/resample_ispy2_dce_map.py \
       --fixed-map-reference /private/T0_SER.nii.gz \
       --moving-map /private/T1_SER.nii.gz \
-      --transform /private/T1_to_T0.tfm \
+      --transform /private/T0_to_T1_pull.tfm \
       --output /private/T1_SER_registered.nii.gz \
       --qc-json /private/T1_SER_registration_qc.json \
       --fixed-map-frame-uid T0_SER_FRAME_UID \
@@ -152,21 +152,46 @@ The DICOM FTV computed by UCSF's derived-object pipeline is not guaranteed to be
 
 ## 7. Latent PDE-to-MRI observation bridge
 
-The current code implements the measurement-side map/mask-to-FTV operator H_DCE. It does **not** yet implement a calibrated map from latent ONCO-DYNAMICS-X fields to PE/SER. The missing forward model should be staged:
+The current code implements the measurement-side map/mask-to-FTV operator H_DCE and now includes a defined candidate forward signal chain. It does **not** contain a calibrated field-to-pharmacokinetic parameter network or learned weights. The formal structure is:
 
 \[
 u(x,t)=\big[C,I,F,O,N,D,E,V\big](x,t)
-\quad\longrightarrow\quad
-\eta(x,t)=g_\theta\big(u(x,t),w(x,t)\big)
-\quad\longrightarrow\quad
-\widehat{S}(x,\tau)
-\quad\longrightarrow\quad
-(\widehat{PE}_{\mathrm{early}},\widehat{PE}_{\mathrm{late}},\widehat{SER})
-\quad\longrightarrow\quad
+\xrightarrow{G_\theta}
+\big(K^{trans},v_e,v_p\big)(x,t)
+\xrightarrow{\text{extended Tofts + SPGR}}
+\widehat{PE}(x,\tau)
+\xrightarrow{\text{sample actual DCE times}}
+\big(\widehat{PE}_{early},\widehat{PE}_{late},\widehat{SER}\big)
+\xrightarrow{H_{DCE}}
 \widehat{FTV}.
 \]
 
-Here w denotes acquisition- and contrast-kinetic variables; eta must represent or parameterise tissue delivery, vascular volume/permeability and extracellular contrast kinetics (for example Ktrans, ve, vp, if a suitable DCE pharmacokinetic model and arterial input function can be supported). These quantities cannot be read directly from tumour cell density. The MRI signal step must use the actual scanner sequence, baseline T1/flip/TR/TE/rescale metadata and within-scan timing when available. The current PE/SER maps can serve as measured targets; the corresponding g_theta and contrast-signal mapping remain to be selected, calibrated and independently evaluated.
+The field-to-PK map G_theta is a learned, phenomenological observation head that must be estimated from training patients and should not be hard-coded as a direct tumour-cell-density-to-enhancement identity. The code provides a range-constrained output transformation for its three logits: Ktrans is non-negative, ve lies between 0 and 1, and vp is non-negative with vp+ve no greater than 1. It contains no fitted coefficients.
+
+For each voxel, the extended Tofts concentration model is:
+
+\[
+C_t(\tau)=v_p C_p(\tau)+K^{trans}\int_0^\tau C_p(s)
+\exp\!\left[-k_{ep}(\tau-s)\right]ds,
+\qquad k_{ep}=K^{trans}/v_e.
+\]
+
+Ktrans is in min^-1; the AIF Cp and tissue concentration Ct must use consistent concentration units; and the integral uses minutes. The implemented numerical convolution takes the actual DCE frame times in seconds and explicitly converts each time step to minutes. The AIF is a required input, not guessed from the treatment arm or assumed to be a population curve.
+
+For an ideally spoiled gradient-echo acquisition, the simplified signal model is:
+
+\[
+S(\tau)=M_0\sin\alpha
+\frac{1-\exp[-TR\,R_1(\tau)]}
+{1-\cos\alpha\,\exp[-TR\,R_1(\tau)]},
+\qquad R_1(\tau)=1/T_{10}+r_1 C_t(\tau),
+\]
+
+with PE(τ)=100×[S(τ)/S(0)−1]. If TE, baseline R2* and transverse relaxivity are supplied, the code includes the additional exp[−TE·R2*(τ)] term. Otherwise it uses the short-TE approximation and explicitly omits T2* attenuation. B1 inhomogeneity, inflow, motion, coil bias and other sequence-specific effects remain outside this first operator and must be corrected, calibrated or included in uncertainty analysis. This is why actual T10, flip angle, TR, TE, acquisition timing and contrast relaxivity are required rather than optional guessed defaults.
+
+The code implements the extended-Tofts concentration step, the SPGR signal-to-PE step, interpolation of PE maps at explicitly supplied early/late effective times (with no extrapolation), an SER ratio with an explicit denominator-validity mask, and the threshold/voxel-geometry FTV step. It does not infer PEearly/PElate times from nominal labels; use actual effective delay values from the DICOM metadata and retain their AUTO/MANUAL provenance.
+
+These pharmacokinetic equations are standard DCE-MRI modelling components, but their parameterization and identifiability depend on temporal resolution, signal-to-concentration calibration and AIF accuracy. A two-timepoint PE/SER summary alone is not enough to identify Ktrans, ve and vp. The raw dynamic time series, precontrast T1 information and adequate sampling are needed for quantitative estimation.
 
 A reasonable next calibration objective is a patient-held-out, voxel-aware loss comparing predicted versus observed PEearly, PElate and SER, plus a secondary FTV agreement term against the DICOM FTV result sequence. Use only training patients to select thresholds, smooth approximations, observation-model coefficients and hyperparameters. All scans from one participant must remain in one partition. Include uncertainty from registration, the bitmask/VOI, signal rescaling and FTV segmentation. Do not describe MRI enhancement volume as a direct viable-cell count.
 
@@ -202,4 +227,7 @@ Public aggregate summaries may be committed only after a privacy review. Current
 - [ACRIN 6698/I-SPY2 DICOM data descriptions and private tags](https://www.cancerimagingarchive.net/wp-content/uploads/ACRIN-6698-ISPY2-DWI-and-DCE-MRI-Data-Descriptions_20210520.pdf)
 - [TCIA longitudinal date de-identification explanation](https://www.cancerimagingarchive.net/submission-and-de-identification-overview/)
 - [TCIA Data Retriever source and current CLI usage](https://github.com/TCIA/data-retriever)
+- [Extended Tofts model and AIF requirements for DCE-MRI](https://pmc.ncbi.nlm.nih.gov/articles/PMC10194023/)
+- [Spoiled-GRE signal equation and contrast relaxivity](https://pmc.ncbi.nlm.nih.gov/articles/PMC12490333/)
+- [SimpleITK registration transform direction](https://simpleitk.readthedocs.io/en/latest/registrationOverview.html)
 - [TCIA API v4 guide](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=70230731)
