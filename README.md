@@ -94,6 +94,14 @@ See [methodology](docs/pam50_molecular_validation.md), [external results and lim
 
 A separate five-class subtype-transfer benchmark was trained in TCGA and evaluated in METABRIC using the five shared annotation classes. It achieved **81.0% accuracy**, **74.7% balanced accuracy**, and **77.8% macro-F1**, versus 39.9% accuracy for the TCGA majority-class baseline. METABRIC's claudin-low (217) and NC (6) labels were excluded from this five-class task. Normal-like was the weakest class (F1 0.60), and LumB-to-LumA confusion was common. This is annotation transfer using the same historical subtype gene panel, not independent subtype discovery or an official PAM50/Prosigna classifier. See [methodology](docs/subtype_transfer_benchmark.md) and [full subtype results/confusion matrix](docs/subtype_transfer_results.md).
 
+### I-SPY 2 clinical linkage and exploratory pCR association
+
+The separate 985-row clinical workbook was matched to the 384-row MRI feature workbook using the exact documented-in-file identifier pair `CLINICAL-TRIAL-SUBJECT-ID = Patient_ID`. All 384 MRI participants matched one-to-one; there were no duplicate IDs or unmatched MRI records. The other 601 clinical records are not represented in the MRI feature workbook.
+
+In the linked subset, pCR code 1 occurs in 113/384 (29.43%); code direction remains provisional pending official data-dictionary confirmation. Greater MRI volume reduction was associated with pCR code 1 at T1 and T2. Internal repeated stratified 5-fold CV (10 repeats) produced mean AUC 0.753 for T1 + age/HR/HER2 and 0.771 for T2 + age/HR/HER2; adding treatment arm gave 0.771 and 0.790, respectively. These are exploratory internal estimates, not external validation or clinical utility evidence. Actual scan dates and verified volume units remain unavailable, so no elapsed-day kinetics or mechanistic PDE rates are claimed.
+
+The reproducible analysis script writes aggregate JSON only and refuses duplicate/unmatched feature IDs. The participant-level linked workbook remains private and is not in this repository. See [linkage and pCR analysis](docs/ispy2_clinical_linkage_and_pcr_analysis.md), [analysis script](scripts/analyze_ispy2_clinical_linkage.py), and [aggregate results](results/ispy2/ispy2_clinical_linkage_and_pcr_aggregate.json).
+
 ### I-SPY 2 four-feature MRI analysis
 
 The 384-participant feature workbook has been analysed using paired repeated-measures statistics. Median T3-vs-T0 changes were -94.58% for the workbook volume field (FTV candidate), -67.05% for longest diameter, +25.55% for sphericity and -28.95% for background parenchymal enhancement. All twelve supplied percentage-change fields passed formula validation. These are treatment-stage descriptive changes, not time-normalised rates, causal treatment effects or PDE coefficients. The physical unit and exact mapping of the workbook volume columns still require workbook-specific confirmation.
@@ -176,6 +184,7 @@ python scripts/run_survival_validation_metrics.py
 - [PAM50-panel molecular external results](docs/pam50_molecular_validation_results.md)
 - [I-SPY 2 multi-feature longitudinal results](docs/ispy2_multifeature_analysis.md)
 - [I-SPY 2 clinical linkage protocol](docs/ispy2_clinical_linkage_protocol.md)
+- [I-SPY 2 clinical linkage and pCR analysis](docs/ispy2_clinical_linkage_and_pcr_analysis.md)
 - [Data sources and governance](docs/data_sources.md)
 - [Safety and limitations](docs/safety_and_limitations.md)
 - [Hardware build guide](docs/hardware_build_guide.md)
