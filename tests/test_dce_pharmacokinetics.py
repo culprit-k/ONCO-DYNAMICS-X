@@ -4,6 +4,8 @@ import pytest
 from onco_dynamics_x.imaging.dce_pharmacokinetics import (
     constrain_pk_parameter_logits,
     extended_tofts_concentration,
+    sample_pe_at_times,
+    ser_from_pe_maps,
     spoiled_gre_percent_enhancement,
 )
 
@@ -80,3 +82,57 @@ def test_spgr_enhancement_increases_with_positive_concentration():
     )
     assert enhancement[0, 0] == pytest.approx(0.0)
     assert enhancement[2, 0] > enhancement[1, 0] > 0
+
+
+def test_sampling_pe_maps_uses_actual_requested_timepoints():
+    times = np.array([0.0, 60.0, 120.0, 180.0])
+    pe = np.array([0.0, 10.0, 20.0, 30.0])[:, None, None, None]
+    sampled = sample_pe_at_times(times, pe, np.array([90.0, 150.0]))
+    assert sampled[:, 0, 0, 0].tolist() == pytest.approx([15.0, 25.0])
+
+
+def test_pe_sampling_refuses_extrapolation():
+    with pytest.raises(ValueError, match="within the measured"):
+        sample_pe_at_times(
+            np.array([0.0, 60.0]),
+            np.array([0.0, 10.0])[:, None],
+            np.array([90.0]),
+        )
+
+
+def test_ser_ratio_returns_explicit_denominator_validity_mask():
+    early = np.array([[100.0, 50.0]])
+    late = np.array([[50.0, 0.0]])
+    ser, valid = ser_from_pe_maps(
+        early, late, minimum_absolute_late_enhancement_percent=1.0
+    )
+    assert valid.tolist() == [[True, False]]
+    assert ser[0, 0] == pytest.approx(2.0)
+    assert np.isnan(ser[0, 1])
+
+
+def test_spgr_t2star_attenuation_requires_complete_parameter_set():
+    with pytest.raises(ValueError, match="supplied together"):
+        spoiled_gre_percent_enhancement(
+            np.zeros((2, 1)),
+            baseline_t1_seconds=1.2,
+            flip_angle_degrees=15,
+            repetition_time_seconds=0.005,
+            longitudinal_relaxivity_s_inv_per_mM=4.0,
+            echo_time_seconds=0.002,
+        )
+
+
+def test_spgr_t2star_attenuation_is_accepted_when_fully_specified():
+    pe = spoiled_gre_percent_enhancement(
+        np.array([0.0, 0.2])[:, None],
+        baseline_t1_seconds=1.2,
+        flip_angle_degrees=15,
+        repetition_time_seconds=0.005,
+        longitudinal_relaxivity_s_inv_per_mM=4.0,
+        echo_time_seconds=0.002,
+        baseline_r2star_s_inv=20.0,
+        transverse_relaxivity_s_inv_per_mM=5.0,
+    )
+    assert pe[0, 0] == pytest.approx(0.0)
+    assert np.isfinite(pe).all()
