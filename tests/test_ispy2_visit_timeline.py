@@ -58,3 +58,24 @@ def test_timeline_refuses_negative_time_from_baseline():
     t1 = timeline[timeline["visit_code"] == "T1"].iloc[0]
     assert t1["interval_status"] == "blocked_negative_time_from_T0"
     assert pd.isna(t1["elapsed_days_from_T0"])
+
+
+def test_timeline_normalizes_t1_subvisit_tag():
+    rows = inventory_rows()
+    rows.loc[1, "visit_code"] = "T1-2"
+    rows.loc[1, "visit_stage"] = "T1"
+    timeline, _ = build_visit_timeline(rows)
+    t1 = timeline[timeline["visit_code"] == "T1"].iloc[0]
+    assert t1["visit_code_raw"] == "T1-2"
+    assert t1["elapsed_days_from_T0"] == pytest.approx(21.0)
+
+
+def test_timeline_date_only_precision_uses_calendar_days():
+    rows = inventory_rows()
+    rows["study_datetime"] = rows["scan_datetime"].str.slice(0, 10) + "T00:00:00"
+    rows["study_time_precision"] = "date_only"
+    rows["study_datetime_values_json"] = '[ "one-date" ]'
+    rows["scan_datetime"] = rows["study_datetime"]
+    timeline, _ = build_visit_timeline(rows)
+    assert timeline["elapsed_days_from_T0"].astype(float).tolist() == [0.0, 21.0, 49.0, 105.0]
+    assert set(timeline["elapsed_time_precision"]) == {"date"}
