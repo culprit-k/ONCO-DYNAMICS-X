@@ -193,10 +193,14 @@ def extract_series_metadata(dataset: Any) -> dict[str, Any]:
     visit = _text(tag_value(dataset, DICOM_TAGS["visit_code"]))
     if visit:
         visit = visit.upper()
+    import re
+    stage_match = re.match(r"^(T[0-3])(?:[-_].*)?$", visit or "")
+    visit_stage = stage_match.group(1) if stage_match else None
     return {
         "patient_id": subject_id,
         "patient_id_source": subject_source,
         "visit_code": visit,
+        "visit_stage": visit_stage,
         "visit_description": _text(tag_value(dataset, DICOM_TAGS["visit_description"])),
         "study_instance_uid": _text(tag_value(dataset, (0x0020, 0x000D))),
         "series_instance_uid": _text(tag_value(dataset, (0x0020, 0x000E))),
@@ -269,11 +273,12 @@ def extract_ser_parameters(dataset: Any) -> dict[str, str]:
         name = _text(tag_value(item, (0x0117, 0x1014)))
         if not name:
             continue
-        value = (
-            tag_value(item, (0x0117, 0x1018))
-            or tag_value(item, (0x0117, 0x1019))
-            or tag_value(item, (0x0117, 0x101A))
-        )
+        value = None
+        for value_tag in ((0x0117, 0x1018), (0x0117, 0x1019), (0x0117, 0x101A)):
+            candidate = tag_value(item, value_tag)
+            if candidate is not None:
+                value = candidate
+                break
         values[name] = _text(value) or ""
     return values
 
