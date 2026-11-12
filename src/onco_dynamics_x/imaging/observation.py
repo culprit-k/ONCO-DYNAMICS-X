@@ -80,14 +80,31 @@ def decode_ftv_bitmask(
     layers = {name: (data & int(bit_masks[name])) != 0 for name in names}
     eligible = (
         layers["precontrast_pass"]
+        & layers["pe_pass"]
         & layers["voi_pass"]
         & ~layers["omit"]
     )
     if "connectivity_pass" in layers:
         eligible &= layers["connectivity_pass"]
-    layers["eligibility_mask_without_pe_ser_threshold"] = eligible
-    layers["pe_pass"] = layers["pe_pass"]
+    layers["ftv_eligibility_mask"] = eligible
     return layers
+
+
+def rescale_dicom_map(
+    pixel_array: np.ndarray,
+    *,
+    rescale_slope: float,
+    rescale_intercept: float,
+) -> np.ndarray:
+    """Apply DICOM Modality LUT linear rescaling to a derived map."""
+    pixels = np.asarray(pixel_array, dtype=float)
+    if pixels.ndim != 3 or not np.isfinite(pixels).all():
+        raise ValueError("pixel_array must be a finite 3D numeric array")
+    slope = float(rescale_slope)
+    intercept = float(rescale_intercept)
+    if not np.isfinite(slope) or not np.isfinite(intercept) or slope == 0:
+        raise ValueError("DICOM rescale slope must be finite/nonzero and intercept finite")
+    return pixels * slope + intercept
 
 
 def ftv_from_analysis_mask(
@@ -134,6 +151,7 @@ def ftv_from_dce_maps(
     *,
     pe_threshold_percent: float,
     ser_minimum: float,
+    ser_maximum: float | None = None,
 ) -> tuple[FTVMeasurement, np.ndarray]:
     """Apply the published PE/SER thresholds inside a pre-validated mask.
 
@@ -151,7 +169,13 @@ def ftv_from_dce_maps(
         raise ValueError("PE and SER maps must be finite")
     if not np.isfinite(pe_threshold_percent) or not np.isfinite(ser_minimum):
         raise ValueError("PE and SER thresholds must be finite")
+    if ser_maximum is not None and (
+        not np.isfinite(ser_maximum) or float(ser_maximum) <= float(ser_minimum)
+    ):
+        raise ValueError("ser_maximum must be finite and greater than ser_minimum")
     mask = eligible & (pe >= float(pe_threshold_percent)) & (ser > float(ser_minimum))
+    if ser_maximum is not None:
+        mask &= ser <= float(ser_maximum)
     spacing = _validate_spacing(voxel_spacing_mm)
     voxel_volume_cc = float(np.prod(spacing) / 1000.0)
     count = int(mask.sum())
@@ -162,6 +186,22 @@ def ftv_from_dce_maps(
         pe_threshold_percent=float(pe_threshold_percent),
         ser_minimum=float(ser_minimum),
         method="hard DCE PE/SER threshold operator inside pre-validated eligibility mask",
+    )
+    if ser_maximum is not None:
+        measurement = FTVMeasurement(
+            ftv_cc=measurement.ftv_cc,
+            voxel_count=measurement.voxel_count,
+            voxel_volume_cc=measurement.voxel_volume_cc,
+            pe_threshold_percent=measurement.pe_threshold_percent,
+            ser_minimum=measurement.ser_minimum,
+            method=measurement.method,
+            reference_ftv_cc=measurement.reference_ftv_cc,
+            difference_from_reference_cc=measurement.difference_from_reference_cc,
+        )
+    return measurement, mask
+
+
+def soft_ftv_from_dce_maps(
     )
     return measurement, mask
 
@@ -176,6 +216,7 @@ def soft_ftv_from_dce_maps(
     ser_minimum: float,
     pe_temperature_percent: float,
     ser_temperature: float,
+    ser_maximum: float | None = None,
 ) -> FTVMeasurement:
     """Differentiable approximation to the hard PE/SER threshold operator.
 
@@ -195,6 +236,11 @@ def soft_ftv_from_dce_maps(
     z_pe = np.clip((pe - pe_threshold_percent) / pe_temperature_percent, -60.0, 60.0)
     z_ser = np.clip((ser - ser_minimum) / ser_temperature, -60.0, 60.0)
     probability = (1.0 / (1.0 + np.exp(-z_pe))) * (1.0 / (1.0 + np.exp(-z_ser)))
+    if ser_maximum is not None:
+        if not np.isfinite(ser_maximum) or ser_maximum <= ser_minimum:
+            raise ValueError("ser_maximum must be finite and greater than ser_minimum")
+        z_upper = np.clip((ser_maximum - ser) / ser_temperature, -60.0, 60.0)
+        probability *= 1.0 / (1.0 + np.exp(-z_upper))
     probability *= eligible
     voxel_volume_cc = float(np.prod(_validate_spacing(voxel_spacing_mm)) / 1000.0)
     expected_voxels = float(probability.sum())
