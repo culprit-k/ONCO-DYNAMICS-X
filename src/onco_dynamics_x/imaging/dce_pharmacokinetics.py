@@ -168,9 +168,6 @@ def spoiled_gre_percent_enhancement(
             np.broadcast_shapes(concentration.shape[1:], baseline_r2star.shape)
         except ValueError as exc:
             raise ValueError("Baseline R2* map is not broadcast-compatible with concentration voxels") from exc
-        t2star_factor = np.exp(
-            -echo_time * transverse_relaxivity * concentration
-        )
         baseline_t2star_factor = np.exp(-echo_time * baseline_r2star)
         signal = signal * np.exp(
             -echo_time * (baseline_r2star + transverse_relaxivity * concentration)
