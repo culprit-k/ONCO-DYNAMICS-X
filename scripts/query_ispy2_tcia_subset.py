@@ -137,10 +137,8 @@ def fetch_study_trial_tags(series_uid: str, token: str) -> dict[str, Any]:
 def canonical_subject_id(value: Any) -> str | None:
     if value is None:
         return None
-    digits = re.sub(r"\D", "", str(value))
-    if len(digits) != 6:
-        return None
-    return digits
+    match = re.search(r"(?<!\d)(\d{6})$", str(value).strip())
+    return match.group(1) if match else None
 
 
 def canonical_stage(visit_code: Any) -> str | None:
@@ -153,10 +151,10 @@ def suggested_role(series_description: Any, modality: Any) -> str:
     modality = str(modality or "").strip().upper()
     if "analysis mask" in description:
         return "FTV_MASK_REVIEW"
-    if "volser" in description and "ser" in description:
-        return "SER_MAP_REVIEW"
-    if "volser" in description and re.search(r"\bpe\d*\b", description):
+    if "volser" in description and re.search(r"\bpe\d+\b", description):
         return "PE_MAP_REVIEW"
+    if "volser" in description and re.search(r"\bser\b", description):
+        return "SER_MAP_REVIEW"
     if "volser" in description and "original dce" in description:
         return "CROPPED_DCE_ORIGINAL_REVIEW"
     if modality == "MR" and ("t2" in description or "t2" in str(series_description or "").lower()):
