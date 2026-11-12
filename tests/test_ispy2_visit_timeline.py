@@ -83,11 +83,12 @@ def test_timeline_date_only_precision_uses_calendar_days():
 
 def test_selected_series_filter_resolves_same_stage_test_retest():
     inventory = inventory_rows()
-    inventory["series_instance_uid"] = ["t0-a", "t1-test", "t1-treatment", "t2-a", "t3-a"]
-    inventory["visit_stage"] = ["T0", "T1", "T1", "T2", "T3"]
-    extra = inventory.iloc[[2]].copy()
+    inventory["series_instance_uid"] = ["t0-a", "t1-treatment", "t2-a", "t3-a"]
+    inventory["visit_stage"] = ["T0", "T1", "T2", "T3"]
+    extra = inventory.iloc[[1]].copy()
+    extra["series_instance_uid"] = "t1-test"
     extra["study_instance_uid"] = "study1-retest"
-    extra["scan_datetime"] = "1960-01-23T08:00:00"
+    extra["scan_datetime"] = "1960-01-03T08:00:00"
     inventory = pd.concat([inventory, extra], ignore_index=True)
     selection = pd.DataFrame(
         {
