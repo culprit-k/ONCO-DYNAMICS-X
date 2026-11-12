@@ -70,6 +70,8 @@ def register_series(
 ) -> dict[str, Any]:
     import SimpleITK as sitk
 
+    if fixed_mask_path is not None and moving_mask_path is None:
+        raise ValueError("A fixed mask is only meaningful when a moving mask is also supplied")
     sitk, fixed, fixed_file_count = _read_series(fixed_directory, fixed_series_uid)
     _, moving, moving_file_count = _read_series(moving_directory, moving_series_uid)
     if fixed.GetDimension() != moving.GetDimension():
@@ -136,6 +138,13 @@ def register_series(
         moving_mask = sitk.ReadImage(str(moving_mask_path))
         if moving_mask.GetDimension() != 3:
             raise ValueError("Moving mask must be a 3D image")
+        if (
+            moving_mask.GetSize() != moving.GetSize()
+            or moving_mask.GetSpacing() != moving.GetSpacing()
+            or moving_mask.GetOrigin() != moving.GetOrigin()
+            or moving_mask.GetDirection() != moving.GetDirection()
+        ):
+            raise ValueError("Moving mask geometry must match the moving image before registration")
         moved_mask = resample(
             moving_mask, final_transform, sitk.sitkNearestNeighbor, sitk.sitkUInt8
         )
@@ -145,7 +154,12 @@ def register_series(
             if not fixed_mask_path.exists():
                 raise ValueError(f"Fixed mask not found: {fixed_mask_path}")
             fixed_mask = sitk.ReadImage(str(fixed_mask_path))
-            if fixed_mask.GetSize() != moved_mask.GetSize() or fixed_mask.GetSpacing() != moved_mask.GetSpacing():
+            if (
+                fixed_mask.GetSize() != fixed.GetSize()
+                or fixed_mask.GetSpacing() != fixed.GetSpacing()
+                or fixed_mask.GetOrigin() != fixed.GetOrigin()
+                or fixed_mask.GetDirection() != fixed.GetDirection()
+            ):
                 raise ValueError("Fixed mask geometry must match the fixed image")
             a = sitk.GetArrayFromImage(sitk.Cast(fixed_mask > 0, sitk.sitkUInt8)).astype(bool)
             b = sitk.GetArrayFromImage(sitk.Cast(moved_mask > 0, sitk.sitkUInt8)).astype(bool)
@@ -165,6 +179,10 @@ def register_series(
         "moving_size_xyz": [int(x) for x in moving.GetSize()],
         "fixed_spacing_mm": [float(x) for x in fixed.GetSpacing()],
         "moving_spacing_mm": [float(x) for x in moving.GetSpacing()],
+        "fixed_origin_mm": [float(x) for x in fixed.GetOrigin()],
+        "moving_origin_mm": [float(x) for x in moving.GetOrigin()],
+        "fixed_direction": [float(x) for x in fixed.GetDirection()],
+        "moving_direction": [float(x) for x in moving.GetDirection()],
         "registered_size_xyz": [int(x) for x in fixed.GetSize()],
         "final_metric_value": float(registration.GetMetricValue()),
         "optimizer_stop_condition": str(registration.GetOptimizerStopConditionDescription()),
