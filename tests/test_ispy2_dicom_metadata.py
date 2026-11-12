@@ -67,7 +67,7 @@ def test_zero_value_ser_parameter_is_preserved():
         (0x0117, 0x1018): 0,
     })
     ds = FakeDataset({(0x0117, 0x1010): [item]})
-    assert extract_series_metadata(ds)["ser_analysis_parameters"]["SER_min"] == "0"
+    assert extract_series_metadata(ds)["ser_analysis_parameters"]["SER_min"] == 0.0
 
 
 def test_acquisition_sequence_and_contrast_fields_are_extracted():
@@ -93,3 +93,53 @@ def test_acquisition_sequence_and_contrast_fields_are_extracted():
     assert row["contrast_bolus_agent"] == "Gadolinium"
     assert row["contrast_bolus_volume_ml"] == 10.0
     assert row["contrast_bolus_start_time"] == "101500"
+
+
+def test_typed_ser_parameters_preserve_float_integer_and_string_values():
+    float_item = FakeDataset(
+        {
+            (0x0117, 0x1012): "FLOAT",
+            (0x0117, 0x1014): "PE_threshold",
+            (0x0117, 0x1018): "70.5",
+        }
+    )
+    integer_item = FakeDataset(
+        {
+            (0x0117, 0x1012): "INTEGER",
+            (0x0117, 0x1014): "phase_count",
+            (0x0117, 0x1019): "12",
+        }
+    )
+    string_item = FakeDataset(
+        {
+            (0x0117, 0x1012): "STRING",
+            (0x0117, 0x1014): "method",
+            (0x0117, 0x101A): "AUTO",
+        }
+    )
+    ds = FakeDataset(
+        {(0x0117, 0x1010): [float_item, integer_item, string_item]}
+    )
+    params = extract_series_metadata(ds)["ser_analysis_parameters"]
+    assert params["PE_threshold"] == 70.5
+    assert params["phase_count"] == 12
+    assert params["method"] == "AUTO"
+
+
+def test_ftv_private_results_preserve_numeric_types():
+    ftv_item = FakeDataset(
+        {
+            (0x0117, 0x10B1): "0.3",
+            (0x0117, 0x10B2): "1.8",
+            (0x0117, 0x10B3): "125",
+            (0x0117, 0x10B4): "1.25",
+            (0x0117, 0x10B5): "SER-restricted",
+        }
+    )
+    ds = FakeDataset({(0x0117, 0x10B0): [ftv_item]})
+    result = extract_series_metadata(ds)["ftv_results"][0]
+    assert result["ser_minimum"] == 0.3
+    assert result["ser_maximum"] == 1.8
+    assert result["voxel_count"] == 125
+    assert result["volume_cc"] == 1.25
+    assert result["label"] == "SER-restricted"
