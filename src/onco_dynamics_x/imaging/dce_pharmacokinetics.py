@@ -58,8 +58,8 @@ def extended_tofts_concentration(
         raise ValueError("times_seconds and arterial_input_mM must be equal-length 1D arrays")
     if not np.isfinite(time_s).all() or not np.isfinite(cp).all():
         raise ValueError("Time and arterial input arrays must be finite")
-    if time_s[0] < 0 or np.any(np.diff(time_s) <= 0):
-        raise ValueError("times_seconds must start at >=0 and be strictly increasing")
+    if not np.isclose(time_s[0], 0.0) or np.any(np.diff(time_s) <= 0):
+        raise ValueError("times_seconds must start at contrast time zero and be strictly increasing")
     if (cp < 0).any():
         raise ValueError("Arterial input concentration cannot be negative")
 
@@ -99,14 +99,18 @@ def spoiled_gre_percent_enhancement(
     flip_angle_degrees: float,
     repetition_time_seconds: float,
     longitudinal_relaxivity_s_inv_per_mM: float,
+    echo_time_seconds: float | None = None,
+    baseline_r2star_s_inv: np.ndarray | float | None = None,
+    transverse_relaxivity_s_inv_per_mM: float | None = None,
 ) -> np.ndarray:
     """Convert concentration to SPGR percent enhancement under a T2*-free model.
 
     Uses the spoiled-GRE steady-state signal equation with actual baseline T1,
-    flip angle, TR and relaxivity. Coil gain/M0 cancels in the signal ratio.
-    T2* attenuation, B1 inhomogeneity, inflow and motion are not represented;
-    these must be corrected/modelled or included in an uncertainty analysis
-    before interpreting real patient maps.
+    flip angle, TR and longitudinal relaxivity. When TE, baseline R2* and
+    transverse relaxivity are all supplied, T2* attenuation is also included.
+    Coil gain/M0 cancels in the signal ratio. B1 inhomogeneity, inflow, coil
+    bias and motion are not represented; these must be corrected/modelled or
+    included in an uncertainty analysis before interpreting real patient maps.
     """
     concentration = np.asarray(tissue_concentration_mM, dtype=float)
     if concentration.ndim < 1 or not np.isfinite(concentration).all():
@@ -140,5 +144,38 @@ def spoiled_gre_percent_enhancement(
     baseline_signal = np.sin(alpha) * (1.0 - e10) / (
         1.0 - np.cos(alpha) * e10
     )
+
+    optional_t2star = (
+        echo_time_seconds is not None,
+        baseline_r2star_s_inv is not None,
+        transverse_relaxivity_s_inv_per_mM is not None,
+    )
+    if any(optional_t2star) and not all(optional_t2star):
+        raise ValueError(
+            "TE, baseline R2* and transverse relaxivity must be supplied together"
+        )
+    if all(optional_t2star):
+        echo_time = float(echo_time_seconds)
+        baseline_r2star = np.asarray(baseline_r2star_s_inv, dtype=float)
+        transverse_relaxivity = float(transverse_relaxivity_s_inv_per_mM)
+        if not np.isfinite(echo_time) or echo_time < 0:
+            raise ValueError("echo_time_seconds must be finite and non-negative")
+        if not np.isfinite(baseline_r2star).all() or (baseline_r2star <= 0).any():
+            raise ValueError("baseline_r2star_s_inv must be finite and positive")
+        if not np.isfinite(transverse_relaxivity) or transverse_relaxivity < 0:
+            raise ValueError("transverse relaxivity must be finite and non-negative")
+        try:
+            np.broadcast_shapes(concentration.shape[1:], baseline_r2star.shape)
+        except ValueError as exc:
+            raise ValueError("Baseline R2* map is not broadcast-compatible with concentration voxels") from exc
+        t2star_factor = np.exp(
+            -echo_time * transverse_relaxivity * concentration
+        )
+        baseline_t2star_factor = np.exp(-echo_time * baseline_r2star)
+        signal = signal * np.exp(
+            -echo_time * (baseline_r2star + transverse_relaxivity * concentration)
+        )
+        baseline_signal = baseline_signal * baseline_t2star_factor
+
     enhancement = 100.0 * (signal / baseline_signal - 1.0)
     return enhancement
