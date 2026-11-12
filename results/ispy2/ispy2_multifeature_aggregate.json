@@ -1,0 +1,81 @@
+{
+  "analysis": "ispy2_multifeature_longitudinal_aggregate_analysis",
+  "analysis_date": "2026-11-12",
+  "n_participants": 384,
+  "complete_feature_families": 4,
+  "formula_checks": "all 12 derived percent-change columns passed; max absolute error < 1e-6 percentage points",
+  "summary": {
+    "volume_field_candidate_ftv": {
+      "t3_vs_t0_median_percent_change": -94.57713214900082,
+      "t3_lower_count": 378,
+      "t3_higher_count": 6,
+      "friedman_statistic": 883.0385517061735,
+      "friedman_p": 4.227033817419306e-191,
+      "holm_p_four_omnibus": 1.6908135269677223e-190
+    },
+    "longest_diameter": {
+      "t3_vs_t0_median_percent_change": -67.05426356589149,
+      "t3_lower_count": 365,
+      "t3_higher_count": 15,
+      "friedman_statistic": 762.5238486842107,
+      "friedman_p": 5.803437451585318e-165,
+      "holm_p_four_omnibus": 1.7410312354755953e-164,
+      "zero_count_by_visit": [
+        0,
+        6,
+        65,
+        128
+      ]
+    },
+    "sphericity": {
+      "t3_vs_t0_median_percent_change": 25.55260978865367,
+      "t3_higher_count": 274,
+      "t3_lower_count": 110,
+      "friedman_statistic": 135.09062500000073,
+      "friedman_p": 4.3239040700643075e-29,
+      "holm_p_four_omnibus": 4.3239040700643075e-29
+    },
+    "background_parenchymal_enhancement": {
+      "t3_vs_t0_median_percent_change": -28.94880492828117,
+      "t3_lower_count": 294,
+      "t3_higher_count": 90,
+      "friedman_statistic": 223.91562500000055,
+      "friedman_p": 2.859228100388245e-48,
+      "holm_p_four_omnibus": 5.71845620077649e-48,
+      "zero_count_by_visit": [
+        0,
+        0,
+        1,
+        4
+      ]
+    }
+  },
+  "volume_change_spearman_associations": [
+    {
+      "feature": "sphericity",
+      "rho": -0.5087753467159473,
+      "bootstrap_ci95": [
+        -0.5811104535925881,
+        -0.4296866387450246
+      ]
+    },
+    {
+      "feature": "longest_diameter",
+      "rho": 0.3653640523289257,
+      "bootstrap_ci95": [
+        0.2719215419789613,
+        0.4573508148455503
+      ]
+    },
+    {
+      "feature": "background_parenchymal_enhancement",
+      "rho": 0.24506885843823292,
+      "bootstrap_ci95": [
+        0.15132630867083197,
+        0.3368411476526958
+      ]
+    }
+  ],
+  "interpretation": "Descriptive stage-wise longitudinal contrasts only; not elapsed-time kinetics, causal effects or PDE parameter estimates.",
+  "privacy": "aggregate-only; no participant identifiers or row-level observations"
+}
