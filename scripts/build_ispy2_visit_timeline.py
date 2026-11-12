@@ -75,10 +75,16 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     data = inventory.copy()
     data["patient_id"] = data["patient_id"].astype("string")
     data["visit_code"] = data["visit_code"].astype("string").str.upper()
+    extracted_stage = data["visit_code"].str.extract(
+        r"^(T[0-3])(?:[-_].*)?$",
+        expand=False,
+    )
     if "visit_stage" in data.columns:
-        data["_visit_stage"] = data["visit_stage"].astype("string").str.upper()
+        provided_stage = data["visit_stage"].astype("string").str.upper().str.strip()
+        provided_stage = provided_stage.mask(provided_stage.eq(""))
+        data["_visit_stage"] = provided_stage.fillna(extracted_stage)
     else:
-        data["_visit_stage"] = data["visit_code"].str.extract(r"^(T[0-3])(?:[-_].*)?$", expand=False)
+        data["_visit_stage"] = extracted_stage
     data = data[data["_visit_stage"].isin(VISIT_ORDER)].copy()
     if data.empty:
         raise ValueError("No T0/T1/T2/T3 DICOM visit records found")
