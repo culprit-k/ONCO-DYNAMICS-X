@@ -25,6 +25,38 @@ Suggested acquisition strategy:
 
 The public [NBIA v4 API guide](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=70230731) documents public getPatientStudy and getSeries methods. It queries the DICOM PatientID field, which must not be presumed identical to the Clinical Trial Subject ID. Verify the ID mapping rather than sending workbook six-digit values blindly to a PatientID filter.
 
+### Programmatic cohort-specific series discovery
+
+For the 384-person feature cohort, first query TCIA's public v4 series metadata and verify the trial subject and visit tags from a representative DICOM series in each study. This avoids assuming that the de-identified DICOM PatientID is the same as the six-digit clinical-trial subject ID.
+
+Install the scientific and imaging extras:
+
+    pip install -e ".[science,imaging,dev]"
+
+Run the subset query using the local feature workbook:
+
+    python scripts/query_ispy2_tcia_subset.py \
+      --feature-workbook "/private/Multi-feature MRI NACT Data.xlsx" \
+      --sheet-name datawith4visits \
+      --id-column CLINICAL-TRIAL-SUBJECT-ID \
+      --collection ISPY2 \
+      --workers 3 \
+      --candidate-csv /private/ispy2_tcia_candidate_series.csv \
+      --summary-json /private/ispy2_tcia_candidate_summary.json
+
+The query uses the public TCIA v4 `getSeries` endpoint and the NBIA guest-token `getDicomTags` endpoint. It checks DICOM ClinicalTrialSubjectID (0012,0040) and ClinicalTrialTimePointID (0012,0050) for one representative series per StudyInstanceUID, then assigns those verified study-level values to that study's series. A study is blocked if either tag is missing or ambiguous. The script queries series metadata for the collection and may make several thousand lightweight tag requests; keep the default low concurrency and do not increase it without a reason.
+
+The output candidate CSV contains participant IDs and SeriesInstanceUIDs. It is a **private review file**, not a download manifest. All rows start with include=0. Review each participant, visit code, series description, protocol, modality and image count. Select only the DCE originals/derived PE/SER/FTV-mask package and a consistent T2 anatomical series where available. Do not include DWI or localizers merely because they appear in the same study. T0/T1 test-retest studies must remain separately identifiable; choose the intended study based on the documented analysis design, not by date alone.
+
+After review, set include=1 only for selected rows and populate review_note with the reason for each choice. Export the reviewed rows to a one-column SeriesInstanceUID CSV for TCIA Data Retriever:
+
+    python scripts/export_ispy2_tcia_manifest.py \
+      --candidate-csv /private/ispy2_tcia_candidate_series.csv \
+      --manifest-csv /private/ispy2_selected_series.csv \
+      --summary-json /private/ispy2_selected_series_summary.json
+
+The exported SeriesInstanceUID CSV is accepted by the current TCIA Data Retriever. Download into private storage, then run the local DICOM inventory. The DICOM header inventory remains the final local confirmation that every downloaded series carries the expected subject and visit tags. Never commit candidate CSVs, manifests, DICOM files, shifted dates, patient IDs or series UIDs to GitHub.
+
 ## 3. DICOM tags and time handling
 
 The metadata parser reads:
