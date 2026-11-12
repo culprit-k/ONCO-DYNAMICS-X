@@ -4,13 +4,13 @@
 
 ## Linkage
 
-- Clinical workbook: 985 rows and 985 unique \`Patient_ID\` values.
-- MRI feature workbook: 384 rows and 384 unique \`CLINICAL-TRIAL-SUBJECT-ID\` values.
+- Clinical workbook: 985 rows and 985 unique `Patient_ID` values.
+- MRI feature workbook: 384 rows and 384 unique `CLINICAL-TRIAL-SUBJECT-ID` values.
 - Exact one-to-one matches: **384/384 (100%)**.
 - Duplicate IDs in either file: **0**.
 - Matched participants missing Arm, HR, HER2, MP, pCR or age: **0**.
 
-Join key: \`CLINICAL-TRIAL-SUBJECT-ID = Patient_ID\`. The 601 clinical-only records were not included in MRI analyses.
+Join key: `CLINICAL-TRIAL-SUBJECT-ID = Patient_ID`. The 601 clinical-only records were not included in MRI analyses.
 
 ## Outcome and subgroup summaries
 
@@ -37,7 +37,7 @@ Mann–Whitney comparisons of log volume ratios yielded p=1.99e-9 (T1), p=8.13e-
 
 ## Logistic association
 
-Unadjusted odds ratios are per one-SD increase in \`log(volume_visit / volume_T0)\`. A larger log ratio means less volume reduction.
+Unadjusted odds ratios are per one-SD increase in `log(volume_visit / volume_T0)`. A larger log ratio means less volume reduction.
 
 | Visit | OR | 95% CI | p |
 |---|---:|---:|---:|
@@ -75,12 +75,12 @@ Before mechanistic calibration or publication:
 
 Install the optional science and survival dependencies, then run:
 
-\`\`\`bash
+```bash
 pip install -e ".[science,survival]"
 python scripts/analyze_ispy2_clinical_linkage.py \\
   --features /private/Multi-feature-MRI-NACT-Data.xlsx \\
   --clinical /private/ISPY2-Imaging-Cohort-1-Clinical-Data.xlsx \\
   --output /private/ispy2_clinical_linkage_and_pcr_aggregate.json
-\`\`\`
+```
 
 The script refuses duplicate or unmatched feature IDs and writes aggregate JSON only. It never writes participant-level linked rows.
