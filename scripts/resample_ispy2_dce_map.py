@@ -72,7 +72,7 @@ def resample_map(
     sitk.WriteImage(registered, str(output_path))
     qc = {
         "kind": kind,
-        "transform_direction": "moving visit physical coordinates -> baseline visit physical coordinates",
+        "transform_mapping": "fixed T0 output physical coordinates -> moving visit input physical coordinates (SimpleITK pull transform)",
         "interpolator": "linear" if kind == "map" else "nearest_neighbor",
         "fixed_map_size_xyz": [int(x) for x in fixed.GetSize()],
         "moving_map_size_xyz": [int(x) for x in moving.GetSize()],
@@ -97,7 +97,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixed-map-reference", required=True, help="Baseline T0 PE/SER/label map defining output geometry")
     parser.add_argument("--moving-map", required=True, help="Follow-up PE/SER/label map")
-    parser.add_argument("--transform", required=True, help="Visit anatomical moving-to-fixed transform")
+    parser.add_argument("--transform", required=True, help="Visit anatomical fixed-to-moving pull transform")
     parser.add_argument("--output", required=True, help="Resampled map or label output")
     parser.add_argument("--qc-json", required=True, help="Private local QC report")
     parser.add_argument("--fixed-map-frame-uid", required=True)
