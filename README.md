@@ -16,7 +16,7 @@ ONCO-DYNAMICS-X is a research and university-project prototype that combines dim
 | AI architectures | PINN, FNO and spatial GNN trained and tested on synthetic ground-truth tasks; expression transformer module | Training/evaluation on biological data and independent validation |
 | Cohort pipeline | Public GDC/cBioPortal workflows; 16-marker availability audit and exploratory 50-gene PAM50-panel PC model externally evaluated | Probe-level rederivation, deployable single-sample normalization and independent-cohort molecular validation |
 | Survival baseline | Age-only and age + PAM50-panel-PC Cox models evaluated in METABRIC with IPCW time-dependent metrics | Clinical utility, prospective validation, stable molecular improvement and covariate-dependent censoring analysis |
-| Biological calibration | Untreated and treatment-exposed volume estimators; low-dimensional PDE parameter estimator; METABRIC pathology-module association; aggregate clinical-target audit | Synthetic PDE recovery and cross-sectional pathology association only; real longitudinal series, registered image observation operators and biological PDE calibration remain pending |
+| Biological calibration | Untreated and treatment-exposed volume estimators; low-dimensional PDE parameter estimator; METABRIC pathology-module association; aggregate I-SPY 2 four-feature longitudinal analysis and strict clinical-linkage validator | Verified feature-to-clinical linkage, acquisition-day kinetics, registered image observation operators and biological PDE calibration remain pending |
 | Dashboard | Streamlit 2D/3D PDE console and optional coupled agent mode | Full experiment-management layer and validated patient-data ingestion |
 | Hardware concept | ESP32 firmware, serial protocol, OpenSCAD phantom and build guide | Physical fabrication, wiring verification and bench testing |
 
@@ -94,6 +94,12 @@ See [methodology](docs/pam50_molecular_validation.md), [external results and lim
 
 A separate five-class subtype-transfer benchmark was trained in TCGA and evaluated in METABRIC using the five shared annotation classes. It achieved **81.0% accuracy**, **74.7% balanced accuracy**, and **77.8% macro-F1**, versus 39.9% accuracy for the TCGA majority-class baseline. METABRIC's claudin-low (217) and NC (6) labels were excluded from this five-class task. Normal-like was the weakest class (F1 0.60), and LumB-to-LumA confusion was common. This is annotation transfer using the same historical subtype gene panel, not independent subtype discovery or an official PAM50/Prosigna classifier. See [methodology](docs/subtype_transfer_benchmark.md) and [full subtype results/confusion matrix](docs/subtype_transfer_results.md).
 
+### I-SPY 2 four-feature MRI analysis
+
+The 384-participant feature workbook has been analysed using paired repeated-measures statistics. Median T3-vs-T0 changes were -94.58% for the workbook volume field (FTV candidate), -67.05% for longest diameter, +25.55% for sphericity and -28.95% for background parenchymal enhancement. All twelve supplied percentage-change fields passed formula validation. These are treatment-stage descriptive changes, not time-normalised rates, causal treatment effects or PDE coefficients. The physical unit and exact mapping of the workbook volume columns still require workbook-specific confirmation.
+
+The separate 985-case clinical workbook has not yet been linked. A strict local linkage validator and privacy-preserving audit protocol are now included; no participant-level file or identifier is committed. See [multi-feature analysis and results](docs/ispy2_multifeature_analysis.md), [aggregate JSON](results/ispy2/ispy2_multifeature_aggregate.json), and [clinical linkage protocol](docs/ispy2_clinical_linkage_protocol.md).
+
 ## Architecture
 
 The current continuum state is:
@@ -168,6 +174,8 @@ python scripts/run_survival_validation_metrics.py
 - [Molecular marker audit](docs/molecular_marker_audit.md)
 - [PAM50-panel molecular external validation](docs/pam50_molecular_validation.md)
 - [PAM50-panel molecular external results](docs/pam50_molecular_validation_results.md)
+- [I-SPY 2 multi-feature longitudinal results](docs/ispy2_multifeature_analysis.md)
+- [I-SPY 2 clinical linkage protocol](docs/ispy2_clinical_linkage_protocol.md)
 - [Data sources and governance](docs/data_sources.md)
 - [Safety and limitations](docs/safety_and_limitations.md)
 - [Hardware build guide](docs/hardware_build_guide.md)
@@ -201,7 +209,7 @@ The workflows publish aggregate reports only. Do not commit controlled-access or
 
 ## Biological calibration
 
-The scalar growth/net-volume fitters and low-dimensional PDE coefficient estimator are calibration tools, not evidence of biological validation. The METABRIC pathology-module exercise is cross-sectional and overlaps marker genes with ER/HER2/PR labels; it does not estimate mechanistic rates. Results are in [the aggregate pathology summary](results/biological_calibration/metabric_pathology_module_association_summary.json). The measurement requirements, MRI data pathway and identifiability gates are in [the biological calibration protocol](docs/biological_calibration_protocol.md). Only synthetic PDE parameter recovery has been tested; no patient- or animal-derived PDE parameter estimates have been generated.
+The scalar growth/net-volume fitters and low-dimensional PDE coefficient estimator are calibration tools, not evidence of biological validation. The METABRIC pathology-module exercise is cross-sectional and overlaps marker genes with ER/HER2/PR labels; it does not estimate mechanistic rates. The new I-SPY 2 analysis adds a multi-feature descriptive longitudinal target, but its four treatment-stage visits do not provide elapsed-day kinetics. The separate 985-person clinical workbook still requires documented feature-to-clinical linkage, and exact workbook volume units need confirmation. Results are in [the aggregate pathology summary](results/biological_calibration/metabric_pathology_module_association_summary.json) and [I-SPY 2 aggregate results](results/ispy2/ispy2_multifeature_aggregate.json). The measurement requirements and identifiability gates are in [the biological calibration protocol](docs/biological_calibration_protocol.md). No patient-derived PDE parameter estimates have been generated.
 
 ## Data and clinical disclaimer
 
