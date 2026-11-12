@@ -57,3 +57,17 @@ def test_excludes_planned_or_cancelled_administrations():
     aligned, summary = align_exposures(e, visits())
     assert aligned.iloc[0]["cumulative_administered_dose_before_scan"] == pytest.approx(80.0)
     assert summary["excluded_non_administered_status_counts"] == {"PLANNED": 1}
+
+
+def test_rejects_mixed_modified_and_unmodified_visit_dates():
+    v = visits()
+    v.loc[0, "longitudinal_date_flag"] = "UNMODIFIED"
+    with pytest.raises(ValueError, match="Every aligned visit"):
+        align_exposures(events(), v)
+
+
+def test_rejects_infinite_treatment_dose():
+    e = events()
+    e.loc[0, "dose"] = float("inf")
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        align_exposures(e, visits())
