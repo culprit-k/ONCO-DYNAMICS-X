@@ -233,6 +233,20 @@ def extract_series_metadata(dataset: Any) -> dict[str, Any]:
         "columns": tag_value(dataset, (0x0028, 0x0011)),
         "number_of_frames": tag_value(dataset, (0x0028, 0x0008)),
         "pixel_spacing": _text(tag_value(dataset, (0x0028, 0x0030))),
+        "repetition_time_ms": tag_value(dataset, DICOM_TAGS["repetition_time_ms"]),
+        "echo_time_ms": tag_value(dataset, DICOM_TAGS["echo_time_ms"]),
+        "inversion_time_ms": tag_value(dataset, DICOM_TAGS["inversion_time_ms"]),
+        "magnetic_field_strength_t": tag_value(dataset, DICOM_TAGS["magnetic_field_strength_t"]),
+        "flip_angle_degrees": tag_value(dataset, DICOM_TAGS["flip_angle_degrees"]),
+        "contrast_bolus_agent": _text(
+            tag_value(dataset, DICOM_TAGS["contrast_bolus_agent"])
+        ),
+        "contrast_bolus_volume_ml": tag_value(
+            dataset, DICOM_TAGS["contrast_bolus_volume_ml"]
+        ),
+        "contrast_bolus_start_time": _text(
+            tag_value(dataset, DICOM_TAGS["contrast_bolus_start_time"])
+        ),
         "rescale_intercept": tag_value(dataset, (0x0028, 0x1052)),
         "rescale_slope": tag_value(dataset, (0x0028, 0x1053)),
         "slice_thickness_mm": tag_value(dataset, (0x0018, 0x0050)),
