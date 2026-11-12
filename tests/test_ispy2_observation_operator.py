@@ -3,7 +3,9 @@ import pytest
 
 from onco_dynamics_x.imaging.observation import (
     ftv_from_analysis_mask,
+    decode_ftv_bitmask,
     ftv_from_dce_maps,
+    rescale_dicom_map,
     soft_ftv_from_dce_maps,
 )
 
@@ -67,3 +69,42 @@ def test_soft_operator_requires_explicit_positive_smoothing_parameters():
             pe_threshold_percent=70, ser_minimum=0.9,
             pe_temperature_percent=0, ser_temperature=0.1,
         )
+
+
+def test_external_bitmask_assignments_decode_layers_without_guessing_values():
+    encoded = np.array([[[1 | 2 | 4, 1 | 2 | 4 | 8], [1 | 2, 1 | 4]]], dtype=np.uint8)
+    layers = decode_ftv_bitmask(
+        encoded,
+        bit_masks={
+            "precontrast_pass": 1,
+            "pe_pass": 2,
+            "voi_pass": 4,
+            "omit": 8,
+        },
+    )
+    assert layers["ftv_eligibility_mask"].tolist() == [[[True, False], [False, False]]]
+
+
+def test_bitmask_decoder_requires_complete_external_bit_definitions():
+    encoded = np.ones((1, 2, 2), dtype=np.uint8)
+    with pytest.raises(ValueError, match="Missing verified bit definitions"):
+        decode_ftv_bitmask(encoded, bit_masks={"precontrast_pass": 1})
+
+
+def test_rescale_dicom_map_applies_slope_and_intercept():
+    pixels = np.array([[[0, 1], [2, 3]]], dtype=np.int16)
+    scaled = rescale_dicom_map(pixels, rescale_slope=0.001, rescale_intercept=0)
+    assert scaled[0, 0, 1] == pytest.approx(0.001)
+    assert scaled[0, 1, 1] == pytest.approx(0.003)
+
+
+def test_hard_ftv_operator_respects_ser_upper_bound():
+    pe = np.array([[[80.0, 80.0, 80.0]]])
+    ser = np.array([[[0.5, 1.0, 2.0]]])
+    eligible = np.ones_like(pe, dtype=bool)
+    result, mask = ftv_from_dce_maps(
+        pe, ser, eligible, (1, 1, 1),
+        pe_threshold_percent=70, ser_minimum=0, ser_maximum=1.0,
+    )
+    assert mask.sum() == 2
+    assert result.ser_maximum == pytest.approx(1.0)
