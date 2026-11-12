@@ -71,6 +71,12 @@ Before mechanistic calibration or publication:
 4. Only after verified units and time intervals, estimate treatment-exposed phenomenological kinetics. Do not label them cell birth/death rates without a validated observation model.
 5. Keep the participant-level linked workbook private. This repository contains aggregate results and code only.
 
+## Data provenance
+
+- TCIA identifies the Multi-feature MRI NACT workbook as the 384-participant dataset associated with the I-SPY 2 MRI response paper and separately lists the 985-participant clinical release: [TCIA I-SPY 2 collection](https://www.cancerimagingarchive.net/collection/ispy2/).
+- The original multi-feature MRI study describes the imaging response analysis and its clinical endpoint context: [Li et al., npj Breast Cancer (2020)](https://doi.org/10.1038/s41523-020-00203-7).
+- TCIA's collection page lists CC BY 4.0 for the clinical and multi-feature workbook resources. Preserve the collection citation and attribution in any redistributed analysis.
+
 ## Reproduction
 
 Install the optional science and survival dependencies, then run:
