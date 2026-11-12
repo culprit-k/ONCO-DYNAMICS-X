@@ -34,7 +34,10 @@ def test_extract_tag_values_returns_unique_values():
 def test_suggested_roles_do_not_auto_select_series():
     assert suggested_role("ISPY2: VOLSER: uni-lateral cropped: SER", "MR") == "SER_MAP_REVIEW"
     assert suggested_role("ISPY2: VOLSER: uni-lateral cropped: PE1", "MR") == "PE_MAP_REVIEW"
-    assert suggested_role("ISPY2: VOLSER: uni-lateral cropped: Analysis Mask", "SEG") == "FTV_MASK_REVIEW"
+    assert (
+        suggested_role("ISPY2: VOLSER: uni-lateral cropped: Analysis Mask", "SEG")
+        == "FTV_MASK_REVIEW"
+    )
     assert suggested_role("T2 AXIAL", "MR") == "T2_ANATOMICAL_CANDIDATE"
     assert suggested_role("LOCALIZER", "MR") == "MANUAL_SERIES_REVIEW"
 
