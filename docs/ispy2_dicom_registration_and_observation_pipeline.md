@@ -66,12 +66,15 @@ Build a local series inventory (private CSV includes IDs, UIDs, shifted dates an
       --inventory-csv /private/ispy2_series_inventory.csv \
       --summary-json /private/ispy2_dicom_inventory_summary.json
 
-Build a patient/visit table of valid relative times:
+Build a patient/visit table of valid relative times. When a nominal stage contains multiple examinations (such as a test/retest or additional baseline scan), supply the reviewed selection file so the chosen study is explicit:
 
     python scripts/build_ispy2_visit_timeline.py \
       --inventory-csv /private/ispy2_series_inventory.csv \
+      --selection-csv /private/ispy2_series_selection.csv \
       --timeline-csv /private/ispy2_visit_timeline.csv \
       --summary-json /private/ispy2_timeline_aggregate.json
+
+Without --selection-csv, multiple studies for a single participant and stage are blocked rather than automatically combined. The selection must be reviewed at patient + stage + SeriesInstanceUID level; selecting a particular series from a study should be based on modality, protocol/description, image content and the visit's purpose.
 
 The inventory and patient/visit CSVs are patient-level files. Do not commit them. Only aggregate summary JSON is eligible for repository inclusion after a privacy review.
 
