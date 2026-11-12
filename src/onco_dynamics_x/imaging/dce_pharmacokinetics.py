@@ -92,6 +92,62 @@ def extended_tofts_concentration(
     return result
 
 
+def sample_pe_at_times(
+    acquisition_times_seconds: np.ndarray,
+    pe_time_series_percent: np.ndarray,
+    target_times_seconds: np.ndarray,
+) -> np.ndarray:
+    """Interpolate PE maps at explicit within-scan target times without extrapolation.
+
+    acquisition_times_seconds is the DCE frame-time vector relative to contrast
+    injection, taken from validated DICOM timing. target_times_seconds must be
+    actual effective PEearly/PElate times, not nominal hard-coded defaults.
+    Output shape is (n_targets, ...spatial dimensions...).
+    """
+    times = np.asarray(acquisition_times_seconds, dtype=float)
+    pe = np.asarray(pe_time_series_percent, dtype=float)
+    targets = np.asarray(target_times_seconds, dtype=float)
+    if times.ndim != 1 or targets.ndim != 1 or pe.ndim < 1:
+        raise ValueError("Times must be 1D and PE series must have time as first axis")
+    if pe.shape[0] != times.size or times.size < 2:
+        raise ValueError("PE time dimension must match at least two acquisition times")
+    if not np.isfinite(times).all() or not np.isfinite(targets).all() or not np.isfinite(pe).all():
+        raise ValueError("Acquisition times, targets and PE maps must be finite")
+    if np.any(np.diff(times) <= 0):
+        raise ValueError("Acquisition times must be strictly increasing")
+    if ((targets < times[0]) | (targets > times[-1])).any():
+        raise ValueError("Target PE times must lie within the measured DCE time window")
+    flattened = pe.reshape(times.size, -1)
+    sampled = np.empty((targets.size, flattened.shape[1]), dtype=float)
+    for voxel_index in range(flattened.shape[1]):
+        sampled[:, voxel_index] = np.interp(
+            targets, times, flattened[:, voxel_index]
+        )
+    return sampled.reshape((targets.size,) + pe.shape[1:])
+
+
+def ser_from_pe_maps(
+    pe_early_percent: np.ndarray,
+    pe_late_percent: np.ndarray,
+    *,
+    minimum_absolute_late_enhancement_percent: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate SER = PEearly/PElate with an explicit denominator validity mask."""
+    early = np.asarray(pe_early_percent, dtype=float)
+    late = np.asarray(pe_late_percent, dtype=float)
+    threshold = float(minimum_absolute_late_enhancement_percent)
+    if early.shape != late.shape or early.ndim < 1:
+        raise ValueError("PEearly and PElate maps must have identical shapes")
+    if not np.isfinite(early).all() or not np.isfinite(late).all():
+        raise ValueError("PE maps must be finite")
+    if not np.isfinite(threshold) or threshold <= 0:
+        raise ValueError("Denominator threshold must be finite and strictly positive")
+    valid = np.abs(late) >= threshold
+    ratio = np.full(early.shape, np.nan, dtype=float)
+    ratio[valid] = early[valid] / late[valid]
+    return ratio, valid
+
+
 def spoiled_gre_percent_enhancement(
     tissue_concentration_mM: np.ndarray,
     *,
