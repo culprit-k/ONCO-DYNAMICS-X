@@ -49,7 +49,7 @@ def test_extended_tofts_supports_spatial_parameter_maps():
 
 
 def test_extended_tofts_rejects_invalid_parameter_fractions():
-    with pytest.raises(ValueError, match="vp + ve"):
+    with pytest.raises(ValueError, match=r"vp \+ ve"):
         extended_tofts_concentration(
             np.array([0.0, 60.0]),
             np.array([1.0, 0.5]),
