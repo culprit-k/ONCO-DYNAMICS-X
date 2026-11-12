@@ -277,28 +277,45 @@ def _sequence(dataset: Any, tag: tuple[int, int]) -> list[Any]:
     return list(value) if isinstance(value, (list, tuple)) else []
 
 
+def _numeric_or_text(value: Any, numeric_type: type) -> Any:
+    """Convert known numeric private values while retaining unparseable raw text."""
+    raw = _unwrap(value)
+    if raw is None:
+        return None
+    try:
+        if numeric_type is int:
+            converted = int(raw)
+            if float(raw) != converted:
+                return _text(raw)
+            return converted
+        converted = float(raw)
+        return converted if converted == converted and abs(converted) != float("inf") else None
+    except (TypeError, ValueError, OverflowError):
+        return _text(raw)
+
+
 def extract_ftv_results(dataset: Any) -> list[dict[str, Any]]:
-    """Read the documented UCSF FTV sequence and retain both FTV thresholds."""
+    """Read numeric FTV thresholds/count/volume and the result label."""
     tag = DICOM_TAGS["ftv_result_sequence"]
     rows = []
     for item in _sequence(dataset, tag):
         rows.append({
-            "ser_minimum": _text(tag_value(item, (0x0117, 0x10B1))),
-            "ser_maximum": _text(tag_value(item, (0x0117, 0x10B2))),
-            "voxel_count": _text(tag_value(item, (0x0117, 0x10B3))),
-            "volume_cc": _text(tag_value(item, (0x0117, 0x10B4))),
+            "ser_minimum": _numeric_or_text(tag_value(item, (0x0117, 0x10B1)), float),
+            "ser_maximum": _numeric_or_text(tag_value(item, (0x0117, 0x10B2)), float),
+            "voxel_count": _numeric_or_text(tag_value(item, (0x0117, 0x10B3)), int),
+            "volume_cc": _numeric_or_text(tag_value(item, (0x0117, 0x10B4)), float),
             "label": _text(tag_value(item, (0x0117, 0x10B5))),
         })
     return rows
 
 
-def extract_ser_parameters(dataset: Any) -> dict[str, str]:
-    """Parse named VOLSER parameters without assuming a default PE threshold."""
+def extract_ser_parameters(dataset: Any) -> dict[str, Any]:
+    """Parse typed VOLSER parameters without assuming a default PE threshold."""
     tag = DICOM_TAGS["ser_parameter_sequence"]
-    values: dict[str, str] = {}
+    values: dict[str, Any] = {}
     for item in _sequence(dataset, tag):
         name = _text(tag_value(item, (0x0117, 0x1014)))
-        parameter_type = _text(tag_value(item, (0x0117, 0x1012)))
+        parameter_type = (_text(tag_value(item, (0x0117, 0x1012))) or "").upper()
         if not name:
             continue
         value_tags = {
@@ -306,9 +323,16 @@ def extract_ser_parameters(dataset: Any) -> dict[str, str]:
             "INTEGER": (0x0117, 0x1019),
             "STRING": (0x0117, 0x101A),
         }
-        value_tag = value_tags.get((parameter_type or "").upper())
-        value = tag_value(item, value_tag) if value_tag is not None else None
-        values[name] = _text(value) or ""
+        value_tag = value_tags.get(parameter_type)
+        raw_value = tag_value(item, value_tag) if value_tag is not None else None
+        if parameter_type == "FLOAT":
+            values[name] = _numeric_or_text(raw_value, float)
+        elif parameter_type == "INTEGER":
+            values[name] = _numeric_or_text(raw_value, int)
+        elif parameter_type == "STRING":
+            values[name] = _text(raw_value)
+        else:
+            values[name] = _text(raw_value)
     return values
 
 
