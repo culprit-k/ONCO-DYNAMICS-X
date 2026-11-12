@@ -1,6 +1,6 @@
 # I-SPY 2 workbook audit and longitudinal calibration handoff
 
-**Status (12 November 2026):** the 384-participant Multi-feature MRI NACT workbook is locally audited and analysed. A privacy-preserving structural audit, aggregate volume analysis and four-feature repeated-measures analysis are complete. The separate 985-case clinical workbook has not yet been locally obtained or linked. No treatment-adjusted effect, elapsed-day kinetic estimate or patient-derived PDE coefficient is claimed.
+**Status (12 November 2026):** the 384-participant Multi-feature MRI NACT workbook and separate 985-case clinical workbook are locally audited and linked one-to-one for all 384 MRI participants. Aggregate four-feature summaries, pCR association analysis and a locked patient-level linear/quadratic response-model comparison are complete. The linked participant-level table remains private. No elapsed-day kinetic estimate or patient-derived PDE coefficient is claimed.
 
 ## Public data source
 
@@ -72,13 +72,15 @@ The per-series slope is descriptive of the observed treatment context. It does n
 
 The existing runner `scripts/fit_treatment_net_volume.py` accepts a local long-format CSV after the workbook audit and manual mapping. Its default volume field is `ftv_cc`; only use that mapping after verifying the workbook's actual unit. Keep raw workbooks, participant linkage and patient-level outputs in approved local/institutional storage.
 
-## Acceptance gate for the next modelling stage
+## Current modelling status and next acceptance gate
 
-Do not start cohort-level fitting until the local audit confirms:
-- interpretable visit/date columns and verified units;
-- an auditable participant linkage and duplicate policy;
-- aligned treatment exposure metadata;
-- enough eligible serial positive FTV measurements;
-- a participant-level temporal holdout that does not leak later visits into calibration.
+The linked workbooks now support treatment-stage pCR association and prediction analyses. A locked 80/20 patient-level split was used for the first linear-versus-quadratic response-model comparison, with zero participant overlap. These prediction models use named T1/T2 stage contrasts and do not convert nominal visits into elapsed days.
 
-If these conditions fail, report the exact data limitation and revise the estimand rather than imputing unsupported dates, inventing visit intervals or fitting mechanistic PDE coefficients.
+The spatial PDE calibration gate remains closed until the following are available and validated:
+- registered spatial tumour/MRI fields and masks at multiple visits;
+- actual acquisition timestamps and aligned treatment-exposure dates;
+- a validated observation operator linking the latent PDE tumour state to measured enhancement volume;
+- spatially resolved microenvironment measurements appropriate to the coupled PDE states;
+- an identifiability analysis and patient-level locked validation protocol.
+
+If these inputs are unavailable, keep the PDE comparator explicitly non-identifiable from aggregate volume data. Do not impute dates, assume equal visit intervals, or report fitted values as biological diffusion, proliferation or treatment-killing rates. See [the pCR response-model comparison](ispy2_pcr_response_model_comparison.md).
