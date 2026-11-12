@@ -57,7 +57,9 @@ def extended_tofts_concentration(
     if not np.isfinite(time_s).all() or not np.isfinite(cp).all():
         raise ValueError("Time and arterial input arrays must be finite")
     if not np.isclose(time_s[0], 0.0) or np.any(np.diff(time_s) <= 0):
-        raise ValueError("times_seconds must start at contrast time zero and be strictly increasing")
+        raise ValueError(
+            "times_seconds must start at contrast time zero and be strictly increasing"
+        )
     if (cp < 0).any():
         raise ValueError("Arterial input concentration cannot be negative")
 
@@ -187,7 +189,9 @@ def spoiled_gre_percent_enhancement(
     try:
         np.broadcast_shapes(concentration.shape[1:], t10.shape)
     except ValueError as exc:
-        raise ValueError("Baseline T1 map is not broadcast-compatible with concentration voxels") from exc
+        raise ValueError(
+            "Baseline T1 map is not broadcast-compatible with concentration voxels"
+        ) from exc
 
     alpha = np.deg2rad(alpha_deg)
     r10 = 1.0 / t10
@@ -221,7 +225,9 @@ def spoiled_gre_percent_enhancement(
         try:
             np.broadcast_shapes(concentration.shape[1:], baseline_r2star.shape)
         except ValueError as exc:
-            raise ValueError("Baseline R2* map is not broadcast-compatible with concentration voxels") from exc
+            raise ValueError(
+                "Baseline R2* map is not broadcast-compatible with concentration voxels"
+            ) from exc
         baseline_t2star_factor = np.exp(-echo_time * baseline_r2star)
         signal = signal * np.exp(
             -echo_time * (baseline_r2star + transverse_relaxivity * concentration)
