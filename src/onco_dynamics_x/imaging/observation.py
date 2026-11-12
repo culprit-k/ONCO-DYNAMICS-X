@@ -40,6 +40,7 @@ class FTVMeasurement:
     pe_threshold_percent: float | None
     ser_minimum: float | None
     method: str
+    ser_maximum: float | None = None
     reference_ftv_cc: float | None = None
     difference_from_reference_cc: float | None = None
 
@@ -186,22 +187,7 @@ def ftv_from_dce_maps(
         pe_threshold_percent=float(pe_threshold_percent),
         ser_minimum=float(ser_minimum),
         method="hard DCE PE/SER threshold operator inside pre-validated eligibility mask",
-    )
-    if ser_maximum is not None:
-        measurement = FTVMeasurement(
-            ftv_cc=measurement.ftv_cc,
-            voxel_count=measurement.voxel_count,
-            voxel_volume_cc=measurement.voxel_volume_cc,
-            pe_threshold_percent=measurement.pe_threshold_percent,
-            ser_minimum=measurement.ser_minimum,
-            method=measurement.method,
-            reference_ftv_cc=measurement.reference_ftv_cc,
-            difference_from_reference_cc=measurement.difference_from_reference_cc,
-        )
-    return measurement, mask
-
-
-def soft_ftv_from_dce_maps(
+        ser_maximum=float(ser_maximum) if ser_maximum is not None else None,
     )
     return measurement, mask
 
@@ -251,4 +237,5 @@ def soft_ftv_from_dce_maps(
         pe_threshold_percent=float(pe_threshold_percent),
         ser_minimum=float(ser_minimum),
         method="soft sigmoid approximation to the DCE PE/SER threshold operator",
+        ser_maximum=float(ser_maximum) if ser_maximum is not None else None,
     )
