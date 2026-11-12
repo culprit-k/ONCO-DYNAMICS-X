@@ -19,7 +19,7 @@ The feature workbook contains 384 unique subject rows and 29 columns. All partic
 
 Median T3-versus-T0 changes were:
 - workbook volume field (FTV candidate): -94.58%; 378 lower and 6 higher;
-- longest diameter: -67.05%; 365 lower and 15 higher;
+- longest diameter: -67.05%; 365 lower, 15 higher and 4 unchanged;
 - sphericity: +25.55%; 274 higher and 110 lower;
 - background parenchymal enhancement: -28.95%; 294 lower and 90 higher.
 
