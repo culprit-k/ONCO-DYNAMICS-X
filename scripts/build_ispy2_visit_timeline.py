@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from collections import Counter
 from pathlib import Path
 
@@ -199,6 +198,8 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
                 interval_precision = "date"
             if days_from_t0 < 0:
                 visits.loc[row_index, "interval_status"] = "blocked_negative_time_from_T0"
+                previous_valid_datetime = None
+                previous_rank = None
                 continue
             visits.loc[row_index, "elapsed_days_from_T0"] = days_from_t0
             visits.loc[row_index, "elapsed_time_precision"] = interval_precision
