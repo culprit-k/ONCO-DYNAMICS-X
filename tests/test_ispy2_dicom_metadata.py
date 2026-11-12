@@ -62,6 +62,7 @@ def test_ambiguous_long_trial_identifier_is_not_guessed():
 
 def test_zero_value_ser_parameter_is_preserved():
     item = FakeDataset({
+        (0x0117, 0x1012): "FLOAT",
         (0x0117, 0x1014): "SER_min",
         (0x0117, 0x1018): 0,
     })
