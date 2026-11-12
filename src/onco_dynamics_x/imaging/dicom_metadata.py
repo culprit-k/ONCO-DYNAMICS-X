@@ -170,14 +170,18 @@ def extract_subject_id(dataset: Any) -> tuple[str | None, str | None]:
         digits = re.sub(r"\D", "", raw)
         if 1 <= len(digits) <= 6:
             return digits.zfill(6), "ClinicalTrialSubjectID (0012,0040)"
-        found = re.findall(r"\d{6}", raw)
-        if found:
-            return found[-1], "ClinicalTrialSubjectID (0012,0040)"
+        trailing_id = re.search(r"(?<!\d)(\d{6})\s*$", raw)
+        if trailing_id:
+            return trailing_id.group(1), "ClinicalTrialSubjectID (0012,0040)"
+        # Do not guess which six-digit block is the trial ID in a longer numeric string.
     patient_id = _text(tag_value(dataset, (0x0010, 0x0020)))
     if patient_id:
-        found = re.findall(r"\d{6}", patient_id)
-        if found:
-            return found[-1], "PatientID (0010,0020) fallback"
+        digits = re.sub(r"\D", "", patient_id)
+        if 1 <= len(digits) <= 6:
+            return digits.zfill(6), "PatientID (0010,0020) fallback"
+        trailing_id = re.search(r"(?<!\d)(\d{6})\s*$", patient_id)
+        if trailing_id:
+            return trailing_id.group(1), "PatientID (0010,0020) fallback"
     return None, None
 
 
