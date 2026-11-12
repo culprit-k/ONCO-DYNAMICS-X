@@ -39,8 +39,14 @@ def select_inventory_rows(inventory: pd.DataFrame, selection: pd.DataFrame) -> p
         data["visit_stage"] = data["visit_code"].astype("string").str.upper().str.extract(
             r"^(T[0-3])(?:[-_].*)?$", expand=False
         )
-    data["visit_stage"] = data["visit_stage"].astype("string").str.upper()
-    chosen["visit_stage"] = chosen["visit_stage"].astype("string").str.upper()
+    extracted_stage = data["visit_code"].astype("string").str.upper().str.extract(
+        r"^(T[0-3])(?:[-_].*)?$",
+        expand=False,
+    )
+    provided_stage = data["visit_stage"].astype("string").str.upper().str.strip()
+    provided_stage = provided_stage.mask(provided_stage.eq(""))
+    data["visit_stage"] = provided_stage.fillna(extracted_stage)
+    chosen["visit_stage"] = chosen["visit_stage"].astype("string").str.upper().str.strip()
     raw_include = chosen["include"].astype(str).str.strip().str.lower()
     valid = {"1", "0", "true", "false", "yes", "no"}
     if not set(raw_include.unique()).issubset(valid):
