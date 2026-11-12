@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -31,13 +32,17 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     data = inventory.copy()
     data["patient_id"] = data["patient_id"].astype("string")
     data["visit_code"] = data["visit_code"].astype("string").str.upper()
-    data = data[data["visit_code"].isin(VISIT_ORDER)].copy()
+    if "visit_stage" in data.columns:
+        data["_visit_stage"] = data["visit_stage"].astype("string").str.upper()
+    else:
+        data["_visit_stage"] = data["visit_code"].str.extract(r"^(T[0-3])(?:[-_].*)?$", expand=False)
+    data = data[data["_visit_stage"].isin(VISIT_ORDER)].copy()
     if data.empty:
         raise ValueError("No T0/T1/T2/T3 DICOM visit records found")
 
     records = []
     for (patient_id, visit, study_uid), group in data.groupby(
-        ["patient_id", "visit_code", "study_instance_uid"], dropna=False
+        ["patient_id", "_visit_stage", "study_instance_uid"], dropna=False
     ):
         dates = sorted(set(group["scan_datetime"].dropna().astype(str)))
         flag_values = set()
@@ -47,6 +52,7 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         record = {
             "patient_id": str(patient_id),
             "visit_code": str(visit),
+            "visit_code_raw": "|".join(sorted(set(group["visit_code"].dropna().astype(str)))),
             "study_instance_uid": "" if pd.isna(study_uid) else str(study_uid),
             "scan_datetime": dates[0] if len(dates) == 1 else None,
             "scan_datetime_consistent": len(dates) == 1,
@@ -111,13 +117,18 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         previous_rank = None
         for row_index, row in ordered.iterrows():
             visit = str(row["visit_code"])
-            if not bool(row["scan_datetime_consistent"]) or not row["scan_datetime"]:
+            if pd.isna(row["scan_datetime"]):
+                visits.loc[row_index, "interval_status"] = "blocked_missing_visit_datetime"
+                previous_valid_datetime = None
+                previous_rank = None
+                continue
+            if not bool(row["scan_datetime_consistent"]):
                 visits.loc[row_index, "interval_status"] = "blocked_inconsistent_visit_datetime"
                 previous_valid_datetime = None
                 previous_rank = None
                 continue
-            if pd.isna(row["scan_datetime"]):
-                visits.loc[row_index, "interval_status"] = "blocked_missing_visit_datetime"
+            if not bool(row["study_datetime_consistent_across_series"]):
+                visits.loc[row_index, "interval_status"] = "blocked_inconsistent_study_datetime_metadata"
                 previous_valid_datetime = None
                 previous_rank = None
                 continue
