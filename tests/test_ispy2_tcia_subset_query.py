@@ -96,3 +96,43 @@ def test_candidate_rows_require_exact_dicom_trial_id_and_unambiguous_visit():
     assert summary["matched_study_count"] == 1
     assert summary["blocked_study_count_missing_or_ambiguous_trial_tags"] == 1
     assert summary["unmatched_target_subject_count"] == 0
+
+
+
+def test_extract_tag_values_accepts_single_tag_object():
+    payload = {
+        "data": {
+            "element": "(0012,0040)",
+            "name": "ClinicalTrialSubjectID",
+            "data": "111881",
+        }
+    }
+    assert extract_tag_values(payload, "(0012,0040)") == {"111881"}
+
+
+def test_blocked_study_count_is_not_inflated_by_multiple_series():
+    series = [
+        {
+            "StudyInstanceUID": "study-bad",
+            "SeriesInstanceUID": "series-a",
+            "Modality": "MR",
+        },
+        {
+            "StudyInstanceUID": "study-bad",
+            "SeriesInstanceUID": "series-b",
+            "Modality": "MR",
+        },
+    ]
+    frame, summary = build_candidate_rows(
+        series,
+        {"study-bad": {
+            "trial_subject_id": None,
+            "visit_code": None,
+            "subject_tag_value_count": 0,
+            "visit_tag_value_count": 0,
+        }},
+        {"111881"},
+        "ISPY2",
+    )
+    assert frame.empty
+    assert summary["blocked_study_count_missing_or_ambiguous_trial_tags"] == 1
