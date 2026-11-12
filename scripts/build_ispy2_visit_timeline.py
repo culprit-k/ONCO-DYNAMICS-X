@@ -88,6 +88,7 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         ambiguous = patient.groupby("visit_code").size()
         if (ambiguous > 1).any():
             visits.loc[idx, "interval_status"] = "blocked_multiple_studies_within_visit"
+            continue
         t0 = patient[patient["visit_code"] == "T0"]
         if len(t0) != 1:
             visits.loc[idx, "interval_status"] = "blocked_missing_or_multiple_T0_studies"
@@ -112,6 +113,11 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
             visit = str(row["visit_code"])
             if not bool(row["scan_datetime_consistent"]) or not row["scan_datetime"]:
                 visits.loc[row_index, "interval_status"] = "blocked_inconsistent_visit_datetime"
+                previous_valid_datetime = None
+                previous_rank = None
+                continue
+            if pd.isna(row["scan_datetime"]):
+                visits.loc[row_index, "interval_status"] = "blocked_missing_visit_datetime"
                 previous_valid_datetime = None
                 previous_rank = None
                 continue
