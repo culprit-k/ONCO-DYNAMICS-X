@@ -46,3 +46,24 @@ def test_dicom_da_tm_and_date_only_precision():
 
 def test_elapsed_days_between_shifted_longitudinal_dates():
     assert elapsed_days("1960-01-02T12:00:00", "1960-01-12T12:00:00") == 10.0
+
+
+def test_visit_code_suffix_is_preserved_and_normalized_to_stage():
+    ds = FakeDataset({(0x0012, 0x0040): "123456", (0x0012, 0x0050): "T1-2"})
+    row = extract_series_metadata(ds)
+    assert row["visit_code"] == "T1-2"
+    assert row["visit_stage"] == "T1"
+
+
+def test_ambiguous_long_trial_identifier_is_not_guessed():
+    ds = FakeDataset({(0x0012, 0x0040): "1234567890"})
+    assert extract_subject_id(ds) == (None, None)
+
+
+def test_zero_value_ser_parameter_is_preserved():
+    item = FakeDataset({
+        (0x0117, 0x1014): "SER_min",
+        (0x0117, 0x1018): 0,
+    })
+    ds = FakeDataset({(0x0117, 0x1010): [item]})
+    assert extract_series_metadata(ds)["ser_analysis_parameters"]["SER_min"] == "0"
