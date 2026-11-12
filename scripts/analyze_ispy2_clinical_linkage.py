@@ -114,7 +114,7 @@ def analyze(features: pd.DataFrame, clinical: pd.DataFrame) -> dict:
             "pCR_code_1_n": int((y == 1).sum()),
             "pCR_code_0_n": int((y == 0).sum()),
             "pCR_code_1_rate": float(y.mean()),
-            "interpretation": "Code 1 is provisionally treated as pCR-positive; confirm against official data dictionary."
+            "interpretation": "The original 384-person MRI paper codes 1 as pCR and 0 as non-pCR; this source-specific mapping is used for the linked MRI subset."
         },
         "pCR_by_HR_HER2": [],
         "pCR_by_arm": [],
