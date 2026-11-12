@@ -1,0 +1,143 @@
+{
+  "analysis": "I-SPY 2 pCR-informed treatment-stage response model comparison",
+  "cohort": {
+    "clinical_only_n": 601,
+    "clinical_rows": 985,
+    "feature_rows": 384,
+    "feature_unmatched_n": 0,
+    "one_to_one_linked_patients": 384
+  },
+  "leakage_controls": [
+    "One linked row per patient; the split is performed on unique participant identifiers.",
+    "No participant identifier is used as a model feature.",
+    "The pCR classifier uses T1/T2 only; T3 is not a predictor.",
+    "pCR is a training target, never an input feature.",
+    "The T3 forecast uses training patients only and does not use pCR as a predictor.",
+    "Scaling and treatment-arm encoding are fitted within each training-only pipeline.",
+    "Patient-level data and identifiers are not written to the output."
+  ],
+  "limitations": [
+    "The locked holdout is internal to the 384-person feature-linked cohort, not external validation.",
+    "The test set is modest; bootstrap intervals may be wide and are conditional on this split.",
+    "The nonlinear term is exploratory; performance differences must be assessed with the paired test-set interval.",
+    "Treatment-arm adjustment is predictive, not a causal treatment-effect estimate.",
+    "HR and HER2 are used as workbook-coded fields; their detailed assay definitions are not re-derived here.",
+    "The workbook volume field's exact unit and implementation equivalence to trial FTV remain unverified.",
+    "No spatial PDE coefficient is estimated because the linked workbooks lack the required spatial/time-resolved observations."
+  ],
+  "measurement_definition": {
+    "physical_unit": "not asserted; workbook-specific unit remains unverified",
+    "primary_measure": "workbook volume field VOLUME_TUM_BLU_V1x; treated as a functional MRI enhancement-volume proxy",
+    "response_variables": {
+      "r1": "ln(V_T1 / V_T0)",
+      "r2": "ln(V_T2 / V_T0)",
+      "r3": "ln(V_T3 / V_T0)"
+    },
+    "time_handling": "T1 and T2 are named visit-stage features; no day intervals or per-day rates are constructed",
+    "viable_cell_count_equivalence": false
+  },
+  "models": {
+    "linear_response_reference": {
+      "pcr_metrics_test": {
+        "brier_score": 0.19091689255532057,
+        "log_loss": 0.5617139117740254,
+        "roc_auc": 0.7262479871175523
+      },
+      "pcr_model": "logit(P(pCR)) = intercept + linear terms in r1, r2, age, HR, HER2 and treatment-arm indicators",
+      "t3_forecast": "r3 predicted by ridge regression on r1, r2, age, HR, HER2 and treatment-arm indicators",
+      "t3_forecast_metrics_test": {
+        "mae_log_ratio": 0.7668204241714892,
+        "r2": 0.452280581961899,
+        "rmse_log_ratio": 0.9971480994815983
+      }
+    },
+    "quadratic_nonlinear_response": {
+      "pcr_metrics_test": {
+        "brier_score": 0.1891340447677097,
+        "log_loss": 0.5594936277112148,
+        "roc_auc": 0.7391304347826088
+      },
+      "pcr_model": "linear predictor additionally includes r1^2, r1*r2 and r2^2",
+      "t3_forecast": "ridge regression additionally includes r1^2, r1*r2 and r2^2",
+      "t3_forecast_metrics_test": {
+        "mae_log_ratio": 0.7665764816849099,
+        "r2": 0.4479586589890321,
+        "rmse_log_ratio": 1.0010744977555683
+      }
+    }
+  },
+  "outcome": {
+    "coding_basis": "Li et al., npj Breast Cancer (2020), DOI 10.1038/s41523-020-00203-7",
+    "field": "pCR",
+    "negative_code": 0,
+    "negative_label": "non-pCR",
+    "negative_n": 271,
+    "positive_code": 1,
+    "positive_label": "pCR",
+    "positive_n": 113
+  },
+  "paired_uncertainty": {
+    "delta_rmse_quadratic_minus_linear_95ci": [
+      -0.013762535870886508,
+      0.020070589232969796
+    ],
+    "delta_roc_auc_quadratic_minus_linear_95ci": [
+      -0.018421052631578897,
+      0.050176146905043004
+    ],
+    "method": "paired patient bootstrap of the locked test set",
+    "requested_resamples": 2000,
+    "rmse_log_ratio_95ci": {
+      "linear": [
+        0.8331116300637417,
+        1.1560392893405642
+      ],
+      "quadratic": [
+        0.8336590830120147,
+        1.1614227593991757
+      ]
+    },
+    "roc_auc_95ci": {
+      "linear": [
+        0.5983451907583555,
+        0.8361728201919065
+      ],
+      "quadratic": [
+        0.6143277683124065,
+        0.849166288566243
+      ]
+    },
+    "valid_auc_resamples": 2000
+  },
+  "reaction_diffusion_comparator": {
+    "diffusion_identifiable_from_whole_volume_only": false,
+    "mathematical_reason": "For no-flux boundaries, integrating dC/ds = D*laplacian(C) + R over the domain gives d/ds integral(C) = integral(R), because the boundary integral of grad(C) dot n is zero. The whole-lesion volume therefore removes D from the aggregate balance; scalar pCR and morphology summaries do not restore spatial information.",
+    "missing_inputs": [
+      "registered_spatial_tumour_fields",
+      "actual_acquisition_times",
+      "treatment_exposure_timeline",
+      "validated_mri_observation_operator",
+      "spatial_microenvironment_fields"
+    ],
+    "required_inputs": [
+      "registered_spatial_tumour_fields",
+      "actual_acquisition_times",
+      "treatment_exposure_timeline",
+      "validated_mri_observation_operator",
+      "spatial_microenvironment_fields"
+    ],
+    "status": "blocked_nonidentifiable"
+  },
+  "split": {
+    "all_linked_patients_assigned_once": true,
+    "method": "stratified patient-level holdout; split performed on unique participant IDs",
+    "patient_overlap_n": 0,
+    "seed": 20261112,
+    "test_fraction": 0.2,
+    "test_n": 77,
+    "test_pCR_negative_n": 54,
+    "test_pCR_positive_n": 23,
+    "train_n": 307,
+    "train_pCR_positive_n": 90
+  }
+}
