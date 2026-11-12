@@ -10,6 +10,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 REQUIRED_EVENT_COLUMNS = {
@@ -42,8 +43,11 @@ def align_exposures(events: pd.DataFrame, visits: pd.DataFrame) -> tuple[pd.Data
     flags = set(v["longitudinal_date_flag"].fillna("").astype(str).str.upper())
     if not flags or not flags.issubset({"MODIFIED", "UNMODIFIED"}):
         raise ValueError("Visit DICOM date-modification flag is missing or inconsistent")
-    if "MODIFIED" not in flags:
-        raise ValueError("No TCIA MODIFIED DICOM dates detected in visit timeline")
+    if flags != {"MODIFIED"}:
+        raise ValueError(
+            "Every aligned visit must carry a consistent MODIFIED date flag; "
+            "mixed, missing or UNMODIFIED dates are rejected by this workflow."
+        )
 
     e["administration_status"] = e["administration_status"].astype(str).str.upper().str.strip()
     excluded_status_counts = dict(Counter(e.loc[
@@ -57,7 +61,8 @@ def align_exposures(events: pd.DataFrame, visits: pd.DataFrame) -> tuple[pd.Data
     e["agent"] = e["agent"].astype(str).str.strip()
     e["dose_unit"] = e["dose_unit"].astype(str).str.strip()
     e["dose"] = pd.to_numeric(e["dose"], errors="raise")
-    if (~e["dose"].map(lambda x: pd.notna(x) and x >= 0)).any():
+    dose_values = e["dose"].to_numpy(dtype=float)
+    if not np.isfinite(dose_values).all() or (dose_values < 0).any():
         raise ValueError("Dose must be finite and non-negative")
     e["administration_datetime"] = pd.to_datetime(
         e["administration_datetime"], errors="raise", utc=True
