@@ -192,6 +192,7 @@ def register_series(
         "moving_mask_resampled": str(moving_mask_out) if moving_mask_out else None,
         "mask_dice_if_both_masks_supplied": dice,
         "transform_type": "Euler3D rigid",
+        "transform_mapping": "fixed/reference T0 physical coordinates -> moving/follow-up physical coordinates; resampler pull transform",
         "clinical_qc_status": (
             "requires visual review and anatomical landmark/segmentation QC; "
             "numeric registration metrics are not proof of anatomical validity"
@@ -208,7 +209,7 @@ def main() -> None:
     parser.add_argument("--moving-dicom-dir", required=True)
     parser.add_argument("--moving-series-uid", required=True, help="Curated T1/T2/T3 series UID")
     parser.add_argument("--output-image", required=True, help="Registered moving volume (.nii.gz)")
-    parser.add_argument("--output-transform", required=True, help="Saved rigid transform (.tfm)")
+    parser.add_argument("--output-transform", required=True, help="Saved fixed-T0-to-moving-visit pull transform (.tfm)")
     parser.add_argument("--qc-json", required=True, help="Private local registration QC JSON")
     parser.add_argument("--moving-mask", help="Optional already-converted moving mask in NIfTI")
     parser.add_argument("--fixed-mask", help="Optional fixed/reference mask in NIfTI for Dice QC")
