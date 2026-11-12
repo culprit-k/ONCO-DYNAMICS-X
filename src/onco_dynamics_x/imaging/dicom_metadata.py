@@ -21,6 +21,14 @@ DICOM_TAGS = {
     "study_date": (0x0008, 0x0020),
     "study_time": (0x0008, 0x0030),
     "timezone_offset": (0x0008, 0x0201),
+    "repetition_time_ms": (0x0018, 0x0080),
+    "echo_time_ms": (0x0018, 0x0081),
+    "inversion_time_ms": (0x0018, 0x0082),
+    "magnetic_field_strength_t": (0x0018, 0x0087),
+    "flip_angle_degrees": (0x0018, 0x1314),
+    "contrast_bolus_agent": (0x0018, 0x0010),
+    "contrast_bolus_volume_ml": (0x0018, 0x1041),
+    "contrast_bolus_start_time": (0x0018, 0x1042),
     "longitudinal_date_flag": (0x0028, 0x0303),
     "dce_phase_count": (0x0117, 0x1030),
     "dce_phase_duration_s": (0x0117, 0x1031),
@@ -276,14 +284,16 @@ def extract_ser_parameters(dataset: Any) -> dict[str, str]:
     values: dict[str, str] = {}
     for item in _sequence(dataset, tag):
         name = _text(tag_value(item, (0x0117, 0x1014)))
+        parameter_type = _text(tag_value(item, (0x0117, 0x1012)))
         if not name:
             continue
-        value = None
-        for value_tag in ((0x0117, 0x1018), (0x0117, 0x1019), (0x0117, 0x101A)):
-            candidate = tag_value(item, value_tag)
-            if candidate is not None:
-                value = candidate
-                break
+        value_tags = {
+            "FLOAT": (0x0117, 0x1018),
+            "INTEGER": (0x0117, 0x1019),
+            "STRING": (0x0117, 0x101A),
+        }
+        value_tag = value_tags.get((parameter_type or "").upper())
+        value = tag_value(item, value_tag) if value_tag is not None else None
         values[name] = _text(value) or ""
     return values
 
