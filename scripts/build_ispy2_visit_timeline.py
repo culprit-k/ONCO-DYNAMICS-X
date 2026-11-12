@@ -59,8 +59,16 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
             "scan_datetime_source": "|".join(sorted(set(
                 group["scan_datetime_source"].dropna().astype(str)
             ))),
+            "scan_time_precision": (
+                "|".join(sorted(set(group["scan_time_precision"].dropna().astype(str))))
+                if "scan_time_precision" in group.columns else "date_and_time"
+            ),
             "longitudinal_date_flag": "|".join(date_flags),
-            "date_flag_valid": len(date_flags) == 1 and date_flags[0] in VALID_DATE_FLAGS,
+            "date_flag_valid": (
+                bool(group["date_flag_consistent"].fillna(False).astype(bool).all())
+                if "date_flag_consistent" in group.columns
+                else len(date_flags) == 1 and date_flags[0] in VALID_DATE_FLAGS
+            ),
             "series_count": int(len(group)),
             "study_datetime_consistent_across_series": bool(
                 group["study_datetime_consistent"].fillna(False).astype(bool).all()
@@ -104,10 +112,14 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
             continue
         t0_datetime = str(t0.iloc[0]["scan_datetime"])
         try:
-            # Validate parseability without converting to a real calendar date.
+            # TCIA-shifted dates are used only for within-patient elapsed intervals.
             pd.Timestamp(t0_datetime)
         except Exception:
             visits.loc[idx, "interval_status"] = "blocked_unparseable_T0_datetime"
+            continue
+        t0_precision = str(t0.iloc[0]["scan_time_precision"])
+        if "|" in t0_precision:
+            visits.loc[idx, "interval_status"] = "blocked_mixed_T0_time_precision"
             continue
 
         ordered = patient.copy()
@@ -133,19 +145,42 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
                 previous_rank = None
                 continue
             current = str(row["scan_datetime"])
-            days_from_t0 = elapsed_days(t0_datetime, current)
+            current_precision = str(row["scan_time_precision"])
+            if "|" in current_precision or current_precision not in {"date_only", "date_and_time"}:
+                visits.loc[row_index, "interval_status"] = "blocked_unknown_time_precision"
+                previous_valid_datetime = None
+                previous_rank = None
+                continue
+            if current_precision == "date_and_time" and t0_precision == "date_and_time":
+                days_from_t0 = elapsed_days(t0_datetime, current)
+                interval_precision = "date_and_time"
+            else:
+                days_from_t0 = float(
+                    (pd.Timestamp(current).date() - pd.Timestamp(t0_datetime).date()).days
+                )
+                interval_precision = "date"
             if days_from_t0 < 0:
                 visits.loc[row_index, "interval_status"] = "blocked_negative_time_from_T0"
                 continue
             visits.loc[row_index, "elapsed_days_from_T0"] = days_from_t0
+            visits.loc[row_index, "elapsed_time_precision"] = interval_precision
             if visit == "T0":
                 visits.loc[row_index, "days_from_previous_stage"] = 0.0
                 visits.loc[row_index, "interval_status"] = "baseline"
             elif previous_valid_datetime is not None and previous_rank is not None:
                 if VISIT_ORDER[visit] > previous_rank:
-                    visits.loc[row_index, "days_from_previous_stage"] = elapsed_days(
-                        previous_valid_datetime, current
-                    )
+                    previous_row = ordered.loc[ordered["_rank"] == previous_rank].iloc[-1]
+                    previous_precision = str(previous_row["scan_time_precision"])
+                    if previous_precision == "date_and_time" and current_precision == "date_and_time":
+                        stage_interval = elapsed_days(previous_valid_datetime, current)
+                        stage_precision = "date_and_time"
+                    else:
+                        stage_interval = float(
+                            (pd.Timestamp(current).date() - pd.Timestamp(previous_valid_datetime).date()).days
+                        )
+                        stage_precision = "date"
+                    visits.loc[row_index, "days_from_previous_stage"] = stage_interval
+                    visits.loc[row_index, "stage_interval_precision"] = stage_precision
                     visits.loc[row_index, "interval_status"] = "relative_interval_valid"
                 else:
                     visits.loc[row_index, "interval_status"] = "blocked_nonmonotone_visit_order"
@@ -162,6 +197,8 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         "studies_with_valid_date_flag": int(visits["date_flag_valid"].sum()),
         "visits_with_t0_relative_days": int(visits["elapsed_days_from_T0"].notna().sum()),
         "visits_with_stage_intervals": int(visits["days_from_previous_stage"].notna().sum()),
+        "elapsed_time_precision_counts": dict(Counter(visits.get("elapsed_time_precision", pd.Series(dtype=str)).dropna())) ,
+        "stage_interval_precision_counts": dict(Counter(visits.get("stage_interval_precision", pd.Series(dtype=str)).dropna())),
         "interval_status_counts": dict(Counter(visits["interval_status"])),
         "date_semantics": (
             "DICOM calendar dates are privacy-shifted where the MODIFIED flag is present; "
