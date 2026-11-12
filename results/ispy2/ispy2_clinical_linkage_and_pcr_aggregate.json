@@ -1,0 +1,145 @@
+{
+  "linkage": {
+    "clinical_n": 985,
+    "clinical_unique_ids": 985,
+    "feature_n": 384,
+    "feature_unique_ids": 384,
+    "matched_n": 384,
+    "feature_unmatched_n": 0,
+    "clinical_only_n": 601,
+    "duplicate_ids": 0,
+    "missing_matched_clinical_covariates": 0,
+    "join": "exact one-to-one CLINICAL-TRIAL-SUBJECT-ID = Patient_ID"
+  },
+  "outcome": {
+    "pCR_code_1_n": 113,
+    "pCR_code_0_n": 271,
+    "pCR_code_1_rate": 0.2942708333,
+    "code_direction": "provisional; verify official data dictionary"
+  },
+  "pCR_by_HR_HER2": [
+    {
+      "HR": 0,
+      "HER2": 0,
+      "n": 132,
+      "pCR_code_1_n": 50,
+      "rate": 0.3787878788
+    },
+    {
+      "HR": 0,
+      "HER2": 1,
+      "n": 30,
+      "pCR_code_1_n": 20,
+      "rate": 0.6666666667
+    },
+    {
+      "HR": 1,
+      "HER2": 0,
+      "n": 162,
+      "pCR_code_1_n": 24,
+      "rate": 0.1481481481
+    },
+    {
+      "HR": 1,
+      "HER2": 1,
+      "n": 60,
+      "pCR_code_1_n": 19,
+      "rate": 0.3166666667
+    }
+  ],
+  "ftv_candidate_median_pct_change_by_pCR": {
+    "0": {
+      "T1": -39.136286,
+      "T2": -82.911505,
+      "T3": -93.525613
+    },
+    "1": {
+      "T1": -62.309852,
+      "T2": -93.25,
+      "T3": -96.556299
+    }
+  },
+  "unadjusted_logistic": {
+    "T1": {
+      "OR_per_SD": 0.531633,
+      "CI95": [
+        0.416974,
+        0.677822
+      ],
+      "p": 3.44238e-7,
+      "mann_whitney_p": 1.98833e-9
+    },
+    "T2": {
+      "OR_per_SD": 0.470722,
+      "CI95": [
+        0.365484,
+        0.606264
+      ],
+      "p": 5.3406e-9,
+      "mann_whitney_p": 8.1314e-11
+    },
+    "T3": {
+      "OR_per_SD": 0.596063,
+      "CI95": [
+        0.471088,
+        0.754193
+      ],
+      "p": 0.0000163346,
+      "mann_whitney_p": 0.00000878537
+    }
+  },
+  "adjusted_logistic": {
+    "T1": {
+      "logratio_OR_per_SD": 0.525241,
+      "CI95": [
+        0.40545,
+        0.680425
+      ],
+      "p": 0.00000108605,
+      "adjusted_for": [
+        "Age_at_Screening",
+        "HR",
+        "HER2"
+      ]
+    },
+    "T2": {
+      "logratio_OR_per_SD": 0.428981,
+      "CI95": [
+        0.325912,
+        0.564644
+      ],
+      "p": 1.57124e-9,
+      "adjusted_for": [
+        "Age_at_Screening",
+        "HR",
+        "HER2"
+      ]
+    }
+  },
+  "internal_repeated_5fold_10repeat_CV": {
+    "T1_age_HR_HER2": {
+      "mean_AUC": 0.753388,
+      "fold_SD": 0.04956
+    },
+    "T1_plus_arm": {
+      "mean_AUC": 0.770964,
+      "fold_SD": 0.0545
+    },
+    "T2_age_HR_HER2": {
+      "mean_AUC": 0.771314,
+      "fold_SD": 0.03947
+    },
+    "T2_plus_arm": {
+      "mean_AUC": 0.789692,
+      "fold_SD": 0.04348
+    }
+  },
+  "caveats": [
+    "pCR coding direction requires dictionary confirmation",
+    "No actual scan dates; no day-based kinetic rates",
+    "No causal treatment comparisons",
+    "Volume units and FTV mapping need confirmation",
+    "Internal CV is not external validation",
+    "T3 is post-treatment and not an early prediction input"
+  ]
+}
