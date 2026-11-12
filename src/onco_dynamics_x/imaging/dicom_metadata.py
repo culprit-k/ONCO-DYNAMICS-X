@@ -193,7 +193,6 @@ def extract_series_metadata(dataset: Any) -> dict[str, Any]:
     visit = _text(tag_value(dataset, DICOM_TAGS["visit_code"]))
     if visit:
         visit = visit.upper()
-    import re
     stage_match = re.match(r"^(T[0-3])(?:[-_].*)?$", visit or "")
     visit_stage = stage_match.group(1) if stage_match else None
     return {
@@ -222,6 +221,8 @@ def extract_series_metadata(dataset: Any) -> dict[str, Any]:
         "columns": tag_value(dataset, (0x0028, 0x0011)),
         "number_of_frames": tag_value(dataset, (0x0028, 0x0008)),
         "pixel_spacing": _text(tag_value(dataset, (0x0028, 0x0030))),
+        "rescale_intercept": tag_value(dataset, (0x0028, 0x1052)),
+        "rescale_slope": tag_value(dataset, (0x0028, 0x1053)),
         "slice_thickness_mm": tag_value(dataset, (0x0018, 0x0050)),
         "spacing_between_slices_mm": tag_value(dataset, (0x0018, 0x0088)),
         "dce_phase_count": tag_value(dataset, DICOM_TAGS["dce_phase_count"]),
