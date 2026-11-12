@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from scripts.build_ispy2_visit_timeline import build_visit_timeline
+from scripts.build_ispy2_visit_timeline import build_visit_timeline, select_inventory_rows
 
 
 def inventory_rows(studies=None, flag="MODIFIED"):
@@ -79,3 +79,41 @@ def test_timeline_date_only_precision_uses_calendar_days():
     timeline, _ = build_visit_timeline(rows)
     assert timeline["elapsed_days_from_T0"].astype(float).tolist() == [0.0, 21.0, 49.0, 105.0]
     assert set(timeline["elapsed_time_precision"]) == {"date"}
+
+
+def test_selected_series_filter_resolves_same_stage_test_retest():
+    inventory = inventory_rows()
+    inventory["series_instance_uid"] = ["t0-a", "t1-test", "t1-treatment", "t2-a", "t3-a"]
+    inventory["visit_stage"] = ["T0", "T1", "T1", "T2", "T3"]
+    extra = inventory.iloc[[2]].copy()
+    extra["study_instance_uid"] = "study1-retest"
+    extra["scan_datetime"] = "1960-01-23T08:00:00"
+    inventory = pd.concat([inventory, extra], ignore_index=True)
+    selection = pd.DataFrame(
+        {
+            "patient_id": ["123456"] * 5,
+            "visit_stage": ["T0", "T1", "T1", "T2", "T3"],
+            "series_instance_uid": ["t0-a", "t1-test", "t1-treatment", "t2-a", "t3-a"],
+            "include": ["1", "0", "yes", "true", "1"],
+        }
+    )
+    selected = select_inventory_rows(inventory, selection)
+    assert set(selected["series_instance_uid"]) == {"t0-a", "t1-treatment", "t2-a", "t3-a"}
+    timeline, _ = build_visit_timeline(selected)
+    assert timeline["elapsed_days_from_T0"].notna().all()
+
+
+def test_selected_series_filter_rejects_patient_stage_uid_mismatch():
+    inventory = inventory_rows()
+    inventory["series_instance_uid"] = ["t0-a", "t1-a", "t2-a", "t3-a"]
+    inventory["visit_stage"] = ["T0", "T1", "T2", "T3"]
+    selection = pd.DataFrame(
+        {
+            "patient_id": ["999999"],
+            "visit_stage": ["T1"],
+            "series_instance_uid": ["t1-a"],
+            "include": ["1"],
+        }
+    )
+    with pytest.raises(ValueError, match="patient/visit/series triple"):
+        select_inventory_rows(inventory, selection)
