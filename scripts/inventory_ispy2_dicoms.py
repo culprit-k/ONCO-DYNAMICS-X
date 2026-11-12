@@ -64,6 +64,13 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
                 "study_datetimes": set(),
                 "acquisition_datetimes": [],
                 "date_flags": set(),
+                "date_flag_missing_file_count": 0,
+                "date_flag_observed_file_count": 0,
+                "study_datetime_missing_file_count": 0,
+                "patient_id_missing_file_count": 0,
+                "visit_stage_missing_file_count": 0,
+                "study_time_precisions": set(),
+                "acquisition_time_precisions": set(),
                 "patient_id_sources": set(),
                 "ftv_results_by_signature": {},
                 "ser_parameters_by_signature": {},
@@ -74,10 +81,23 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
         record["series_directories"].add(str(path.parent.resolve()))
         if metadata.get("study_datetime"):
             record["study_datetimes"].add(metadata["study_datetime"])
+        else:
+            record["study_datetime_missing_file_count"] += 1
+        if metadata.get("study_time_precision"):
+            record["study_time_precisions"].add(metadata["study_time_precision"])
         if metadata.get("acquisition_datetime"):
             record["acquisition_datetimes"].append(metadata["acquisition_datetime"])
+        if metadata.get("acquisition_time_precision"):
+            record["acquisition_time_precisions"].add(metadata["acquisition_time_precision"])
         if metadata.get("longitudinal_date_flag"):
             record["date_flags"].add(metadata["longitudinal_date_flag"].upper())
+            record["date_flag_observed_file_count"] += 1
+        else:
+            record["date_flag_missing_file_count"] += 1
+        if not metadata.get("patient_id"):
+            record["patient_id_missing_file_count"] += 1
+        if not metadata.get("visit_stage"):
+            record["visit_stage_missing_file_count"] += 1
         if metadata.get("patient_id_source"):
             record["patient_id_sources"].add(metadata["patient_id_source"])
         if metadata.get("ftv_results"):
@@ -93,8 +113,14 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
         acq = sorted(datetime.fromisoformat(x) for x in record["acquisition_datetimes"])
         study_dates = sorted(record["study_datetimes"])
         flags = sorted(record["date_flags"])
-        result["study_datetime"] = study_dates[0] if len(study_dates) == 1 else None
-        result["study_datetime_consistent"] = len(study_dates) == 1
+        result["study_datetime"] = (
+            study_dates[0]
+            if len(study_dates) == 1 and record["study_datetime_missing_file_count"] == 0
+            else None
+        )
+        result["study_datetime_consistent"] = (
+            len(study_dates) == 1 and record["study_datetime_missing_file_count"] == 0
+        )
         result["scan_datetime"] = result["study_datetime"] or (
             acq[0].isoformat() if acq else None
         )
@@ -102,11 +128,28 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
             "StudyDate/StudyTime" if result["study_datetime"] else
             (record.get("acquisition_datetime_source") if acq else None)
         )
+        result["scan_time_precision"] = (
+            next(iter(record["study_time_precisions"]))
+            if result["study_datetime"] and len(record["study_time_precisions"]) == 1
+            else (
+                next(iter(record["acquisition_time_precisions"]))
+                if acq and len(record["acquisition_time_precisions"]) == 1
+                else None
+            )
+        )
         result["acquisition_start_datetime"] = acq[0].isoformat() if acq else None
         result["acquisition_end_datetime"] = acq[-1].isoformat() if acq else None
         result["acquisition_datetime_count"] = len(acq)
         result["date_flags"] = "|".join(flags)
-        result["date_flag_consistent"] = len(flags) == 1
+        result["date_flag_consistent"] = (
+            len(flags) == 1
+            and record["date_flag_missing_file_count"] == 0
+            and record["date_flag_observed_file_count"] == record["file_count"]
+        )
+        result["date_flag_missing_file_count"] = record["date_flag_missing_file_count"]
+        result["study_datetime_missing_file_count"] = record["study_datetime_missing_file_count"]
+        result["patient_id_missing_file_count"] = record["patient_id_missing_file_count"]
+        result["visit_stage_missing_file_count"] = record["visit_stage_missing_file_count"]
         result["patient_id_sources"] = "|".join(sorted(record["patient_id_sources"]))
         directories = sorted(record["series_directories"])
         result["series_directory"] = directories[0] if len(directories) == 1 else None
@@ -116,7 +159,7 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
         result["ser_analysis_parameters_json"] = _json(list(record["ser_parameters_by_signature"].values()))
         for key in (
             "study_datetimes", "acquisition_datetimes", "date_flags",
-            "patient_id_sources", "ftv_results_by_signature", "ser_parameters_by_signature",
+            "study_time_precisions", "acquisition_time_precisions", "patient_id_sources", "ftv_results_by_signature", "ser_parameters_by_signature",
             "series_directories",
         ):
             result.pop(key, None)
@@ -136,7 +179,7 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
         "series_without_visit_code": int((df["visit_code"].isna() | (df["visit_code"] == "")).sum()) if not df.empty else 0,
         "visit_code_series_counts": dict(visit_counts),
         "series_with_scan_datetime": int(df["scan_datetime"].notna().sum()) if not df.empty else 0,
-        "series_with_longitudinal_date_flag": int(df["date_flags"].astype(bool).sum()) if not df.empty else 0,
+        "series_with_longitudinal_date_flag": int(df["date_flag_consistent"].sum()) if not df.empty else 0,
         "series_with_ftv_private_results": int(
             df["ftv_results_json"].fillna("[]").ne("[]").sum()
         ) if not df.empty else 0,
