@@ -141,5 +141,85 @@
     "Volume units and FTV mapping need confirmation",
     "Internal CV is not external validation",
     "T3 is post-treatment and not an early prediction input"
+  ],
+  "pCR_by_arm": [
+    {
+      "Arm": "Paclitaxel",
+      "n": 65,
+      "pCR_code_1_n": 9,
+      "rate": 0.1384615385
+    },
+    {
+      "Arm": "Paclitaxel + AMG 386",
+      "n": 49,
+      "pCR_code_1_n": 9,
+      "rate": 0.1836734694
+    },
+    {
+      "Arm": "Paclitaxel + Ganitumab",
+      "n": 45,
+      "pCR_code_1_n": 8,
+      "rate": 0.1777777778
+    },
+    {
+      "Arm": "Paclitaxel + Ganetespib",
+      "n": 41,
+      "pCR_code_1_n": 15,
+      "rate": 0.3658536585
+    },
+    {
+      "Arm": "Paclitaxel + Neratinib",
+      "n": 40,
+      "pCR_code_1_n": 8,
+      "rate": 0.2
+    },
+    {
+      "Arm": "Paclitaxel + Pembrolizumab",
+      "n": 27,
+      "pCR_code_1_n": 13,
+      "rate": 0.4814814815
+    },
+    {
+      "Arm": "Paclitaxel + ABT 888 + Carboplatin",
+      "n": 25,
+      "pCR_code_1_n": 10,
+      "rate": 0.4
+    },
+    {
+      "Arm": "Paclitaxel + MK-2206",
+      "n": 25,
+      "pCR_code_1_n": 7,
+      "rate": 0.28
+    },
+    {
+      "Arm": "T-DM1 + Pertuzumab",
+      "n": 17,
+      "pCR_code_1_n": 9,
+      "rate": 0.5294117647
+    },
+    {
+      "Arm": "Paclitaxel + Trastuzumab",
+      "n": 16,
+      "pCR_code_1_n": 5,
+      "rate": 0.3125
+    },
+    {
+      "Arm": "Paclitaxel + Pertuzumab + Trastuzumab",
+      "n": 16,
+      "pCR_code_1_n": 10,
+      "rate": 0.625
+    },
+    {
+      "Arm": "Paclitaxel + AMG 386 + Trastuzumab",
+      "n": 9,
+      "pCR_code_1_n": 3,
+      "rate": 0.3333333333
+    },
+    {
+      "Arm": "Paclitaxel + MK-2206 + Trastuzumab",
+      "n": 9,
+      "pCR_code_1_n": 7,
+      "rate": 0.7777777778
+    }
   ]
 }
