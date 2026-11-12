@@ -19,6 +19,50 @@ VISIT_ORDER = {"T0": 0, "T1": 1, "T2": 2, "T3": 3}
 VALID_DATE_FLAGS = {"MODIFIED", "UNMODIFIED"}
 
 
+def select_inventory_rows(inventory: pd.DataFrame, selection: pd.DataFrame) -> pd.DataFrame:
+    """Filter inventory to exact human-reviewed patient/stage/series triples."""
+    required_inventory = {"patient_id", "series_instance_uid"}
+    required_selection = {"patient_id", "visit_stage", "series_instance_uid", "include"}
+    missing_inventory = required_inventory - set(inventory.columns)
+    missing_selection = required_selection - set(selection.columns)
+    if missing_inventory or missing_selection:
+        raise ValueError(
+            f"Missing selection columns; inventory={sorted(missing_inventory)}, "
+            f"selection={sorted(missing_selection)}"
+        )
+    data = inventory.copy()
+    chosen = selection.copy()
+    for frame in (data, chosen):
+        frame["patient_id"] = frame["patient_id"].astype("string").str.strip().str.zfill(6)
+        frame["series_instance_uid"] = frame["series_instance_uid"].astype("string").str.strip()
+    if "visit_stage" not in data.columns:
+        data["visit_stage"] = data["visit_code"].astype("string").str.upper().str.extract(
+            r"^(T[0-3])(?:[-_].*)?$", expand=False
+        )
+    data["visit_stage"] = data["visit_stage"].astype("string").str.upper()
+    chosen["visit_stage"] = chosen["visit_stage"].astype("string").str.upper()
+    raw_include = chosen["include"].astype(str).str.strip().str.lower()
+    valid = {"1", "0", "true", "false", "yes", "no"}
+    if not set(raw_include.unique()).issubset(valid):
+        raise ValueError("Selection include values must be 1/0, true/false or yes/no")
+    chosen = chosen.loc[raw_include.isin({"1", "true", "yes"})].copy()
+    if chosen.empty:
+        raise ValueError("No patient/visit/series rows were selected")
+    if chosen["series_instance_uid"].duplicated().any():
+        raise ValueError("Selected series contains duplicate SeriesInstanceUID values")
+    triples = ["patient_id", "visit_stage", "series_instance_uid"]
+    check = chosen[triples].merge(
+        data[triples].drop_duplicates(),
+        on=triples,
+        how="left",
+        validate="one_to_one",
+        indicator=True,
+    )
+    if not check["_merge"].eq("both").all():
+        raise ValueError("At least one selected patient/visit/series triple is absent from inventory")
+    return data[data["series_instance_uid"].isin(set(chosen["series_instance_uid"]))].copy()
+
+
 def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     required = {
         "patient_id", "visit_code", "study_instance_uid", "scan_datetime",
@@ -251,11 +295,23 @@ def build_visit_timeline(inventory: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--inventory-csv", required=True)
+    parser.add_argument(
+        "--selection-csv",
+        help="Optional reviewed patient/visit/series selection CSV; resolves test/retest ambiguity",
+    )
     parser.add_argument("--timeline-csv", required=True, help="Private local patient-visit timeline")
     parser.add_argument("--summary-json", required=True, help="Aggregate-only summary")
     args = parser.parse_args()
     inventory = pd.read_csv(args.inventory_csv, dtype={"patient_id": "string"})
+    if args.selection_csv:
+        selection = pd.read_csv(args.selection_csv, dtype={"patient_id": "string"})
+        inventory = select_inventory_rows(inventory, selection)
     timeline, summary = build_visit_timeline(inventory)
+    summary["series_selection_applied"] = bool(args.selection_csv)
+    summary["series_selection_policy"] = (
+        "exact reviewed patient/visit/series triples"
+        if args.selection_csv else "none; ambiguous repeated studies are blocked"
+    )
     output = Path(args.timeline_csv)
     summary_path = Path(args.summary_json)
     output.parent.mkdir(parents=True, exist_ok=True)
