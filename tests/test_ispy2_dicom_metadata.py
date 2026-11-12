@@ -67,3 +67,28 @@ def test_zero_value_ser_parameter_is_preserved():
     })
     ds = FakeDataset({(0x0117, 0x1010): [item]})
     assert extract_series_metadata(ds)["ser_analysis_parameters"]["SER_min"] == "0"
+
+
+def test_acquisition_sequence_and_contrast_fields_are_extracted():
+    ds = FakeDataset(
+        {
+            (0x0012, 0x0040): "123456",
+            (0x0018, 0x0080): 4.2,
+            (0x0018, 0x0081): 1.7,
+            (0x0018, 0x0082): 0.8,
+            (0x0018, 0x0087): 3.0,
+            (0x0018, 0x1314): 12.0,
+            (0x0018, 0x0010): "Gadolinium",
+            (0x0018, 0x1041): 10.0,
+            (0x0018, 0x1042): "101500",
+        }
+    )
+    row = extract_series_metadata(ds)
+    assert row["repetition_time_ms"] == 4.2
+    assert row["echo_time_ms"] == 1.7
+    assert row["inversion_time_ms"] == 0.8
+    assert row["magnetic_field_strength_t"] == 3.0
+    assert row["flip_angle_degrees"] == 12.0
+    assert row["contrast_bolus_agent"] == "Gadolinium"
+    assert row["contrast_bolus_volume_ml"] == 10.0
+    assert row["contrast_bolus_start_time"] == "101500"
