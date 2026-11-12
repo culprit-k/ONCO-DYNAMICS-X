@@ -59,9 +59,8 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
             record = dict(metadata)
             record.update({
                 "series_directory": str(path.parent.resolve()),
-                "file_paths": [],
+                "series_directories": set(),
                 "file_count": 0,
-                "sop_uids": set(),
                 "study_datetimes": set(),
                 "acquisition_datetimes": [],
                 "date_flags": set(),
@@ -72,9 +71,7 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
             groups[key] = record
 
         record["file_count"] += 1
-        record["file_paths"].append(str(path.resolve()))
-        if metadata.get("sop_instance_uid"):
-            record["sop_uids"].add(metadata["sop_instance_uid"])
+        record["series_directories"].add(str(path.parent.resolve()))
         if metadata.get("study_datetime"):
             record["study_datetimes"].add(metadata["study_datetime"])
         if metadata.get("acquisition_datetime"):
@@ -111,15 +108,16 @@ def inventory_dicom_tree(root: Path, *, max_files: int | None = None) -> tuple[p
         result["date_flags"] = "|".join(flags)
         result["date_flag_consistent"] = len(flags) == 1
         result["patient_id_sources"] = "|".join(sorted(record["patient_id_sources"]))
-        result["unique_sop_instance_count"] = len(record["sop_uids"])
+        directories = sorted(record["series_directories"])
+        result["series_directory"] = directories[0] if len(directories) == 1 else None
+        result["series_directories_json"] = _json(directories)
         result["study_datetime_values_json"] = _json(study_dates)
-        result["file_paths_json"] = _json(sorted(set(record["file_paths"])))
         result["ftv_results_json"] = _json(list(record["ftv_results_by_signature"].values()))
         result["ser_analysis_parameters_json"] = _json(list(record["ser_parameters_by_signature"].values()))
         for key in (
-            "sop_uids", "study_datetimes", "acquisition_datetimes", "date_flags",
+            "study_datetimes", "acquisition_datetimes", "date_flags",
             "patient_id_sources", "ftv_results_by_signature", "ser_parameters_by_signature",
-            "file_paths",
+            "series_directories",
         ):
             result.pop(key, None)
         rows.append(result)
